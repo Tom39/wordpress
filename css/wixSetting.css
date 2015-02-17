@@ -1,0 +1,99 @@
+@charset "UTF-8";
+
+/*----------------------------------------------------------------------------------------------------------
+
+　　初期設定
+
+  ----------------------------------------------------------------------------------------------------------*/
+
+html {
+	height:100%;
+}
+
+textarea {
+	resize: horizontal;
+	height: 500px;
+	width: 50%;
+
+	font-size: 120%;
+	border:1px solid #777;
+    padding: 5px;
+
+    -webkit-border-radius: 5px;
+     
+    /* Firefox */
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+     
+    /* IE */
+    color: #FFFAF0;
+    background-color: #444444;
+    background: -webkit-gradient(linear, left top, left bottom, from(#444444), to(#333333));
+    background-image: -webkit-linear-gradient(to bottom, #444444 0%, #333333 100%) repeat scroll 0 0 rgba(0, 0, 0, 0);
+    background-image: -moz-linear-gradient(to bottom, #444444 0%, #333333 100%) repeat scroll 0 0 rgba(0, 0, 0, 0);
+    background-image: -o-linear-gradient(to bottom, #444444 0%, #333333 100%) repeat scroll 0 0 rgba(0, 0, 0, 0);
+    background-image: linear-gradient(to bottom, #444444 0%, #333333 100%) repeat scroll 0 0 rgba(0, 0, 0, 0);
+
+
+}
+
+/*----------------------------------------------------------------------------------------------------------
+
+　　ベースレイアウト
+
+  ----------------------------------------------------------------------------------------------------------*/
+
+.decide_management {
+    position: relative; width: 126px;
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
+}
+.decide_management-checkbox {
+    display: none !important;
+}
+.decide_management-label {
+    display: block; overflow: hidden; cursor: pointer;
+    border: 2px solid #E64C4C; border-radius: 20px;
+}
+.decide_management-inner {
+    display: block; width: 200%; margin-left: -100%;
+    -moz-transition: margin 0.3s ease-in 0s; -webkit-transition: margin 0.3s ease-in 0s;
+    -o-transition: margin 0.3s ease-in 0s; transition: margin 0.3s ease-in 0s;
+}
+.decide_management-inner:before, .decide_management-inner:after {
+    display: block; float: left; width: 50%; height: 34px; padding: 0; line-height: 34px;
+    font-size: 20px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+    -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box;
+}
+.decide_management-inner:before {
+    content: "ON";
+    padding-left: 7px;
+    background-color: #3455C1; color: #FFFFFF;
+}
+.decide_management-inner:after {
+    content: "OFF";
+    padding-right: 7px;
+    background-color: #EEEEEE; color: #999999;
+    text-align: right;
+}
+.decide_management-switch {
+    display: block; width: 20px; margin: 7px;
+    background: #FFFFFF;
+    border: 2px solid #E64C4C; border-radius: 20px;
+    position: absolute; top: 0; bottom: 0; right: 88px;
+    -moz-transition: all 0.3s ease-in 0s; -webkit-transition: all 0.3s ease-in 0s;
+    -o-transition: all 0.3s ease-in 0s; transition: all 0.3s ease-in 0s; 
+}
+.decide_management-checkbox:checked + .decide_management-label .decide_management-inner {
+    margin-left: 0;
+}
+.decide_management-checkbox:checked + .decide_management-label .decide_management-switch {
+    right: 0px; 
+}
+
+
+
+
+
+
+
+

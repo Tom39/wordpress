@@ -1,0 +1,12 @@
+<kwix.jp>
+		/* : 128
+<wixdev>
+		/test : 128, 234,235,236
+		/test?.html : 5
+		"/wordpress" : no_attach
+<local>
+		/vaio/products/ : 90
+		"/fa\d/" : 128
+		/vaio/ : 100
+		"/products/.*" : 5 : only
+		/vaio/products/fa1/special.html : 280, 128
