@@ -6,11 +6,11 @@ jQuery(function($) {
 
 	//パターンファイルのフォーム追加
 	$('#add_patternFile').click(function() {
-		var parentElementName = '#patternFile_form #pattern_wid ';
+		var parentElementName = '#patternFile_form #pattern_filename ';
 
 		//フォームを追加
-		var pattern_wid_len = $(parentElementName + 'li').length;
-		var insertElement = '<li><input type="text" name="pattern[' + pattern_wid_len + ']"> <input type="text" name="wid[' + pattern_wid_len + ']"></li>';
+		var pattern_filename_len = $(parentElementName + 'li').length;
+		var insertElement = '<li><input type="text" name="pattern[' + pattern_filename_len + ']"> <input type="text" name="filename[' + pattern_filename_len + ']"></li>';
 		$(parentElementName).append(insertElement);
 
 		// 削除ボタンの一旦全消去し、配置し直す
@@ -25,12 +25,12 @@ jQuery(function($) {
 	});
 
 	// 削除ボタンを押した場合の処理
-	$(document).on('click', '#patternFile_form #pattern_wid input[type="button"]', function(e) {
-		var parentElementName = '#patternFile_form #pattern_wid ';
+	$(document).on('click', '#patternFile_form #pattern_filename input[type="button"]', function(e) {
+		var parentElementName = '#patternFile_form #pattern_filename ';
 
 		//フォームを削除
 		var idx = $(e.target).parent().index();
-		$('#patternFile_form #pattern_wid li').eq(idx).remove();
+		$('#patternFile_form #pattern_filename li').eq(idx).remove();
 
 		// フォームがひとつになるなら、削除ボタンは不要なので消去
 		if ($(parentElementName + 'li').length == 1) $(parentElementName + 'input[type="button"]').remove();
@@ -38,7 +38,7 @@ jQuery(function($) {
 		// フォームの番号を振り直す
 		$(parentElementName + 'li').each(function(index) {
 			 $(this).children('input:text:eq(0)').attr('name', 'pattern[' + index + ']');
-			 $(this).children('input:text:eq(1)').attr('name', 'wid[' + index + ']');
+			 $(this).children('input:text:eq(1)').attr('name', 'filename[' + index + ']');
 		});
 
 	});	
