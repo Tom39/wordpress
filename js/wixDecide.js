@@ -1,20 +1,32 @@
 
 //マウスの座標位置
-var mouseX = 0;
-var mouseY = 0;
+// var mouseX = 0;
+// var mouseY = 0;
 //画面サイズ
 var windowWidth = 0;
 var windowHeight = 0;
 
+var leftPosition;
+var topPosition;
+
 jQuery(function($) {
+
+
+	window.onmessage = function(e){
+	 	var tmp_leftPosition = Number(e.data.split(",")[0]);
+	 	var tmp_topPosition = Number(e.data.split(",")[1]);
+	 	leftPosition = tmp_leftPosition;
+	 	topPosition = tmp_topPosition;
+	 	console.log(leftPosition + ' : ' + topPosition);
+	 }
 
 	windowWidth = $(window).width();
 	windowHeight = $(window).height();
 
-	$("body").mousemove(function(e) {
-        mouseX = e.pageX;
-        mouseY = e.pageY;
-    });
+	// $("body").mousemove(function(e) {
+ //        mouseX = e.pageX;
+ //        mouseY = e.pageY;
+ //    });
 
 
 	if ( $('#submitdiv').length ) {
@@ -83,62 +95,63 @@ jQuery(function($) {
 						data: data,
 
 						success: function(json) {
+console.log(json['test']);
+							// var contents = $("<iframe />", {
+							// 	id: 'wixDecideIframe'
+							// });
 
-							var contents = $("<iframe />", {
-								id: 'wixDecideIframe'
-							});
-
-							var pop = new $pop(contents , {
-								type: 'inline',
-								title: 'WIX Manual Decide',
-								width: windowWidth,
-								height: windowHeight - 50,
-								modal: true,
-								windowmode: false,
-								close: true,
-								resize: true
-							});  
-
-
-							// //iframeへのbody挿入
-							var iframe = window.document.getElementById('wixDecideIframe');
-							iframe.contentWindow.document.open();
-							iframe.contentWindow.document.write(json['html']);
-							iframe.contentWindow.document.close();
+							// var pop = new $pop(contents , {
+							// 	type: 'inline',
+							// 	title: 'WIX Manual Decide',
+							// 	width: windowWidth,
+							// 	height: windowHeight - 50,
+							// 	modal: true,
+							// 	windowmode: false,
+							// 	close: true,
+							// 	resize: true
+							// });  
 
 
-							$('iframe').ready(function(){
-								//Decide決定ボタンの作成
-								var wixDecideButton = $("<button />", {
-									text: 'Decide',
-									class: 'wixDecideBtn',
-									href: 'javascript:;',
-									title: 'wixDecide',
-									id: 'pwWixDecide',
-									click: function(event) {
-										/* Act on the event */
-										$('#lost-connection-notice')
-											.before('<div id="wixDecide_message" class="updated below-h2"><p>WIX Decide処理を行いました</p></div>');
+							// // //iframeへのbody挿入
+							// var iframe = window.document.getElementById('wixDecideIframe');
+							// iframe.contentWindow.document.open();
+							// iframe.contentWindow.document.write(json['html']);
+							// iframe.contentWindow.document.close();
 
-										$('#publish').show();
-										$('#wixDecide').hide();
-										pop.close();
-									}
-								});
-								$('.pWindow').children().eq(0).before(wixDecideButton);
-							});
 
-							//背景のグレー画面をクリックしたらモーダルclose
-							$('#pwCover').off().click(function(event) {
-								// html、bodyの固定解除
-								// $('html, body').removeClass('lock');
+							// $('iframe').ready(function(){
+							// 	//Decide決定ボタンの作成
+							// 	var wixDecideButton = $("<button />", {
+							// 		text: 'Decide',
+							// 		class: 'wixDecideBtn',
+							// 		href: 'javascript:;',
+							// 		title: 'wixDecide',
+							// 		id: 'pwWixDecide',
+							// 		click: function(event) {
+							// 			/* Act on the event */
+							// 			$('#lost-connection-notice')
+							// 				.before('<div id="wixDecide_message" class="updated below-h2"><p>WIX Decide処理を行いました</p></div>');
 
-								pop.close();
-							});
+							// 			$('#publish').show();
+							// 			$('#wixDecide').hide();
+							// 			pop.close();
+							// 		}
+							// 	});
+							// 	$('.pWindow').children().eq(0).before(wixDecideButton);
+							// });
+
+							// //背景のグレー画面をクリックしたらモーダルclose
+							// $('#pwCover').off().click(function(event) {
+							// 	// html、bodyの固定解除
+							// 	// $('html, body').removeClass('lock');
+
+							// 	pop.close();
+							// });
 						},
 
 						error: function(xhr, textStatus, errorThrown){
-      						alert('Error');
+      						// alert('Error');
+      						console.log(textStatus);
     					}
 
     				});

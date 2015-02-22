@@ -1,6 +1,8 @@
 <?php
 
-// $wix_ajax_message;
+require_once( dirname( __FILE__ ) . '/patternMatching.php' );
+
+$pm = new patternMatching;
 
 
 //Javascript→phpへのAjax通信を可能にするための変数定義
@@ -11,24 +13,13 @@ function ajaxURL() {
 	printf($str, $ajaxurl);
 }
 
-//ManualDecideを行うかどうか(wixDecideボタンを出現させるか否か)
-add_action('admin_head-post.php', 'wix_manual_decide_flag');
-add_action('admin_head-post-new.php', 'wix_manual_decide_flag');
-function wix_manual_decide_flag(){
-	$str = "<script type=\"text/javascript\"> var manual_decideFlag = '%s' </script>";
-	$manual_decideFlag = get_option('manual_decideFlag');
-	printf($str, $manual_decideFlag);
 
-	// global $post; var_dump($post);
-}
-
-
-
-
-
+//Manula Decideプレビュー画面のBody
 add_action( 'wp_ajax_wix_decide_preview', 'wix_decide_preview' );
 add_action( 'wp_ajax_nopriv_wix_decide_preview', 'wix_decide_preview' );
 function wix_decide_preview() {
+	global $pm;
+
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
 
@@ -54,14 +45,68 @@ function wix_decide_preview() {
 		$response_html = wp_remote_retrieve_body( $response );
 
 		if ( strpos($response_html, '<div class="entry-content">') !== false ) {
-			$decode_before_body_part = htmlspecialchars_decode($_POST['before_body_part']);
-			$returnValue = str_replace( $decode_before_body_part, $_POST['after_body_part'], $response_html );
+			//編集後のBodyに、アタッチしてから置換
+			// $decode_oldBody = htmlspecialchars_decode($_POST['before_body_part']);
+			// $newBody = new_body($_POST['after_body_part']);
+			// $returnValue = str_replace( $decode_oldBody, $newBody, $response_html );
+
+
+			// $allEntry = wix_set_link( $_POST['after_body_part'] );
+
+			// //とりあえず各エントリに分離
+			// $tmp_entryArray = preg_split("/[,]+/", $allEntry);
+
+			// $entryArray = array();
+			// $count = 0;
+			// foreach ($tmp_entryArray as $index => $entry) {
+
+			// 	$keyword = explode('=', $entry)[0];
+			// 	$targets = explode('=', $entry)[1];
+
+			// 	//keywordに{が付いてたら取り除く。それ以外は"などを取り除く
+			// 	if ( strpos($keyword, '{') !== false )
+			// 		$keyword = substr( $keyword, strpos($keyword, '{')+1 );
+			// 	else
+			// 		$keyword = ltrim( str_replace('"', '', $keyword) );
+
+			// 	//targetに}が付いてたら取り除く。
+			// 	if ( $count != count($tmp_entryArray)-1 ) {
+			// 		$targetArray = $pm -> splitSpace( $targets );
+			// 	} else {
+			// 		$tmp_targetArray = $pm -> splitSpace( $targets );
+			// 		$targetArray = array();
+
+			// 		foreach ($tmp_targetArray as $index => $target) {
+			// 			if ( strpos($target, '}') !== false )
+			// 				$target = rtrim($target);
+			// 				// $target = substr($target, 0, strpos($target, '}') );
+
+			// 			array_push($targetArray, $target);
+			// 		}
+			// 	}
+
+
+			// 	$entryArray[$keyword] = $targetArray;
+
+			// 	$count++;
+
+			// }
+
+
+
+
+			$test = wix_set_link( $_POST['after_body_part'] );
+			$test = json_decode($test,true);
+			$test = $test['香川真司'];
+
 		} else {
 			$returnValue = $response_html;
 		}
 
 		$json = array(
-			"html" => $returnValue
+			// "html" => $returnValue,
+			// "test" => $entryArray
+			"test" => $test
 		);
 		 echo json_encode( $json );
 	} else {
@@ -71,6 +116,62 @@ function wix_decide_preview() {
     die();
 }
 
+
+function wix_set_link( $body ) {
+
+	$WixFileNames = 'サッカー日本代表.wix,20111101SamuraiBlue.wix';
+
+
+	$URL = 'http://wixdev.db.ics.keio.ac.jp/WIXAuthorEditor_0.0.1/GetEntryInfo';
+	
+	$ch = curl_init();
+	$data = array(
+	    'filenames' => $WixFileNames
+	);
+	$data = http_build_query($data, "", "&");
+
+	try {
+		//送信
+		curl_setopt( $ch, CURLOPT_URL, $URL );
+		curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded') );
+		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+		curl_setopt( $ch, CURLOPT_POST, true );
+		curl_setopt( $ch, CURLOPT_POSTFIELDS, $data );
+
+		$response = curl_exec($ch);
+
+		if ( $response === false ) {
+
+		    // エラー文字列を出力する
+		    echo 'エラーです. http_test.php';
+	    	echo curl_error( $ch );
+
+		}
+
+	} catch ( Exception $e ) {
+	
+		echo '捕捉した例外: ',  $e -> getMessage(), "\n";
+	
+	} finally {
+
+		curl_close($ch);
+	
+	}
+
+	return $response;
+
+}	
+
+
+
+//モーダルウィンドウの<head>にwixDecide_iframe.jsのインクルード
+function wix_decide_include_file(){
+    if ( is_preview() == true ) {
+    	$path = wix_decide_iframe_js;
+    	echo "<script type=\"text/javascript\" src=\"" . $path . "\"></script>";
+    }
+}
+add_action('wp_head','wix_decide_include_file');
 
 
 
