@@ -3,6 +3,9 @@
 require_once( dirname( __FILE__ ) . '/patternMatching.php' );
 
 $pm = new patternMatching;
+$interLinkArray = array();
+$interLinkArray['長友佑都'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
+$interLinkArray['佐草友也'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
 
 
 //Javascript→phpへのAjax通信を可能にするための変数定義
@@ -19,6 +22,7 @@ add_action( 'wp_ajax_wix_decide_preview', 'wix_decide_preview' );
 add_action( 'wp_ajax_nopriv_wix_decide_preview', 'wix_decide_preview' );
 function wix_decide_preview() {
 	global $pm;
+	global $interLinkArray;
 
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
@@ -95,9 +99,51 @@ function wix_decide_preview() {
 
 
 
-			$test = wix_set_link( $_POST['after_body_part'] );
-			$test = json_decode($test,true);
-			$test = $test['香川真司'];
+			$allEntry = wix_set_link( $_POST['after_body_part'] );
+
+			if ( $allEntry != false ) {
+				/*
+				* allEntry: 既にLibraryに登録済みかつ、パターンファイルからマッチしたWIXファイルのエントリ情報
+				* exLinkArray: allEntryを連想配列にパースしたもの(外部リンク情報)
+				* interLinkArray: WordPress上で算出した内部リンク情報
+				*/
+
+				$exLinkArray = json_decode($allEntry, true);
+
+				foreach ($exLinkArray as $keyword => $exLinkArray_targets) {
+					//exLinkArrayのキーワードが、interLinkArrayのキーワードにもある場合
+					if ( isset($interLinkArray[$keyword]) ) {
+
+						//外部リンクtargetが複数ある時
+						if ( count($exLinkArray_targets) > 1 ) {
+							//一旦、内部リンクtargetを持つ
+							$interLinkArray_targets = $interLinkArray[$keyword];
+
+							//既にinterLinkarrayのターゲットに存在したらpushしない
+							foreach ($exLinkArray_targets as $exIndex => $exTarget) {
+								$flag = false;
+								foreach ($interLinkArray_targets as $interIndex => $interTarget) {
+									if ( $exTarget == $interTarget ) { $flag = true; break; }
+								}
+								if ( $flag == false ) array_push($interLinkArray_targets, $exTarget);
+							}
+
+							$interLinkArray[$keyword] = $interLinkArray_targets;
+						}
+						
+
+					} else {
+
+						$interLinkArray[$keyword] = $exLinkArray_targets;
+
+					}
+				}
+
+			} else {
+				//interLinkArrayのみでOK
+			}
+
+			
 
 		} else {
 			$returnValue = $response_html;
@@ -105,8 +151,8 @@ function wix_decide_preview() {
 
 		$json = array(
 			// "html" => $returnValue,
-			// "test" => $entryArray
-			"test" => $test
+			"test" => $interLinkArray
+			// "test" => $test
 		);
 		 echo json_encode( $json );
 	} else {
