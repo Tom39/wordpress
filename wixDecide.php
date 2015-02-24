@@ -6,6 +6,7 @@ $pm = new patternMatching;
 $interLinkArray = array();
 $interLinkArray['長友佑都'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
 $interLinkArray['佐草友也'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
+$interLinkArray['原口元気'] = array('http://kwix.jp');
 
 
 //Javascript→phpへのAjax通信を可能にするための変数定義
@@ -49,101 +50,83 @@ function wix_decide_preview() {
 		$response_html = wp_remote_retrieve_body( $response );
 
 		if ( strpos($response_html, '<div class="entry-content">') !== false ) {
-			//編集後のBodyに、アタッチしてから置換
-			// $decode_oldBody = htmlspecialchars_decode($_POST['before_body_part']);
-			// $newBody = new_body($_POST['after_body_part']);
-			// $returnValue = str_replace( $decode_oldBody, $newBody, $response_html );
 
+			$exEntry = wixfile_entry_info( 'サッカー日本代表.wix,20111101SamuraiBlue.wix' );
+			
+			//まず内部リンクのみallEntryに取り込む
+			$allEntry = array();
+			foreach ($interLinkArray as $keyword => $targets) {
+				$allEntry[$keyword] = $targets;
+			}
 
-			// $allEntry = wix_set_link( $_POST['after_body_part'] );
-
-			// //とりあえず各エントリに分離
-			// $tmp_entryArray = preg_split("/[,]+/", $allEntry);
-
-			// $entryArray = array();
-			// $count = 0;
-			// foreach ($tmp_entryArray as $index => $entry) {
-
-			// 	$keyword = explode('=', $entry)[0];
-			// 	$targets = explode('=', $entry)[1];
-
-			// 	//keywordに{が付いてたら取り除く。それ以外は"などを取り除く
-			// 	if ( strpos($keyword, '{') !== false )
-			// 		$keyword = substr( $keyword, strpos($keyword, '{')+1 );
-			// 	else
-			// 		$keyword = ltrim( str_replace('"', '', $keyword) );
-
-			// 	//targetに}が付いてたら取り除く。
-			// 	if ( $count != count($tmp_entryArray)-1 ) {
-			// 		$targetArray = $pm -> splitSpace( $targets );
-			// 	} else {
-			// 		$tmp_targetArray = $pm -> splitSpace( $targets );
-			// 		$targetArray = array();
-
-			// 		foreach ($tmp_targetArray as $index => $target) {
-			// 			if ( strpos($target, '}') !== false )
-			// 				$target = rtrim($target);
-			// 				// $target = substr($target, 0, strpos($target, '}') );
-
-			// 			array_push($targetArray, $target);
-			// 		}
-			// 	}
-
-
-			// 	$entryArray[$keyword] = $targetArray;
-
-			// 	$count++;
-
-			// }
-
-
-
-
-			$allEntry = wix_set_link( $_POST['after_body_part'] );
-
-			if ( $allEntry != false ) {
-				/*
-				* allEntry: 既にLibraryに登録済みかつ、パターンファイルからマッチしたWIXファイルのエントリ情報
-				* exLinkArray: allEntryを連想配列にパースしたもの(外部リンク情報)
-				* interLinkArray: WordPress上で算出した内部リンク情報
-				*/
-
-				$exLinkArray = json_decode($allEntry, true);
+			/*
+			* exEntry: 既にLibraryに登録済みかつ、パターンファイルからマッチしたWIXファイルのエントリ情報
+			* exLinkArray: exEntryを連想配列にパースしたもの(外部リンク情報)
+			* interLinkArray: WordPress上で算出した内部リンク情報
+			* allEntry: 全てのリンク情報
+			*/
+			if ( $exEntry != false ) {
+				$exLinkArray = json_decode($exEntry, true);
 
 				foreach ($exLinkArray as $keyword => $exLinkArray_targets) {
-					//exLinkArrayのキーワードが、interLinkArrayのキーワードにもある場合
-					if ( isset($interLinkArray[$keyword]) ) {
+					//exLinkArrayのキーワードが、allEntryのキーワードにもある場合
+					if ( isset($allEntry[$keyword]) ) {
 
-						//外部リンクtargetが複数ある時
-						if ( count($exLinkArray_targets) > 1 ) {
-							//一旦、内部リンクtargetを持つ
-							$interLinkArray_targets = $interLinkArray[$keyword];
+						//一旦、内部リンクtargetを持つ
+						$allEntry_targets = $allEntry[$keyword];
 
-							//既にinterLinkarrayのターゲットに存在したらpushしない
-							foreach ($exLinkArray_targets as $exIndex => $exTarget) {
-								$flag = false;
-								foreach ($interLinkArray_targets as $interIndex => $interTarget) {
-									if ( $exTarget == $interTarget ) { $flag = true; break; }
-								}
-								if ( $flag == false ) array_push($interLinkArray_targets, $exTarget);
+						//既にallEntryのターゲットに存在したらpushしない
+						foreach ($exLinkArray_targets as $exIndex => $exTarget) {
+							$flag = false;
+							foreach ($allEntry_targets as $interIndex => $interTarget) {
+								if ( $exTarget == $interTarget ) { $flag = true; break; }
 							}
-
-							$interLinkArray[$keyword] = $interLinkArray_targets;
+							if ( $flag == false ) array_push($allEntry_targets, $exTarget);
 						}
-						
+
+						//連想配列としてセット
+						$allEntry[$keyword] = $allEntry_targets;
 
 					} else {
 
-						$interLinkArray[$keyword] = $exLinkArray_targets;
+						$allEntry[$keyword] = $exLinkArray_targets;
 
 					}
 				}
-
-			} else {
-				//interLinkArrayのみでOK
 			}
 
-			
+			$allLinkInfo = array();
+			$count = 0;
+			foreach ($allEntry as $keyword => $targets) {
+				array_push( $allLinkInfo, 
+							array(
+								'keyword' => $keyword,
+								'target' => $targets,
+								'keywordLength' => mb_strlen($keyword)
+								)
+							);
+				$sortIndex[$count] = strlen($keyword);
+				$count++;
+			}
+			array_multisort($sortIndex, SORT_DESC, $allLinkInfo);
+
+
+			//Bodyにリンク作ってreturn
+			$tmpbody = $_POST['after_body_part'];
+			foreach ($allLinkInfo as $index => $value) {
+				$keyword = $value['keyword'];
+				$targets = $value['targets'];
+
+				if ( strpos($tmpbody, $keyword) !== false  ) {
+					
+				}
+
+			}
+
+
+
+			// $decode_oldBody = htmlspecialchars_decode($_POST['before_body_part']);
+			// $returnValue = str_replace( $decode_oldBody, $_POST['after_body_part'], $response_html );
 
 		} else {
 			$returnValue = $response_html;
@@ -151,8 +134,8 @@ function wix_decide_preview() {
 
 		$json = array(
 			// "html" => $returnValue,
-			"test" => $interLinkArray
-			// "test" => $test
+			"test" => $allLinkInfo
+			// "test" => $tmp
 		);
 		 echo json_encode( $json );
 	} else {
@@ -163,16 +146,15 @@ function wix_decide_preview() {
 }
 
 
-function wix_set_link( $body ) {
+function wixfile_entry_info( $filenames ) {
 
-	$WixFileNames = 'サッカー日本代表.wix,20111101SamuraiBlue.wix';
-
+	// $WixFileNames = 'サッカー日本代表.wix,20111101SamuraiBlue.wix';
 
 	$URL = 'http://wixdev.db.ics.keio.ac.jp/WIXAuthorEditor_0.0.1/GetEntryInfo';
 	
 	$ch = curl_init();
 	$data = array(
-	    'filenames' => $WixFileNames
+	    'filenames' => $filenames
 	);
 	$data = http_build_query($data, "", "&");
 
