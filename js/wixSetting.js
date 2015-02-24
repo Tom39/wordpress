@@ -6,7 +6,7 @@ jQuery(function($) {
 
 	//パターンファイルのフォーム追加
 	$('#add_patternFile').click(function() {
-		var parentElementName = '#patternFile_form #pattern_filename ';
+		var parentElementName = '#wix_settings_form #pattern_filename ';
 
 		//フォームを追加
 		var pattern_filename_len = $(parentElementName + 'li').length;
@@ -25,12 +25,12 @@ jQuery(function($) {
 	});
 
 	// 削除ボタンを押した場合の処理
-	$(document).on('click', '#patternFile_form #pattern_filename input[type="button"]', function(e) {
-		var parentElementName = '#patternFile_form #pattern_filename ';
+	$(document).on('click', '#wix_settings_form #pattern_filename input[type="button"]', function(e) {
+		var parentElementName = '#wix_settings_form #pattern_filename ';
 
 		//フォームを削除
 		var idx = $(e.target).parent().index();
-		$('#patternFile_form #pattern_filename li').eq(idx).remove();
+		$('#wix_settings_form #pattern_filename li').eq(idx).remove();
 
 		// フォームがひとつになるなら、削除ボタンは不要なので消去
 		if ($(parentElementName + 'li').length == 1) $(parentElementName + 'input[type="button"]').remove();
