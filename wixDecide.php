@@ -1,12 +1,38 @@
 <?php
 
-require_once( dirname( __FILE__ ) . '/patternMatching.php' );
+$innerLinkArray = array();
 
-$pm = new patternMatching;
-$interLinkArray = array();
-$interLinkArray['長友佑都'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
-$interLinkArray['佐草友也'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
-$interLinkArray['原口元気'] = array('http://kwix.jp');
+// $innerLinkArray[0] = array('end'=>array('2'), 'nextStart'=>array('5'), 'keyword'=>array('卓球'), 'targets'=>array('http://yahoo.co.jp'));
+// $innerLinkArray[5] = array('end'=>array('13'), 'nextStart'=>array('15'), 'keyword'=>array('エクソンモービル'), 'targets'=>array('http://yahoo.co.jp'));
+// $innerLinkArray[15] = array('end'=>array('18'), 'nextStart'=>array('0'), 'keyword'=>array('前田敦子'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
+// $innerLinkArray[20] = array('end'=>array('24'), 'nextStart'=>array('0'), 'keyword'=>array('前田敦子'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
+
+$innerLinkArray[0] = array('end'=>array('4'), 'nextStart'=>array('5'), 'keyword'=>array('カタール'), 'targets'=>array('http://yahoo.co.jp'));
+$innerLinkArray[5] = array('end'=>array('8'), 'nextStart'=>array('18'), 'keyword'=>array('大島優子'), 'targets'=>array('http://yahoo.co.jp'));
+$innerLinkArray[18] = array('end'=>array('22'), 'nextStart'=>array('0'), 'keyword'=>array('前田敦子'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
+
+
+// $innerLinkArray['0-4'] = array('http://yahoo.co.jp');
+// $innerLinkArray['140-143'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
+// $innerLinkArray['161-164'] = array('http://kwix.jp');
+
+// array_push( $innerLinkArray, 
+// 			array(
+// 					'start' => array(140),
+// 					'end' => array(143),
+// 					'targets' => array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp')
+// 				)
+// 		);
+// array_push( $innerLinkArray, 
+// 			array(
+// 					'start' => array(161),
+// 					'end' => array(164),
+// 					'targets' => array('http://kwix.jp')
+// 				)
+// 		);
+// $innerLinkArray['ナダル'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
+// $innerLinkArray['ロペス'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
+// $innerLinkArray['コリッチ'] = array('http://kwix.jp');
 
 
 //Javascript→phpへのAjax通信を可能にするための変数定義
@@ -17,13 +43,21 @@ function ajaxURL() {
 	printf($str, $ajaxurl);
 }
 
+//モーダルウィンドウの<head>にインクルード
+add_action('wp_head','wix_decide_include_file');
+function wix_decide_include_file(){
+    if ( is_preview() == true ) {
+    	echo "<script type=\"text/javascript\" src=\"" . wix_decide_iframe_js . "\"></script>";
+    	echo "<link rel=\"stylesheet\" href=\"" . wix_decide_css . "\" type=\"text/css\" charset=\"UTF-8\" />";
+    }
+}
+
 
 //Manula Decideプレビュー画面のBody
 add_action( 'wp_ajax_wix_decide_preview', 'wix_decide_preview' );
 add_action( 'wp_ajax_nopriv_wix_decide_preview', 'wix_decide_preview' );
 function wix_decide_preview() {
-	global $pm;
-	global $interLinkArray;
+	global $innerLinkArray;
 
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
@@ -46,96 +80,35 @@ function wix_decide_preview() {
 
 	if ( ! is_wp_error( $response ) && wp_remote_retrieve_response_code( $response ) === 200 ) {
 		
-		//返り値はbodyというか<html></html><html>まで
+		//返り値はbodyというか<html></html>まで
 		$response_html = wp_remote_retrieve_body( $response );
 
 		if ( strpos($response_html, '<div class="entry-content">') !== false ) {
 
-			$exEntry = wixfile_entry_info( 'サッカー日本代表.wix,20111101SamuraiBlue.wix' );
+			// $exEntry = wixfile_entry_info( 'サッカー日本代表.wix,20111101SamuraiBlue.wix' );
+
+
+			//編集後のBodyに、アタッチしてから置換
+			$decode_oldBody = htmlspecialchars_decode($_POST['before_body_part']);
+
+			$tmp = json_encode($innerLinkArray, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+
+			// $newBody = new_body($_POST['after_body_part'], $tmp);
+			$newBody = new_body('カタール。大島優子です。<br>中村俊輔です。<br>前田敦子です。<br>', $tmp);
+			// $newBody = new_body('卓球のワールドツアー、ドイツ・オープンが２２日、ブレーメンで行われ、女子シングルスで世界ランク３８位の伊藤美誠（１４＝スターツ）が同４５位のペトリサ・ソルヤ（２１＝ドイツ）を４―２で下し、初優勝を飾った。', $tmp);
 			
-			//まず内部リンクのみallEntryに取り込む
-			$allEntry = array();
-			foreach ($interLinkArray as $keyword => $targets) {
-				$allEntry[$keyword] = $targets;
-			}
+			$returnValue = str_replace( $decode_oldBody, $newBody, $response_html );
 
-			/*
-			* exEntry: 既にLibraryに登録済みかつ、パターンファイルからマッチしたWIXファイルのエントリ情報
-			* exLinkArray: exEntryを連想配列にパースしたもの(外部リンク情報)
-			* interLinkArray: WordPress上で算出した内部リンク情報
-			* allEntry: 全てのリンク情報
-			*/
-			if ( $exEntry != false ) {
-				$exLinkArray = json_decode($exEntry, true);
-
-				foreach ($exLinkArray as $keyword => $exLinkArray_targets) {
-					//exLinkArrayのキーワードが、allEntryのキーワードにもある場合
-					if ( isset($allEntry[$keyword]) ) {
-
-						//一旦、内部リンクtargetを持つ
-						$allEntry_targets = $allEntry[$keyword];
-
-						//既にallEntryのターゲットに存在したらpushしない
-						foreach ($exLinkArray_targets as $exIndex => $exTarget) {
-							$flag = false;
-							foreach ($allEntry_targets as $interIndex => $interTarget) {
-								if ( $exTarget == $interTarget ) { $flag = true; break; }
-							}
-							if ( $flag == false ) array_push($allEntry_targets, $exTarget);
-						}
-
-						//連想配列としてセット
-						$allEntry[$keyword] = $allEntry_targets;
-
-					} else {
-
-						$allEntry[$keyword] = $exLinkArray_targets;
-
-					}
-				}
-			}
-
-			$allLinkInfo = array();
-			$count = 0;
-			foreach ($allEntry as $keyword => $targets) {
-				array_push( $allLinkInfo, 
-							array(
-								'keyword' => $keyword,
-								'target' => $targets,
-								'keywordLength' => mb_strlen($keyword)
-								)
-							);
-				$sortIndex[$count] = strlen($keyword);
-				$count++;
-			}
-			array_multisort($sortIndex, SORT_DESC, $allLinkInfo);
-
-
-			//Bodyにリンク作ってreturn
-			$tmpbody = $_POST['after_body_part'];
-			foreach ($allLinkInfo as $index => $value) {
-				$keyword = $value['keyword'];
-				$targets = $value['targets'];
-
-				if ( strpos($tmpbody, $keyword) !== false  ) {
-					
-				}
-
-			}
-
-
-
-			// $decode_oldBody = htmlspecialchars_decode($_POST['before_body_part']);
-			// $returnValue = str_replace( $decode_oldBody, $_POST['after_body_part'], $response_html );
 
 		} else {
 			$returnValue = $response_html;
 		}
 
 		$json = array(
-			// "html" => $returnValue,
-			"test" => $allLinkInfo
-			// "test" => $tmp
+			"html" => $returnValue,
+			// "html" => $newBody
+			// "html" => $tmp
+			// "html" => $innerLinkArray
 		);
 		 echo json_encode( $json );
 	} else {
@@ -145,12 +118,10 @@ function wix_decide_preview() {
     die();
 }
 
-
+//使ってない
 function wixfile_entry_info( $filenames ) {
 
-	// $WixFileNames = 'サッカー日本代表.wix,20111101SamuraiBlue.wix';
-
-	$URL = 'http://wixdev.db.ics.keio.ac.jp/WIXAuthorEditor_0.0.1/GetEntryInfo';
+	$URL = 'http://trezia.db.ics.keio.ac.jp/WIXAuthorEditor_0.0.1/GetEntryInfo';
 	
 	$ch = curl_init();
 	$data = array(
@@ -191,15 +162,6 @@ function wixfile_entry_info( $filenames ) {
 }	
 
 
-
-//モーダルウィンドウの<head>にwixDecide_iframe.jsのインクルード
-function wix_decide_include_file(){
-    if ( is_preview() == true ) {
-    	$path = wix_decide_iframe_js;
-    	echo "<script type=\"text/javascript\" src=\"" . $path . "\"></script>";
-    }
-}
-add_action('wp_head','wix_decide_include_file');
 
 
 

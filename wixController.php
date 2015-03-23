@@ -10,10 +10,12 @@ Text Domain: WIX
 */
 
 define( 'PatternFile', dirname( __FILE__ ) . '/WixPattern.txt' );
-define( 'wix_style', plugins_url('/css/wixSetting.css', __FILE__) );
+define( 'wix_settings_css', plugins_url('/css/wixSetting.css', __FILE__) );
+define( 'wix_decide_css', plugins_url('/css/wixDecide.css', __FILE__) );
 define( 'popupwindow_css', plugins_url('/css/popupwindow.css', __FILE__) );
 define( 'wix_settings_js', plugins_url('/js/wixSetting.js', __FILE__) );
 define( 'wix_decide_js', plugins_url('/js/wixDecide.js', __FILE__) );
+define( 'wix_decide_iframe_js', plugins_url('/js/wixDecide_iframe.js', __FILE__) );
 define( 'popupwindow_js', plugins_url('/js/popupwindow-1.8.1.js', __FILE__) );
 
 
@@ -30,8 +32,9 @@ add_action( 'admin_init', 'wix_admin_init' );
 
 
 function wix_admin_init() {
-	wp_register_style( 'wix-style', wix_style );
+	wp_register_style( 'wix-settings-css', wix_settings_css );
     wp_register_style( 'popupwindow-css', popupwindow_css );
+    wp_register_style( 'wix-decide-css', wix_decide_css );
 	wp_register_script( 'wix-settings-js', wix_settings_js );
 	wp_register_script( 'wix-decide-js', wix_decide_js );
     wp_register_script( 'popupwindow-js', popupwindow_js );
@@ -41,7 +44,7 @@ function wix_admin_init() {
 
 //スクリプトの読み込み
 function wix_admin_settings_scripts() {
-	wp_enqueue_style( 'wix-style', wix_style, array() );
+	wp_enqueue_style( 'wix-settings-css', wix_settings_css, array() );
 	wp_enqueue_script( 'wix-settings-js', wix_settings_js, array('jquery') );
 
 	//jQuery UI
@@ -60,11 +63,32 @@ function wix_admin_settings_scripts() {
     );
 }
 
-function wix_admin_decide_scripts() {
-    wp_enqueue_style( 'popupwindow-css', popupwindow_css, array() );
-	wp_enqueue_script( 'wix-decide-js', wix_decide_js );
-    wp_enqueue_script( 'popupwindow-js', popupwindow_js );
+function wix_admin_decide_scripts($hook_suffix) {
+    $post_pages = array('post.php', 'post-new.php');
+
+    if ( in_array($hook_suffix, $post_pages) ) {
+        wp_enqueue_style( 'wix-decide-css', wix_decide_css, array() );
+        wp_enqueue_style( 'popupwindow-css', popupwindow_css, array() );
+        wp_enqueue_script( 'wix-decide-js', wix_decide_js );
+        wp_enqueue_script( 'popupwindow-js', popupwindow_js );
+
+        //ManualDecideを行うかどうか(wixDecideボタンを出現させるか否か)
+        $str = "<script type=\"text/javascript\"> var manual_decideFlag = '%s' </script>";
+        $manual_decideFlag = get_option('manual_decideFlag');
+        printf($str, $manual_decideFlag);
+    }
+
 }
+
+// add_action( 'wp_head', 'wix_decide_popup_css' );
+function wix_decide_popup_css() {
+    if ( is_preview() == true ) {
+        wp_register_style( 'wix-decide-css', wix_decide_css );
+        wp_enqueue_style( 'wix-decide-css', wix_decide_css, array() );
+    }
+}
+
+
 
 
 

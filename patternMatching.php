@@ -24,7 +24,7 @@ class patternMatching {
 		$no_attachFlag = false;
 
 
-		$pm -> RequestPath = '/vaio/products/fa1/special.html';
+		// $pm -> RequestPath = '/vaio/products/fa1/special.html';
 		// var_dump( $pm -> RequestPath );
 
 		try{
@@ -341,6 +341,7 @@ class patternMatching {
 			return parse_url( urldecode( get_permalink() ), $option );
 		else
 			return parse_url( urldecode( get_admin_url() ), $option );
+		
 	}
 
 	function subjectPath() {

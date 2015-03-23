@@ -1,0 +1,65 @@
+/* popup */
+
+a.wix-pre-authorLink:link {
+	color: #ff0000;
+}
+
+/* popup menu */
+table.predecidetable {
+	margin:-10px 0px 0px 20px;
+	border-collapse:collapse;
+	background:#EFF4FB url("./images/teaser.gif") repeat-x;
+	border-left:1px solid #686868;
+	border-right:1px solid #686868;
+	font:0.8em/145% 'Trebuchet MS',helvetica,arial,verdana;
+	color: #333;
+	z-index: 1000000;
+}
+
+table.predecidetable td, table.predecidetable th {
+		padding:5px;
+}
+
+/* =links
+----------------------------------------------- */
+table.predecidetable a.wix-pre-authorLink:link {
+	text-decoration:none;	
+	color: #000000 !important;
+}
+
+table.predecidetable a.wix-pre-authorLink:link:visited {
+		font-weight:normal;
+		color:#551A8B;
+		text-decoration: line-through;
+}
+
+table.predecidetable a.wix-pre-authorLink:link:hover {
+		border-bottom: 1px dashed #bbb;
+}
+
+/* =head =foot
+----------------------------------------------- */
+table.predecidetable thead th, table.predecidetable tfoot th {
+		background:#333 url("./images/llsh.gif") repeat-x;
+		color:#fff
+}
+
+
+/* =body
+----------------------------------------------- */
+table.predecidetable tbody th, table.predecidetable tbody td {
+		border-bottom: dotted 1px #333;
+}
+
+table.predecidetable tbody th {
+		white-space: nowrap;
+}
+
+table.predecidetable tbody th a {
+		color:#333;
+}
+
+table.predecidetable tbody tr:hover {
+		background:#fafafa
+}
+

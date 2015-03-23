@@ -40,7 +40,9 @@ function wix_admin_menu() {
 	);
 
 	add_action( 'admin_enqueue_scripts', 'wix_admin_settings_scripts' );
-	created_wixfile_info();
+	
+	add_action('admin_head-toplevel_page_wix-admin-settings', 'created_wixfile_info');
+
 }
 
 
@@ -211,7 +213,7 @@ function decide_management() {
 
 
 function created_wixfile_info() {
-	$URL = 'http://wixdev.db.ics.keio.ac.jp/WIXAuthorEditor_0.0.1/GetCreatedWIXFileNames';
+	$URL = 'http://trezia.db.ics.keio.ac.jp/WIXAuthorEditor_0.0.1/GetCreatedWIXFileNames';
 	
 	$ch = curl_init();
 	$data = array(
