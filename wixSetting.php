@@ -32,17 +32,36 @@ add_action( 'admin_menu', 'wix_admin_menu' );
 function wix_admin_menu() {
 
 	add_menu_page(
-		__('WIX Settings', 'wix-settings'),
-		__('WIX Settings', 'wix-settings'),
+		__('WIX Admin Settings', 'wix-settings'),
+		__('WIX Admin Settings', 'wix-settings'),
 		'administrator',
 		'wix-admin-settings',
 		'wix_admin_settings' 
+	);
+
+	add_submenu_page(
+		'wix-admin-settings',
+		__('WIX FIle Settings', 'wixfile-settings'),
+		__('WIX File Settings', 'wixfile-settings'),
+		'administrator',
+		'wix-admin-wixfile-settings',
+		'wix_admin_wixfile_settings'
 	);
 
 	add_action( 'admin_enqueue_scripts', 'wix_admin_settings_scripts' );
 	
 	add_action('admin_head-toplevel_page_wix-admin-settings', 'created_wixfile_info');
 
+}
+
+function wix_admin_wixfile_settings() {
+?>
+<div class="wrap">
+<?php
+	echo 'test';
+?>
+</div>
+<?php
 }
 
 
