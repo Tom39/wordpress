@@ -5,6 +5,8 @@ var windowHeight = 0;
 var leftPosition;
 var topPosition;
 
+var decideLink = new Array();
+
 jQuery(function($) {
 
 
@@ -61,6 +63,7 @@ jQuery(function($) {
 						* href: プレビュー先URL 
 						* target: 編集中コンテンツID
 						* post_format: フォーマットの種類
+						* before_body_part: 差し替え前のBody
 						* after_body_part: 差し替え用のBody
 						*/
 						var href =  decodeURI( $('#post-preview').attr('href') );
@@ -68,7 +71,7 @@ jQuery(function($) {
 						var post_format = $('#post-formats-select :input:checked').val();
 						var before_body_part = $('#content').html();
 						var after_body_part = $('iframe:first').contents().find('#tinymce').eq(0).html();
-
+						// var after_body_part = $('#wp-content-editor-container #content').html();
 
 
 						var data = {
@@ -88,7 +91,7 @@ jQuery(function($) {
 
 							success: function(json) {
 // console.log(json['html']);
-// console.log( json['html'].substring(json['html'].indexOf('<head>'), json['html'].indexOf('</head>')) );
+// console.log( json['html'].substring(json['html'].indexOf('<body>'), json['html'].indexOf('</body>')) );
 
 								var contents = $("<iframe />", {
 									id: 'wixDecideIframe'
@@ -105,13 +108,11 @@ jQuery(function($) {
 									resize: true
 								});  
 
-
-								// //iframeへのbody挿入
+								//iframeへのbody挿入
 								var iframe = window.document.getElementById('wixDecideIframe');
 								iframe.contentWindow.document.open();
 								iframe.contentWindow.document.write(json['html']);
 								iframe.contentWindow.document.close();
-
 
 								$('iframe').ready(function(){
 									//Decide決定ボタンの作成
@@ -123,20 +124,123 @@ jQuery(function($) {
 										id: 'pwWixDecide',
 										click: function(event) {
 											/* Act on the event */
-											$('#lost-connection-notice')
-												.before('<div id="wixDecide_message" class="updated below-h2"><p>WIX Decide処理を行いました</p></div>');
+											if (decideLink.length > 0) {
+												//Decideファイル作成部
+												var count = 0;
+												var post_decideLink = new Array();
+												var nextStartArray = new Array();
 
-											$('#publish').show();
-											$('#wixDecide').hide();
-											pop.close();
+												$.each(decideLink, function(index, ar) {
+													if (ar !== undefined) {
+														if ( count != 0 ) 
+															nextStartArray.push(index);
+
+														count++;
+													}
+												});
+												nextStartArray.push(0);
+												
+												count = 0;
+												$.each(decideLink, function(index, ar) {
+													if (ar !== undefined) {
+														ar['start'] = index;
+														ar['nextStart'] = nextStartArray[count];
+														post_decideLink[count] = ar;
+														count++;
+													}
+												});
+
+												data = {
+													'action': 'wix_create_decidefile',
+													'post_ID': target,
+													'decideLink' : post_decideLink
+												};
+												$.ajax({
+													async: true,
+													dataType: "json",
+													type: "POST",
+													url: ajaxurl,
+													data: data,
+
+													success: function(response){
+														console.log(response);
+													},
+													error: function(xhr, textStatus, errorThrown){
+														alert('wixDecide.js DecideFile Create Error');
+													}
+												});
+
+												$('#lost-connection-notice')
+													.before('<div id="wixDecide_message" class="updated below-h2"><p>WIX Decide処理を行いました</p></div>');
+												$('#publish').show();
+												// $('#wixDecide').hide();
+												pop.close(); pop2.close();
+											} else {
+												if ( confirm('Decide処理してませんが、閉じていいですか？') ) {
+													$('#lost-connection-notice')
+														.before('<div id="wixDecide_message" class="updated below-h2"><p>WIX Decide処理は行ってません</p></div>');
+													$('#publish').show();
+													// $('#wixDecide').hide();
+													pop.close(); pop2.close();
+												}
+											}
+											
 										}
 									});
 									$('.pWindow').children().eq(0).before(wixDecideButton);
 
+									//既存Decide情報の見える化
+									data = {
+										'action': 'wix_decidefile_check',
+										'post_ID': target,
+									};
+									$.ajax({
+										async: true,
+										dataType: "json",
+										type: "POST",
+										url: ajaxurl,
+										data: data,
+
+										success: function(response){
+											if ( response['existingDecideInfo'] != '' ) {
+												var contents2 = $("<iframe />", {
+													id: 'wixExistingDecideInfo'
+												});
+												var pop2 = new $pop(contents2 , {
+													type: 'inline',
+													title: 'WIX Decide情報',
+													width: 400,
+													height: 400,
+													modal: false,
+													windowmode: false,
+													close: true,
+													resize: true
+												});  
+												iframe = window.document.getElementById('wixExistingDecideInfo');
+												iframe.contentWindow.document.open();
+												iframe.contentWindow.document.write(response['existingDecideInfo']);
+												iframe.contentWindow.document.close();
+											}
+
+										},
+										error: function(xhr, textStatus, errorThrown){
+											alert('wixDecide.js Exsiting DecideInfo Error');
+										}
+									});
+									
 									//ポップアップの処理
 									$('#wixDecideIframe').contents().find('.wix-authorLink').mouseover(function() {
 										popupMenu($(this));
-										// alert($(this).attr('keywords'));
+										//既存orクリックされたTargetなら色付け
+										// clickPopupTarget($(this));
+
+										//ポップアップのクリックイベント
+										$('#wixDecideIframe').contents().find('.wix-pre-authorLink').off();
+										$('#wixDecideIframe').contents().find('.wix-pre-authorLink').click(function(){
+											createPreDecideFile($(this));
+											//クリックされたキーワードの色変更
+											$(this).parents('span').prev().css('background', '#ccccff');
+										});
 									});
 
 									$('#wixDecideIframe').contents().find('.decidemenu').mouseover(function(event) {
@@ -146,6 +250,7 @@ jQuery(function($) {
 										displayMode('none', $(this));
 									});
 
+
 								});
 
 								//背景のグレー画面をクリックしたらモーダルclose
@@ -153,7 +258,7 @@ jQuery(function($) {
 									// html、bodyの固定解除
 									// $('html, body').removeClass('lock');
 
-									pop.close();
+									pop.close(); pop2.close();
 								});
 							},
 
@@ -177,8 +282,6 @@ jQuery(function($) {
 
 });
 
-
-
 //ポップアップの処理
 function displayMode(block_none, object) {
 	object.css('display', block_none);
@@ -190,8 +293,9 @@ function popupMenu(object) {
 	var popupIndex = object.attr('popupIndex');
 
 	popupMenuItem = new Array();
-	for ( var i = 0; i < keyword.length; i++ ) {
-		var att = "class='wix-pre-authorLink' href='javascript:void(0)' target='" + target[i] + "' start='" + targetStart + "'";
+	for ( var i = 0; i < target.length; i++ ) {
+		// var att = "class='wix-pre-authorLink' href='javascript:void(0)' target='" + target[i] + "' start='" + targetStart + "'";
+		var att = "class='wix-pre-authorLink' href='javascript:void(0)'";
 		popupMenuItem.push(target[i], att);
 	}
 	// メニュー作成
@@ -222,7 +326,32 @@ function popupMenu(object) {
 				.html(layer);
 }
 
+function clickPopupTarget(object) {
 
+}
+
+
+//.wix-pre-authorLinkのクリックイベント
+function createPreDecideFile(object){
+	var start = object.parents('span').prev().attr('start');
+	var keyword, target, end;
+
+	if ( (start in decideLink) == true ){
+		delete decideLink[start];
+	}
+	keyword = object.parents('span').prev().html();
+	target = object.html();
+	end = parseInt(start) + keyword.length;
+
+	decideLink[start] = {'keyword':keyword,'target':target,'end':end};
+}
+
+//クリックされたポップアップを視覚的に分からせる
+// function changeColor(object) {
+	//クリックされたキーワードの色変更
+	// object.parents('span').prev().css('background', '#ccccff');
+	// object.css('cssText','color: blue !important;');
+// }
 
 
 
@@ -272,7 +401,7 @@ function popupMenu(object) {
 
 
 
-// 
+//使ってない
 function wix_ajax_message( message ) {
 	var data = {
 		'action': 'wix_message',
