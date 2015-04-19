@@ -1,38 +1,20 @@
 <?php
 
+//innerLinkArrayは自動生成したWIXファイルのキーワードから、位置を算出して作るもの
 $innerLinkArray = array();
 
-// $innerLinkArray[0] = array('end'=>array('2'), 'nextStart'=>array('5'), 'keyword'=>array('卓球'), 'targets'=>array('http://yahoo.co.jp'));
+// $innerLinkArray[0] = array('end'=>array('2'), 'nextStart'=>array('5'), 'keyword'=>array('女優'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
 // $innerLinkArray[5] = array('end'=>array('13'), 'nextStart'=>array('15'), 'keyword'=>array('エクソンモービル'), 'targets'=>array('http://yahoo.co.jp'));
-// $innerLinkArray[15] = array('end'=>array('18'), 'nextStart'=>array('0'), 'keyword'=>array('前田敦子'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
-// $innerLinkArray[20] = array('end'=>array('24'), 'nextStart'=>array('0'), 'keyword'=>array('前田敦子'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
+// $innerLinkArray[15] = array('end'=>array('19'), 'nextStart'=>array('24'), 'keyword'=>array('菅田将暉'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
+// $innerLinkArray[24] = array('end'=>array('25'), 'nextStart'=>array('30'), 'keyword'=>array('佐草'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
+// $innerLinkArray[30] = array('end'=>array('34'), 'nextStart'=>array('500'), 'keyword'=>array('オンエア'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
+// // $innerLinkArray[73] = array('end'=>array('77'), 'nextStart'=>array('500'), 'keyword'=>array('大島優子'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
+// $innerLinkArray[500] = array('end'=>array('501'), 'nextStart'=>array('0'), 'keyword'=>array('場'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
 
-$innerLinkArray[0] = array('end'=>array('4'), 'nextStart'=>array('5'), 'keyword'=>array('カタール'), 'targets'=>array('http://yahoo.co.jp'));
-$innerLinkArray[5] = array('end'=>array('8'), 'nextStart'=>array('18'), 'keyword'=>array('大島優子'), 'targets'=>array('http://yahoo.co.jp'));
-$innerLinkArray[18] = array('end'=>array('22'), 'nextStart'=>array('0'), 'keyword'=>array('前田敦子'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
+$innerLinkArray[0] = array('end'=>array('3'), 'nextStart'=>array('4'), 'keyword'=>array('遠山研'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
+$innerLinkArray[4] = array('end'=>array('10'), 'nextStart'=>array('30'), 'keyword'=>array('データベース'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
+$innerLinkArray[30] = array('end'=>array('40'), 'nextStart'=>array('0'), 'keyword'=>array('各'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
 
-
-// $innerLinkArray['0-4'] = array('http://yahoo.co.jp');
-// $innerLinkArray['140-143'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
-// $innerLinkArray['161-164'] = array('http://kwix.jp');
-
-// array_push( $innerLinkArray, 
-// 			array(
-// 					'start' => array(140),
-// 					'end' => array(143),
-// 					'targets' => array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp')
-// 				)
-// 		);
-// array_push( $innerLinkArray, 
-// 			array(
-// 					'start' => array(161),
-// 					'end' => array(164),
-// 					'targets' => array('http://kwix.jp')
-// 				)
-// 		);
-// $innerLinkArray['ナダル'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
-// $innerLinkArray['ロペス'] = array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp');
-// $innerLinkArray['コリッチ'] = array('http://kwix.jp');
 
 
 //Javascript→phpへのAjax通信を可能にするための変数定義
@@ -58,6 +40,7 @@ add_action( 'wp_ajax_wix_decide_preview', 'wix_decide_preview' );
 add_action( 'wp_ajax_nopriv_wix_decide_preview', 'wix_decide_preview' );
 function wix_decide_preview() {
 	global $innerLinkArray;
+	global $wpdb;
 
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
@@ -72,11 +55,25 @@ function wix_decide_preview() {
 		wp_die( __( 'You are not allowed to edit this post.' ) );
 	}
 
-	$query_args = array( 'preview' => 'true' );
-	$query_args['preview_id'] = $post->ID;
-	$query_args['post_format'] = empty( $_POST['post_format'] ) ? 'standard' : sanitize_key( $_POST['post_format'] );
-	$url = add_query_arg( $query_args, urldecode(esc_url_raw(get_permalink( $post->ID ))) );
-	$response = wp_remote_get( $url );
+	$page_status = get_post_status( $post_ID );
+
+	if ( $page_status == 'publish' ) {
+		$query_args = array( 'preview' => 'true' );
+		$query_args['preview_id'] = $post->ID;
+		$query_args['post_format'] = empty( $_POST['post_format'] ) ? 'standard' : sanitize_key( $_POST['post_format'] );
+		$url = add_query_arg( $query_args, urldecode(esc_url_raw(get_permalink( $post->ID ))) );
+		$response = wp_remote_get( $url );
+	} else if ( $page_status == 'draft' ) {
+		$query_args = array( 'preview' => 'true' );
+		$url = add_query_arg( $query_args, urldecode(esc_url_raw(get_permalink( $post->ID ))) );
+		$response = wp_remote_get( $url );
+
+		$publish_post_url = $wpdb->get_var("SELECT guid FROM " . $wpdb->prefix . "posts 
+										 WHERE post_type='post' AND post_status='publish'
+										 ORDER BY ID DESC"
+										);
+		$response = wp_remote_get( $publish_post_url );
+	}
 
 	if ( ! is_wp_error( $response ) && wp_remote_retrieve_response_code( $response ) === 200 ) {
 		
@@ -85,20 +82,21 @@ function wix_decide_preview() {
 
 		if ( strpos($response_html, '<div class="entry-content">') !== false ) {
 
-			// $exEntry = wixfile_entry_info( 'サッカー日本代表.wix,20111101SamuraiBlue.wix' );
-
-
 			//編集後のBodyに、アタッチしてから置換
 			$decode_oldBody = htmlspecialchars_decode($_POST['before_body_part']);
 
 			$tmp = json_encode($innerLinkArray, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
 
-			// $newBody = new_body($_POST['after_body_part'], $tmp);
-			$newBody = new_body('カタール。大島優子です。<br>中村俊輔です。<br>前田敦子です。<br>', $tmp);
-			// $newBody = new_body('卓球のワールドツアー、ドイツ・オープンが２２日、ブレーメンで行われ、女子シングルスで世界ランク３８位の伊藤美誠（１４＝スターツ）が同４５位のペトリサ・ソルヤ（２１＝ドイツ）を４―２で下し、初優勝を飾った。', $tmp);
+			$newBody = new_body($_POST['after_body_part'], $tmp);
 			
-			$returnValue = str_replace( $decode_oldBody, $newBody, $response_html );
+			// $returnValue = str_replace( $decode_oldBody, '$newBody', $response_html );
+			//↑だと上手く置換できなかった
+			$start = strpos($response_html, '<div class="entry-content">') + strlen('<div class="entry-content">');
+			$end = strpos($response_html, '</div>', $start);
+			$former_response_html = substr($response_html, 0, $start);
+			$later_response_html = substr($response_html, $end);
 
+			$returnValue = $former_response_html . $newBody . $later_response_html;
 
 		} else {
 			$returnValue = $response_html;
@@ -106,17 +104,114 @@ function wix_decide_preview() {
 
 		$json = array(
 			"html" => $returnValue,
-			// "html" => $newBody
-			// "html" => $tmp
-			// "html" => $innerLinkArray
 		);
-		 echo json_encode( $json );
+		echo json_encode( $json );
+
 	} else {
-		var_dump( $response );
+		$json = array(
+			"html" => $publish_post_url,
+		);
+		echo json_encode( $json );
 	}
 	
     die();
 }
+
+//各ページのDecideファイル作成
+add_action( 'wp_ajax_wix_create_decidefile', 'wix_create_decidefile' );
+add_action( 'wp_ajax_nopriv_wix_create_decidefile', 'wix_create_decidefile' );
+function wix_create_decidefile() {
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$post_ID = (int) substr( $_POST['post_ID'], strlen('wp-preview-') );
+
+	if ( ! $post = get_post( $post_ID ) ) {
+		wp_die( __( 'You are not allowed to edit this post.' ) );
+	}
+	if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+		wp_die( __( 'You are not allowed to edit this post.' ) );
+	}
+	// $test = urldecode($post->post_name);
+
+	$object = $_POST['decideLink'];
+
+	$dirname = dirname( __FILE__ ) . '/WIXDecideFiles/';
+	if ( !file_exists($dirname) ) {
+		mkdir($dirname, 0777, true);
+	}
+	if ( file_exists($dirname.$post_ID.'.txt') ) {
+		unlink($dirname.$post_ID.'.txt');
+	}
+
+	foreach ($object as $index => $array) {
+		$start = $array['start'];
+		$end = $array['end'];
+		$nextStart = $array['nextStart'];
+		$keyword = $array['keyword'];
+		$target = $array['target'];
+
+		$line = 'start:' . $start . ',end:' . $end . ',nextStart:' . $nextStart . ',keyword:' . $keyword . ',target:' . $target . "\n";
+		file_put_contents( $dirname.$post_ID.'.txt', $line, FILE_APPEND | LOCK_EX );
+	}
+
+	$json = array(
+		"response" => 'aaa'
+	);
+	echo json_encode($json);
+
+	die();
+}
+
+//Decideファイルの存在確認
+add_action( 'wp_ajax_wix_decidefile_check', 'wix_decidefile_check' );
+add_action( 'wp_ajax_nopriv_wix_decidefile_check', 'wix_decidefile_check' );
+function wix_decidefile_check() {
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$post_ID = (int) substr( $_POST['post_ID'], strlen('wp-preview-') );
+
+	$filename = dirname( __FILE__ ) . '/WIXDecideFiles/' . $post_ID . '.txt';
+	if ( file_exists($filename) ) {
+		// $returnValue = file_get_contents($filename, FILE_USE_INCLUDE_PATH);
+		$fopen = fopen($filename, 'r');
+
+		if ($fopen){
+			$count = 0;
+			if ( flock($fopen, LOCK_SH) ){
+				$existingDecideInfo = '<table><caption>既存WIX Decide情報</caption><tr style="background:#ccccff"><th>Keyword</th><th>Target</th></tr>';
+				while ( !feof($fopen) ) {
+					$line = fgets($fopen);
+					if ( $line != '' ) {
+						$tmp_line = substr($line, strpos($line, 'keyword') + 8);
+						$keyword = substr($tmp_line, 0, strpos($tmp_line, ','));
+						$target = substr($tmp_line, strpos($tmp_line, ':') + 1);
+						
+						$existingDecideInfo = $existingDecideInfo . '<tr><td>' . $keyword . '</td>' . '<td>' . $target . '</td></tr>';
+					}
+				}
+				$existingDecideInfo = $existingDecideInfo . '</table>';
+				flock($fopen, LOCK_UN);
+			} else {
+		        $existingDecideInfo = 'ファイルロックに失敗しました';
+			}
+		}
+		fclose($fopen);
+	} else {
+		$existingDecideInfo = '';
+	}
+
+
+	$json = array(
+		"existingDecideInfo" => $existingDecideInfo
+	);
+	echo json_encode($json);
+
+	die();
+}
+
+
 
 //使ってない
 function wixfile_entry_info( $filenames ) {
