@@ -29,7 +29,6 @@ function new_body( $content, $innerLinkArray = '') {
 				
 				// 新しい cURL リソースを作成
 				$ch = curl_init();
-// $tmp = '{ "0": { "end": [ "2" ], "nextStart": [ "5" ], "keyword": [ "女優" ], "targets": [ "http://aqua.db.ics.keio.ac.jp" ] } }';
 				// パラメータ	
 				$data = array(
 				    'minLength' => 3,
