@@ -10,6 +10,7 @@ Text Domain: WIX
 */
 
 define( 'PatternFile', dirname( __FILE__ ) . '/WixPattern.txt' );
+define( 'WixDecideFiles', dirname( __FILE__ ) . '/WIXDecideFiles/' );
 define( 'wix_settings_css', plugins_url('/css/wixSetting.css', __FILE__) );
 define( 'wix_decide_css', plugins_url('/css/wixDecide.css', __FILE__) );
 define( 'popupwindow_css', plugins_url('/css/popupwindow.css', __FILE__) );

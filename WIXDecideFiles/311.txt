@@ -1,0 +1,2 @@
+start:0,end:3,nextStart:4,keyword:遠山研,target:http://aqua.db.ics.keio.ac.jp
+start:4,end:10,nextStart:0,keyword:データベース,target:http://aqua.db.ics.keio.ac.jp

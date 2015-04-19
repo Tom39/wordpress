@@ -24,7 +24,7 @@ table.predecidetable td, table.predecidetable th {
 ----------------------------------------------- */
 table.predecidetable a.wix-pre-authorLink:link {
 	text-decoration:none;	
-	color: #000000 !important;
+	color: #000000;
 }
 
 table.predecidetable a.wix-pre-authorLink:link:visited {

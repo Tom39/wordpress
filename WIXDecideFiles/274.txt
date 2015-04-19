@@ -1,0 +1,5 @@
+start:0,end:2,nextStart:3,keyword:女優,target:http://aqua.db.ics.keio.ac.jp
+start:3,end:7,nextStart:15,keyword:大島優子,target:http://ameblo.jp/oshima-y/
+start:15,end:19,nextStart:30,keyword:菅田将暉,target:no_attach
+start:30,end:34,nextStart:73,keyword:オンエア,target:http://www.db.ics.keio.ac.jp
+start:73,end:77,nextStart:0,keyword:大島優子,target:no_attach
