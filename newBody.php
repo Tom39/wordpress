@@ -13,18 +13,20 @@ add_filter( 'the_content', 'new_body' );
 // remove_all_filters( 'the_content' );
 remove_filter('the_content', 'wptexturize'); //-などの特殊文字への変換を停止
 
-function new_body( $content, $innerLinkArray = '') {
+function new_body( $content, $decideFileArray = '') {
+	global $start;
 	if( is_preview() == false ) {
 
 		//プレビューと違ってEnterキーによる空白(空行)を1文字としてカウントしてしまって、preview_attachとattachが噛み合わなくなってたからこうしている。
-		$content = preg_replace('/(\s|　)/','',$content);
+		//これよくない！
+		// $content = preg_replace('/(\s|　)/','',$content);
 
 		$patternMatching = new patternMatching;
 		$WixID = $patternMatching -> returnWixID();
 
 		// if ( $WixID != 0 ) {
-			if ( !empty($innerLinkArray) ) {
-
+			if ( !empty($decideFileArray) ) {
+				/* Decide処理なら */
 				$attachURL = 'http://trezia.db.ics.keio.ac.jp/sakusa_WIXServer_0.3.5/PreviewAttach';
 				
 				// 新しい cURL リソースを作成
@@ -35,7 +37,7 @@ function new_body( $content, $innerLinkArray = '') {
 				    'rewriteAnchorText' => 'false',
 				    'bookmarkedWIX' => $WixID,
 				    'body' => mb_convert_encoding($content, 'UTF-8'),
-				    'innerLinkArray' => $innerLinkArray
+				    'innerLinkArray' => $decideFileArray
 				);
 				$data = http_build_query($data, "", "&");
 
@@ -102,6 +104,7 @@ function new_body( $content, $innerLinkArray = '') {
 	}
 }
 
+//Decideファイル情報を連想配列に整形
 function DecideFileInfo($filename) {
 	$returnValue = array();
 

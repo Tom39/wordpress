@@ -4,6 +4,11 @@ a.wix-pre-authorLink:link {
 	color: #ff0000;
 }
 
+table.popTable td{
+	text-align: center;
+	border: 1px solid;
+}
+
 /* popup menu */
 table.predecidetable {
 	margin:-10px 0px 0px 20px;

@@ -1,7 +1,9 @@
 <?php
 
 require_once( dirname( __FILE__ ) . '/patternMatching.php' );
+//登録済みWIXファイル
 $wids_filenames = array();
+$wixfile_table_version = 0.1;
 
 //--------------------------------------------------------------------------
 //
@@ -12,6 +14,34 @@ register_activation_hook(__FILE__, 'wix_manual_decide_init' );
 function wix_manual_decide_init() {
 	update_option( 'manual_decideFlag', 'true' );
 }
+
+//--------------------------------------------------------------------------
+//
+//  プラグイン有効の際に行うオプションの追加
+//
+//--------------------------------------------------------------------------
+register_activation_hook(__FILE__, 'wixfile_table_create' );
+function wixfile_table_create() {
+	global $wpdb;
+	$db_version = get_option('db_version', 0);
+	$table_name = $wpdb->prefix . 'wixfile';
+	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+
+	if ( $is_db_exists == $table_name && $db_version >= $wixfile_table_version ) return;
+
+	$sql = "CREATE TABLE " . $table_name . " (
+	         id mediumint(9) NOT NULL AUTO_INCREMENT,
+		     keyword tinytext NOT NULL,
+		     target VARCHAR(55) NOT NULL,
+		     UNIQUE KEY id (id)
+	        );";
+
+	require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+	dbDelta($sql);
+
+	update_option("db_version", $wixfile_table_version);
+}
+
 
 //--------------------------------------------------------------------------
 //
@@ -39,31 +69,20 @@ function wix_admin_menu() {
 		'wix_admin_settings' 
 	);
 
-	add_submenu_page(
-		'wix-admin-settings',
-		__('WIX FIle Settings', 'wixfile-settings'),
-		__('WIX File Settings', 'wixfile-settings'),
-		'administrator',
-		'wix-admin-wixfile-settings',
-		'wix_admin_wixfile_settings'
-	);
+	// add_submenu_page(
+	// 	'wix-admin-settings',
+	// 	__('WIX FIle Settings', 'wixfile-settings'),
+	// 	__('WIX File Settings', 'wixfile-settings'),
+	// 	'administrator',
+	// 	'wix-admin-wixfile-settings',
+	// 	'wix_admin_wixfile_settings'
+	// );
 
 	add_action( 'admin_enqueue_scripts', 'wix_admin_settings_scripts' );
 	
 	add_action('admin_head-toplevel_page_wix-admin-settings', 'created_wixfile_info');
 
 }
-
-function wix_admin_wixfile_settings() {
-?>
-<div class="wrap">
-<?php
-	echo 'test';
-?>
-</div>
-<?php
-}
-
 
 //管理画面でのWIX設定ページ
 function wix_admin_settings(){
@@ -98,7 +117,7 @@ function wix_admin_settings(){
 			<p>
 				URLパターン : WIXファイル名 
 					<input type="button" id="add_patternFile" 
-					value= "<?php echo esc_attr( __( 'Form Add', 'admin-wix-patternFile' ) ); ?>" 
+					value= "<?php echo esc_attr( __( 'Form Add', 'wix_patternFile_adding' ) ); ?>" 
 					class="button button-primary button-large" >
 			</p>	
 
@@ -117,7 +136,7 @@ function wix_admin_settings(){
 					//フォームが１個なら削除ボタンは生成しない
 					if ( count($patternFile) != 1 ) {
 					echo '<input type="button" value="' . 
-							esc_attr( __( 'Delete', 'admin-wix-patternFile' ) ) . 
+							esc_attr( __( 'Delete', 'wix_patternFile_adding' ) ) . 
 							'" class="button button-primary button-large">';
 					}
 					echo '</li>';
@@ -160,7 +179,7 @@ function wix_admin_settings(){
 			<p>
 				URLパターン : WIXファイル名 
 					<input type="button" id="add_patternFile" 
-					value= "<?php echo esc_attr( __( 'Form Add', 'admin-wix-patternFile' ) ); ?>" 
+					value= "<?php echo esc_attr( __( 'Form Add', 'wix_patternFile_adding' ) ); ?>" 
 					class="button button-primary button-large" >
 
 				<ol id="pattern_filename">
@@ -179,10 +198,370 @@ function wix_admin_settings(){
 
 <?php decide_management(); ?>
 
+<?php wix_admin_wixfile_settings(); ?>
 
-
+</div>
 <?php
 }
+
+
+function wix_admin_wixfile_settings() {
+?>
+<div class="wrap">
+<?php 
+	global $wpdb;
+	echo '<h2>' . __( 'WIX File Settings', 'wixfile_settings' ) . '</h2>'; 
+?>
+	<div>
+		<form id="wixfile_settings_form" method="post" action="">
+
+			<?php wp_nonce_field( 'my-nonce-key', 'nonce_wixfile_settings' ); ?>
+
+			<table id="wixfile_contents">
+				<tr>
+					<th>Keyword</th>
+					<th>Targets</th>
+					<!-- <th>Any Settings</th> -->
+				</tr>
+				 
+			<?php 
+				$table_name = $wpdb->prefix . 'wixfile';
+				$sql = 'SELECT COUNT(*) FROM ' . $table_name;
+				if ( $wpdb->get_var($sql) == 0 ) {
+			?>
+				<tr>
+					<th>
+						<input type="text" name="keywords[0]" placeholder="<?php echo '慶應義塾大学' ?>">
+					</th>
+					<th>
+						<input type="text" name="targets[0]" placeholder="<?php echo esc_html('http://www.keio.ac.jp') ?>">
+					</th>
+				</tr>
+			<?php 
+				} else { 
+					$sql = 'SELECT keyword, target FROM ' . $table_name;
+					$results = $wpdb->get_results($sql);
+					$count = 0;
+					foreach ($results as $value) {
+						// $keyword = '<input type="text" name="keywords[' . $count . ']" value="' . esc_html($value->keyword) . '">';
+						// $target = '<input type="text" name="targets[' . $count . ']" value="' . esc_html($value->target) . '">';
+						$keyword = esc_html($value->keyword);
+						$target = mb_strimwidth(esc_html($value->target), 0, 30, '...');
+						echo '<tr>';
+						echo '<th width="100">' . $keyword . '</th>';
+						echo '<th width="100">' . $target . '</th>';
+						echo '</tr>';
+						$count++;
+					}
+				} ?>
+			</table>
+
+
+			<br><br>
+			<span id='newWIXFiles'>
+				<table class='newEntry'>
+					<tr>
+						<td><label for=keyword>Keyword</label></td>
+						<td><input type="text" name="keywords[0]" /></td>
+					</tr>
+					<tr>
+						<td><label for=target>Targets</label></td>
+						<td><input type="text" size=30  name="targets[0]" /></td>
+					</tr>
+					<!-- <tr>
+						<td></td>
+						<td>
+							<input type=checkbox id=firstonly name=firstonly value="1" /><label for=firstonly>First Match Only</label>
+							<input type=checkbox id=case name=case value="1" /><label for=case>Case Sensitivity</label>
+							<input type=checkbox id=filter name=filter value="1" /><label for=filter>Filter in comments?</label>
+						</td>
+					</tr> -->
+				</table>
+			</span>
+
+			<table>
+				<tr>
+					<td>
+						<input type="submit" name="wixfile_settings" 
+							value= "<?php echo esc_attr( __( 'WIX File Save', 'wixfile_settings' ) ); ?>" 
+							class="button button-primary button-large" >
+					</td>
+					<td>
+						<input type="button" id="add_wixfile" 
+							value= "<?php echo esc_attr( __( 'Form Add', 'wixfile_adding' ) ); ?>" 
+							class="button button-primary button-large" >
+					</td>
+				</tr>
+			</table>
+
+
+
+
+		</form>
+	</div>
+	
+</div>
+<?php
+}
+
+
+
+add_action( 'admin_init', 'wix_settings_core' );
+function wix_settings_core() {
+	global $wids_filenames;
+	//nonceの値の✔
+	if ( isset( $_POST['nonce_init_settings'] ) && $_POST['nonce_init_settings'] ) {
+
+		if ( check_admin_referer( 'my-nonce-key', 'nonce_init_settings' ) ) {
+
+			$e = new WP_Error();
+
+			if ( isset( $_POST['wix_init_settings'] ) && $_POST['wix_init_settings'] ) {
+
+				if ( isset( $_POST['authorName'] ) && $_POST['authorName'] ) {
+
+					if ( !isset( $_POST['hostName'] ) || empty($_POST['hostName']) ) {
+						update_option( 'wix_host_name', DB_HOST );
+						$hostName = '<' . DB_HOST . '>' . "\n";
+					} else {
+						update_option( 'wix_host_name', $_POST['hostName'] );
+						$hostName = '<' . $_POST['hostName'] . '>' . "\n";
+					}
+
+					//オーサ名のDB登録
+					update_option( 'wix_author_name', $_POST['authorName'] );
+
+
+					if ( isset( $_POST['pattern'] ) && $_POST['pattern'] && isset( $_POST['filename'] ) && $_POST['filename'] ) {
+						// FILE_APPEND フラグはファイルの最後に追記することを表し、
+						// LOCK_EX フラグは他の人が同時にファイルに書き込めないことを表します。
+						// stripslashesでアンエスケープ
+						file_put_contents( PatternFile, $hostName, FILE_USE_INCLUDE_PATH | LOCK_EX );
+
+						foreach ( $_POST['pattern'] as $key => $pattern ) {
+							foreach ($wids_filenames as $wid => $filename) {
+								if ( $filename == $_POST['filename'][$key] ) {
+									$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . $wid . "\n";
+									file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
+									break;
+								}
+							}
+						}
+					} else {
+						file_put_contents( PatternFile, $hostName, FILE_USE_INCLUDE_PATH | LOCK_EX );
+						$pattern_filename = "\t" . stripslashes('/*') . ' : 0' . "\n";
+						file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
+					}
+					set_transient( 'wix_init_settings', '初期設定完了しました', 10 );
+
+				} else {
+					$e -> add('error', __( 'Please entry author name', 'wix_init_settings' ) );
+					set_transient( 'wix_init_settings_errors', $e->get_error_message(), 10 );
+				}
+			}
+		} else {
+			$e -> add('error', __( 'Please entry one more', 'wix_init_settings' ) );
+			set_transient( 'wix_init_settings_errors', $e->get_error_message(), 10 );
+		}
+
+	} else if ( isset( $_POST['nonce_settings'] ) && $_POST['nonce_settings'] ) {
+
+		if ( check_admin_referer( 'my-nonce-key', 'nonce_settings' ) ) {
+
+			$e = new WP_Error();
+
+			if ( isset( $_POST['wix_settings'] ) && $_POST['wix_settings'] ) {
+
+				if ( isset( $_POST['pattern'] ) && $_POST['pattern'] && isset( $_POST['filename'] ) && $_POST['filename'] ) {
+
+					$hostName = '<' . get_option( 'wix_host_name' ) . '>' . "\n";
+
+					file_put_contents( PatternFile, $hostName, FILE_USE_INCLUDE_PATH | LOCK_EX );
+
+					foreach ( $_POST['pattern'] as $key => $pattern ) {
+						foreach ($wids_filenames as $wid => $filename) {
+							if ( $filename == $_POST['filename'][$key] ) {
+								$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . $wid . "\n";
+								file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
+								break;
+							}
+						}
+					}
+
+					set_transient( 'wix_settings', '設定更新しました', 10 );
+				}
+			}
+		} else {
+			$e -> add('error', __( 'Please check various form', 'wix_settings' ) );
+			set_transient( 'wix_settings_errors', $e->get_error_message(), 10 );
+		}
+	}
+
+}
+
+add_action( 'admin_init', 'wixfile_settings_core' );
+function wixfile_settings_core() {
+	global $wpdb;
+	//nonceの値の✔
+	if ( isset( $_POST['nonce_wixfile_settings'] ) && $_POST['nonce_wixfile_settings'] ) {
+
+		if ( check_admin_referer( 'my-nonce-key', 'nonce_wixfile_settings' ) ) {
+
+			$e = new WP_Error();
+
+			if ( isset( $_POST['wixfile_settings'] ) && $_POST['wixfile_settings'] ) {
+
+				if ( isset( $_POST['keywords'] ) && $_POST['keywords'] && isset( $_POST['targets'] ) && $_POST['targets'] ) {
+					
+					$table_name = $wpdb->prefix . 'wixfile';
+					$insertEntry = '';
+
+					foreach ($_POST['keywords'] as $index => $keyword) {
+						if ( !empty($keyword) ) {
+
+							$sql = 'SELECT COUNT(*) FROM ' . $table_name . ' WHERE keyword="' . $keyword . '"';
+							$keywordNum_inDB = $wpdb->get_var($sql);
+
+							//まだテーブルにないキーワードの場合
+							if ( $keywordNum_inDB == 0 ) {
+								if ( empty($insertEntry) )
+									$insertEntry = '("' . $keyword .'", "' . $_POST['targets'][$index] . '"), ';
+								else
+									$insertEntry = $insertEntry . '("' . $keyword .'", "' . $_POST['targets'][$index] . '"), ';
+								
+							} else {
+								$sql = 'SELECT COUNT(*) FROM ' . $table_name . ' WHERE keyword="' . $keyword . '" and target="' . $_POST['targets'][$index] . '"';
+								$targetNum_inDB = $wpdb->get_var( $sql );
+								if ( $targetNum_inDB == 0 ) {
+									if ( empty($insertEntry) )
+										$insertEntry = '("' . $keyword .'", "' . $_POST['targets'][$index] . '"), ';
+									else
+										$insertEntry = $insertEntry . '("' . $keyword .'", "' . $_POST['targets'][$index] . '"), ';
+								}
+							}
+
+						}
+					}
+					if ( !empty($insertEntry)) {
+						$sql = 'INSERT INTO ' . $table_name . '(keyword, target) VALUES ' . $insertEntry;
+						$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
+						$results = $wpdb->query( $sql );
+						set_transient( 'wix_settings', 'WIX FILE 更新しました', 1 );
+					} else {
+						set_transient( 'wix_settings', '既にある情報、もしくはフォームに値がなかったため更新しませんでした', 1 );
+					}
+
+
+
+
+					// $table_name = $wpdb->prefix . 'wixfile';
+					// $existingKeywordArray = array();
+
+					// $sql = 'SELECT * FROM ' . $table_name;
+					// $results = $wpdb->get_results( $sql );
+
+					// $sql = 'INSERT INTO ' . $table_name . '(keyword, target) VALUES ';
+
+					// foreach ( $results as $index => $value ) {
+					// 	foreach ( $_POST['keywords'] as $key => $keyword ) {
+							//DBにまだないキーワードならinsert
+							// if ( $value->keyword != $keyword ) {
+								// $tmp = '("' . $keyword .'", "' . $_POST['targets'][$key] . '"), ';
+								// unset($_POST['keywords'][$key]);
+								// $sql = $sql . $tmp;
+							// } else {
+								//とりあえず配列に確保。その時今回同じキーワードを複数記述している時に対応
+								// if (isset($existingKeywordArray[$keyword]))
+								// 	$existingKeywordArray[$keyword] = $existingKeywordArray[$keyword] . ',' . $_POST['targets'][$key];
+								// else 
+								// 	$existingKeywordArray[$value->keyword] = $value->target . ',' . $_POST['targets'][$key];
+					// 		}
+					// 	}
+					// }
+
+					// $sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
+					// $results = $wpdb->query( $sql );
+
+
+					// foreach ($existingKeywordArray as $key => $value) {
+					// 	$sql = 'UPDATE ' . $table_name . ' SET target="' . $value . '" WHERE keyword="' . $key . '"';
+					// 	$results = $wpdb->query( $sql );
+					// }
+
+				}
+
+
+
+			}
+		} else {
+			$e -> add('error', __( 'Please check various WIX FIle form', 'wixfile_settings' ) );
+			set_transient( 'wixfile_settings_errors', $e->get_error_message(), 10 );
+		}
+	}
+}
+
+
+
+//更新・エラーメッセージを表示する
+add_action( 'admin_notices', 'wix_settings_notices' );	
+
+function wix_settings_notices() {
+?>
+	<?php if ( $messages = get_transient( 'wix_init_settings_errors' ) ): ?>
+	<div class="error">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'wix_init_settings' ) ): ?>
+	<div class="updated">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'wix_settings_errors' ) ): ?>
+	<div class="error">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'wix_settings' ) ): ?>
+	<div class="updated">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'wixfile_settings_errors' ) ): ?>
+	<div class="error">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'wixfile_settings' ) ): ?>
+	<div class="updated">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php endif; ?>
+<?php
+}
+
+
+
+
 
 //Library登録済みWIXファイル一覧
 function created_wixfiles() {
@@ -312,131 +691,7 @@ function wix_manual_decide() {
 }
 
 
-add_action( 'admin_init', 'wix_settings_core' );
-function wix_settings_core() {
-	global $wids_filenames;
-	//nonceの値の✔
-	if ( isset( $_POST['nonce_init_settings'] ) && $_POST['nonce_init_settings'] ) {
 
-		if ( check_admin_referer( 'my-nonce-key', 'nonce_init_settings' ) ) {
-
-			$e = new WP_Error();
-
-			if ( isset( $_POST['wix_init_settings'] ) && $_POST['wix_init_settings'] ) {
-
-				if ( !isset( $_POST['hostName'] ) || empty($_POST['hostName']) ) {
-					update_option( 'wix_host_name', DB_HOST );
-					$hostName = '<' . DB_HOST . '>' . "\n";
-				} else {
-					update_option( 'wix_host_name', $_POST['hostName'] );
-					$hostName = '<' . $_POST['hostName'] . '>' . "\n";
-				}
-
-				//オーサ名のDB登録
-				update_option( 'wix_author_name', $_POST['authorName'] );
-
-
-				if ( isset( $_POST['pattern'] ) && $_POST['pattern'] && isset( $_POST['filename'] ) && $_POST['filename'] ) {
-					// FILE_APPEND フラグはファイルの最後に追記することを表し、
-					// LOCK_EX フラグは他の人が同時にファイルに書き込めないことを表します。
-					// stripslashesでアンエスケープ
-					file_put_contents( PatternFile, $hostName, FILE_USE_INCLUDE_PATH | LOCK_EX );
-
-					foreach ( $_POST['pattern'] as $key => $pattern ) {
-						foreach ($wids_filenames as $wid => $filename) {
-							if ( $filename == $_POST['filename'][$key] ) {
-								$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . $wid . "\n";
-								file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
-								break;
-							}
-						}
-					}
-
-					set_transient( 'wix_init_settings', '初期設定完了しました', 10 );
-				}
-			}
-		} else {
-			$e -> add('error', __( 'Please entry one more', 'wix_init_settings' ) );
-			set_transient( 'wix_init_settings_errors', $e->get_error_message(), 10 );
-		}
-
-	} else if ( isset( $_POST['nonce_settings'] ) && $_POST['nonce_settings'] ) {
-
-		if ( check_admin_referer( 'my-nonce-key', 'nonce_settings' ) ) {
-
-			$e = new WP_Error();
-
-			if ( isset( $_POST['wix_settings'] ) && $_POST['wix_settings'] ) {
-
-				if ( isset( $_POST['pattern'] ) && $_POST['pattern'] && isset( $_POST['filename'] ) && $_POST['filename'] ) {
-
-					$hostName = '<' . get_option( 'wix_host_name' ) . '>' . "\n";
-
-					file_put_contents( PatternFile, $hostName, FILE_USE_INCLUDE_PATH | LOCK_EX );
-
-					foreach ( $_POST['pattern'] as $key => $pattern ) {
-						foreach ($wids_filenames as $wid => $filename) {
-							if ( $filename == $_POST['filename'][$key] ) {
-								$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . $wid . "\n";
-								file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
-								break;
-							}
-						}
-					}
-
-					set_transient( 'wix_settings', '設定更新しました', 10 );
-				}
-			}
-		} else {
-			$e -> add('error', __( 'Please check various form', 'wix_settings' ) );
-			set_transient( 'wix_settings_errors', $e->get_error_message(), 10 );
-		}
-
-	}
-
-}
-
-
-//更新・エラーメッセージを表示する
-add_action( 'admin_notices', 'wix_settings_notices' );	
-
-function wix_settings_notices() {
-?>
-	<?php if ( $messages = get_transient( 'wix_init_settings_errors' ) ): ?>
-	<div class="error">
-		<ul>
-			<?php foreach( (array)$messages as $message ): ?>
-				<li><?php echo esc_html($message); ?></li>
-			<?php endforeach; ?>
-		</ul>
-	</div>
-	<?php elseif ( $messages = get_transient( 'wix_init_settings' ) ): ?>
-	<div class="updated">
-		<ul>
-			<?php foreach( (array)$messages as $message ): ?>
-				<li><?php echo esc_html($message); ?></li>
-			<?php endforeach; ?>
-		</ul>
-	</div>
-	<?php elseif ( $messages = get_transient( 'wix_settings_errors' ) ): ?>
-	<div class="error">
-		<ul>
-			<?php foreach( (array)$messages as $message ): ?>
-				<li><?php echo esc_html($message); ?></li>
-			<?php endforeach; ?>
-		</ul>
-	</div>
-	<?php elseif ( $messages = get_transient( 'wix_settings' ) ): ?>
-	<div class="updated">
-		<ul>
-			<?php foreach( (array)$messages as $message ): ?>
-				<li><?php echo esc_html($message); ?></li>
-			<?php endforeach; ?>
-		</ul>
-	</div>
-	<?php endif; ?>
-<?php
-}
 
 
   

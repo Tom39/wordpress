@@ -22,42 +22,230 @@ jQuery(function($) {
 	windowHeight = $(window).height();
 
 
-	if ( $('#submitdiv').length ) {
-	    stamp = $('#timestamp').html();
-	    $('#timestampdiv')
-	      .before('<p><a class="update-timestamp hide-if-no-js button" href="#update_timestamp">最新の日時に置き換えます</a></p>')
-	      .prev().click(function(){
-		        date = new Date();
-		        var aa = date.getFullYear(), mm = date.getMonth() + 1, jj = date.getDate(), hh = date.getHours(), mn = date.getMinutes();
-		        mm = '' + mm;
-		        if(mm.length == 1) mm = '0' + mm;
-		        $('#aa').val(aa);
-		        $('#mm').val(mm);
-		        $('#jj').val(jj);
-		        $('#hh').val(hh);
-		        $('#mn').val(mn);
-		        $('#timestamp').html(
-		        	postL10n.publishOnPast + ' <b>' +
-		        	aa + '年' +
-		        	mm + '月' +
-		        	jj + '日 @ ' +
-		        	hh + ':' +
-		        	mn + '</b> '
-		        );
+  	$('#detail_show').click(function(){
+  		$('#detail_show').hide();
+  		$('#detailSettings').show();
+  	});
+  	$('#detail_hide').click(function(){
+  		$('#detailSettings').hide();
+  		$('#detail_show').show();
+  	});
 
-				return false;
-	      });
-  	}
+  	$('#new_entry_insert').click(function(){
+  		var keyword = $('#newEntry input:text').eq(0).val();
+  		var target = $('#newEntry input:text').eq(1).val();
+  		if ( keyword.length != 0 && target.length != 0 ) {
+  			var entry_data = {
+				'action': 'wix_new_entry_insert',
+				'keyword' : keyword,
+				'target' : target,
+			};
+			$.ajax({
+				async: true,
+				dataType: "json",
+				type: "POST",
+				url: ajaxurl,
+				data: entry_data,
+
+				success: function(json) {
+					if ( json['test'] == 'success') {
+						$('#newEntry input:text').eq(0).val('');
+  						$('#newEntry input:text').eq(1).val('');
+  						$('#insert_success').show();
+
+					} else {
+						alert('既に存在する情報です');
+					}
+				},
+
+				error: function(xhr, textStatus, errorThrown){
+					console.log(textStatus);
+				}
+
+			});
+
+			$('#newEntry input:text').focus(function(){
+				$('#insert_success').hide();
+			});
+
+ 		} else {
+ 			alert('入力してください');
+ 		}
+ 
+  	}); 
+
+
+  	$('#wix_tf_idf').click(function(){
+  		var sentence = $('iframe:first').contents().find('#tinymce').eq(0).text();
+  		var entry_data = {
+			'action': 'wix_tf_idf',
+			'sentence': sentence,
+			'sample-title': $('#titlewrap input:text').val(),
+		};
+		$.ajax({
+			async: true,
+			dataType: "json",
+			type: "POST",
+			url: ajaxurl,
+			data: entry_data,
+
+			success: function(json) {
+				// console.log(json['returnValue']);
+
+				var contents = $("<div />", {
+					id: 'wixRecommendDiv'
+				});
+				var pop = new $pop(contents , {
+					type: 'inline',
+					title: 'WIX Recommendation',
+					width: windowWidth,
+					height: windowHeight - 50,
+					modal: true,
+					windowmode: false,
+					close: true,
+					resize: true
+				});  
+
+				var tableDiv = $("<div />", {
+					id: 'popTableDiv'
+				}).css({'margin' : '5px auto'}).appendTo(contents);
+				
+				var table = $("<TABLE />",{
+					id: 'popTable',
+					class: 'popTable'
+				}).appendTo(tableDiv);
+
+				var tr = $("<TR />", {
+					id: 'popTableTr',
+					class: 'popTable'
+				}).appendTo(table);
+				
+				$("<TH />", {
+					text: 'キーワード'
+				}).css({'white-space': 'nowrap'}).appendTo(tr);
+				$("<TH />", {
+					text: 'リンク先Webページ候補'
+				}).css({'white-space': 'nowrap'}).appendTo(tr);
+				$("<TH />", {
+					text: '選択'
+				}).css({'white-space': 'nowrap', 'width' : '8px'}).appendTo(tr);
+
+				var td_num = 0;
+				$.each(json['returnValue'], function(keyword, titles) {
+					var tr = $("<TR />").appendTo(table);
+
+					$("<TD />", {
+						text: keyword
+					}).css({'white-space': 'nowrap'}).appendTo(tr);
+
+					var td = $("<TD />",{
+						class: 'wixRecomTd',
+					}).appendTo(tr);
+					var td2 = $("<TD />").appendTo(tr);
+
+					var count = 0;
+					$.each(titles, function(index, title){
+						// if ( title != $('#titlewrap input:text').val() ) {
+							$("<div />", {
+								text: title
+							}).css({'white-space': 'nowrap'}).appendTo(td);
+							$("<input />", {
+								type: "checkbox",
+								id: 'wixRecomCheck' + td_num + '-' + count,
+							}).appendTo(td2);
+							count++;
+						// }
+					});
+
+					td_num++;
+				});
+
+				var buttonDiv = $("<div />", {
+					id: 'popButtonDiv'
+				}).appendTo(contents);
+
+				$('<button />', {
+					text: "ADD ENTRY",
+					click: function(event) {
+						/* Act on the event */
+						var newEntry = new Array();
+						var count = 0;
+						$.each($('#popTable input:checkbox'), function(index, elm) {
+							if ( $('#popTable input:checkbox').eq(index).prop('checked') ) {
+								var keyword = $('#popTable input:checkbox').eq(index).parent().parent().children(0).eq(0).text();
+								var id = $('#popTable input:checkbox').eq(index).attr('id');
+								var former_id = Number(id.substring(13, id.indexOf('-')));
+								var later_id = Number(id.substring(id.indexOf('-') + 1));
+								var target = $('.wixRecomTd').eq(former_id).children().eq(later_id).text().split('【')[1];
+								target = target.substring(0, target.length - 1);
+								newEntry[count] = {
+									'keyword' : keyword,
+									'target' : target
+								};
+								count++;
+							}
+						});
+						console.log(newEntry);
+						if ( newEntry.length != 0 ) {
+							data = {
+								'action': 'wix_new_entry_inserts',
+								'entry': newEntry,
+							};
+							$.ajax({
+								async: true,
+								dataType: "json",
+								type: "POST",
+								url: ajaxurl,
+								data: data,
+
+								success: function(json){
+									alert('完了しました');
+								},
+								error: function(xhr, textStatus, errorThrown){
+									alert('wixDecide.js DB Insert Error');
+								}
+							});
+						} else {
+							alert('選択してください');
+						}
+					}
+				}).appendTo(buttonDiv);
+				$('<button />', {
+					text: "CANSEL",
+					click : function(event) {
+						/* Act on the event */
+						pop.close();
+					}
+				}).appendTo(buttonDiv);
+				
+			},
+
+			error: function(xhr, textStatus, errorThrown){
+				console.log(textStatus);
+			}
+
+		});
+  	});
+
 
   	if ( typeof(manual_decideFlag) != "undefined" ) {
 	  	if ( manual_decideFlag == 'true' ) {
 
-			if ( $('#publish').length ) {
+	  		//新規作成ページだったらmetaboxを隠しておく
+	  		if ( adminpage == 'post-new-php' ) {
+	  			$('#wix_decide_links').hide();
+	  		}
+
+	  		//更新ページまたは、messageが出現していれば
+			if ( (adminpage == 'post-php' || location.href.indexOf('message') != -1) && $('#publish').length ) {
 				// $('#publish').hide();		
 
-				$('#publish')
-					.before('<input name="wix" type="button" class="button button-primary button-large" id="wixDecide" value="WIXDecide" >')
-					.prev().click(function(evt) {
+				// $('#publish')
+				// 	.before('<input name="wix" type="button" class="button button-primary button-large" id="wixDecide" value="WIXDecide" >')
+				// 	.prev()
+				$('#wixDecide')
+					.click(function(evt) {
+						// $('#publish').trigger('click');
 
 						/*
 						* href: プレビュー先URL 
@@ -69,16 +257,17 @@ jQuery(function($) {
 						var href =  decodeURI( $('#post-preview').attr('href') );
 						var target = $('#post-preview').attr('target');
 						var post_format = $('#post-formats-select :input:checked').val();
-						var before_body_part = $('#content').html();
-						var after_body_part = $('iframe:first').contents().find('#tinymce').eq(0).html();
-						// var after_body_part = $('#wp-content-editor-container #content').html();
-
+						// var before_body_part = $('#content').html();
+						// var after_body_part = $('iframe:first').contents().find('#tinymce').eq(0).html();
+						var after_body_part = $('.wp-editor-area').eq(0).text();
+	/*現状、ページが編集された時に、エディタにあるものじゃなくて、保存されてるやつを取ってきてるから上手く行ってる。
+						本当は、↑のafterを使いたいけど、改行とかを全部繋げてしまっているため、decideの時と、attachの時が咬み合わない*/
 
 						var data = {
 							'action': 'wix_decide_preview',
 							'target' : target,
 							'post_format' : post_format,
-							'before_body_part' : before_body_part,
+							// 'before_body_part' : before_body_part,
 							'after_body_part' : after_body_part
 						};
 
@@ -91,7 +280,7 @@ jQuery(function($) {
 
 							success: function(json) {
 // console.log(json['html']);
-// console.log( json['html'].substring(json['html'].indexOf('<body>'), json['html'].indexOf('</body>')) );
+// console.log(json['test']);
 
 								var contents = $("<iframe />", {
 									id: 'wixDecideIframe'
@@ -129,6 +318,8 @@ jQuery(function($) {
 												var count = 0;
 												var post_decideLink = new Array();
 												var nextStartArray = new Array();
+
+												rest_popup();
 
 												$.each(decideLink, function(index, ar) {
 													if (ar !== undefined) {
@@ -189,44 +380,45 @@ jQuery(function($) {
 									});
 									$('.pWindow').children().eq(0).before(wixDecideButton);
 
+
 									//既存Decide情報の見える化
-									data = {
-										'action': 'wix_decidefile_check',
-										'post_ID': target,
-									};
-									$.ajax({
-										async: true,
-										dataType: "json",
-										type: "POST",
-										url: ajaxurl,
-										data: data,
+									// data = {
+									// 	'action': 'wix_decidefile_check',
+									// 	'post_ID': target,
+									// };
+									// $.ajax({
+									// 	async: true,
+									// 	dataType: "json",
+									// 	type: "POST",
+									// 	url: ajaxurl,
+									// 	data: data,
 
-										success: function(response){
-											if ( response['existingDecideInfo'] != '' ) {
-												var contents2 = $("<iframe />", {
-													id: 'wixExistingDecideInfo'
-												});
-												var pop2 = new $pop(contents2 , {
-													type: 'inline',
-													title: 'WIX Decide情報',
-													width: 400,
-													height: 400,
-													modal: false,
-													windowmode: false,
-													close: true,
-													resize: true
-												});  
-												iframe = window.document.getElementById('wixExistingDecideInfo');
-												iframe.contentWindow.document.open();
-												iframe.contentWindow.document.write(response['existingDecideInfo']);
-												iframe.contentWindow.document.close();
-											}
+									// 	success: function(response){
+									// 		if ( response['existingDecideInfo'] != '' ) {
+									// 			var contents2 = $("<iframe />", {
+									// 				id: 'wixExistingDecideInfo'
+									// 			});
+									// 			var pop2 = new $pop(contents2 , {
+									// 				type: 'inline',
+									// 				title: 'WIX Decide情報',
+									// 				width: 400,
+									// 				height: 400,
+									// 				modal: false,
+									// 				windowmode: false,
+									// 				close: true,
+									// 				resize: true
+									// 			});  
+									// 			iframe = window.document.getElementById('wixExistingDecideInfo');
+									// 			iframe.contentWindow.document.open();
+									// 			iframe.contentWindow.document.write(response['existingDecideInfo']);
+									// 			iframe.contentWindow.document.close();
+									// 		}
 
-										},
-										error: function(xhr, textStatus, errorThrown){
-											alert('wixDecide.js Exsiting DecideInfo Error');
-										}
-									});
+									// 	},
+									// 	error: function(xhr, textStatus, errorThrown){
+									// 		alert('wixDecide.js Exsiting DecideInfo Error');
+									// 	}
+									// });
 									
 									//ポップアップの処理
 									$('#wixDecideIframe').contents().find('.wix-authorLink').mouseover(function() {
@@ -345,6 +537,26 @@ function createPreDecideFile(object){
 
 	decideLink[start] = {'keyword':keyword,'target':target,'end':end};
 }
+
+//Decide時にポップアップをクリックしていないものも、デフォルトで回収
+function rest_popup() {
+	var test = new Array();
+	var start, keyword, target, end;
+
+	var object = jQuery('iframe').contents().find('.wix-authorLink');
+	var obj_size = object.size();
+	for ( var i = 0; i < obj_size; i++) {
+		start = object.eq(i).attr('start');
+		if(decideLink.hasOwnProperty(start) == false) {
+			keyword = object.eq(i).html();
+			target = object.eq(i).attr('targets').split(',')[0];
+			end = parseInt(start) + keyword.length;
+			decideLink[start] = {'keyword':keyword,'target':target,'end':end};
+		}
+	}
+}
+
+
 
 //クリックされたポップアップを視覚的に分からせる
 // function changeColor(object) {
