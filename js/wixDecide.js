@@ -75,12 +75,12 @@ jQuery(function($) {
   	}); 
 
 
-  	$('#wix_tf_idf').click(function(){
-  		var sentence = $('iframe:first').contents().find('#tinymce').eq(0).text();
+  	$('#wix_entry_recommendation').click(function(){
+  		var sentence = $('iframe:first').contents().find('#tinymce').eq(0).html();
   		var entry_data = {
-			'action': 'wix_tf_idf',
+			'action': 'wix_entry_recommendation',
 			'sentence': sentence,
-			'sample-title': $('#titlewrap input:text').val(),
+			'doc-title': $('#titlewrap input:text').val(),
 		};
 		$.ajax({
 			async: true,
@@ -90,134 +90,139 @@ jQuery(function($) {
 			data: entry_data,
 
 			success: function(json) {
-				// console.log(json['returnValue']);
+console.log(json['similarity']);
+// console.log(json['returnValue']);
+// console.log(json['idf']);
+				if ( json['returnValue'].length != 0 ) {
+					var contents = $("<div />", {
+						id: 'wixRecommendDiv'
+					});
+					var pop = new $pop(contents , {
+						type: 'inline',
+						title: 'WIX Recommendation',
+						width: windowWidth,
+						height: windowHeight - 50,
+						modal: true,
+						windowmode: false,
+						close: true,
+						resize: true
+					});  
 
-				var contents = $("<div />", {
-					id: 'wixRecommendDiv'
-				});
-				var pop = new $pop(contents , {
-					type: 'inline',
-					title: 'WIX Recommendation',
-					width: windowWidth,
-					height: windowHeight - 50,
-					modal: true,
-					windowmode: false,
-					close: true,
-					resize: true
-				});  
+					var tableDiv = $("<div />", {
+						id: 'popTableDiv'
+					}).css({'margin' : '5px auto'}).appendTo(contents);
+					
+					var table = $("<TABLE />",{
+						id: 'popTable',
+						class: 'popTable'
+					}).appendTo(tableDiv);
 
-				var tableDiv = $("<div />", {
-					id: 'popTableDiv'
-				}).css({'margin' : '5px auto'}).appendTo(contents);
-				
-				var table = $("<TABLE />",{
-					id: 'popTable',
-					class: 'popTable'
-				}).appendTo(tableDiv);
-
-				var tr = $("<TR />", {
-					id: 'popTableTr',
-					class: 'popTable'
-				}).appendTo(table);
-				
-				$("<TH />", {
-					text: 'キーワード'
-				}).css({'white-space': 'nowrap'}).appendTo(tr);
-				$("<TH />", {
-					text: 'リンク先Webページ候補'
-				}).css({'white-space': 'nowrap'}).appendTo(tr);
-				$("<TH />", {
-					text: '選択'
-				}).css({'white-space': 'nowrap', 'width' : '8px'}).appendTo(tr);
-
-				var td_num = 0;
-				$.each(json['returnValue'], function(keyword, titles) {
-					var tr = $("<TR />").appendTo(table);
-
-					$("<TD />", {
-						text: keyword
+					var tr = $("<TR />", {
+						id: 'popTableTr',
+						class: 'popTable'
+					}).appendTo(table);
+					
+					$("<TH />", {
+						text: 'キーワード'
 					}).css({'white-space': 'nowrap'}).appendTo(tr);
+					$("<TH />", {
+						text: 'リンク先Webページ候補'
+					}).css({'white-space': 'nowrap'}).appendTo(tr);
+					$("<TH />", {
+						text: '選択'
+					}).css({'white-space': 'nowrap', 'width' : '8px'}).appendTo(tr);
 
-					var td = $("<TD />",{
-						class: 'wixRecomTd',
-					}).appendTo(tr);
-					var td2 = $("<TD />").appendTo(tr);
+					var td_num = 0;
+					$.each(json['returnValue'], function(keyword, titles) {
+						var tr = $("<TR />").appendTo(table);
 
-					var count = 0;
-					$.each(titles, function(index, title){
-						// if ( title != $('#titlewrap input:text').val() ) {
-							$("<div />", {
-								text: title
-							}).css({'white-space': 'nowrap'}).appendTo(td);
-							$("<input />", {
-								type: "checkbox",
-								id: 'wixRecomCheck' + td_num + '-' + count,
-							}).appendTo(td2);
-							count++;
-						// }
+						$("<TD />", {
+							text: keyword
+						}).css({'white-space': 'nowrap'}).appendTo(tr);
+
+						var td = $("<TD />",{
+							class: 'wixRecomTd',
+						}).appendTo(tr);
+						var td2 = $("<TD />").appendTo(tr);
+
+						var count = 0;
+						$.each(titles, function(index, title){
+							// if ( title != $('#titlewrap input:text').val() ) {
+								$("<div />", {
+									text: title
+								}).css({'white-space': 'nowrap'}).appendTo(td);
+								$("<input />", {
+									type: "checkbox",
+									id: 'wixRecomCheck' + td_num + '-' + count,
+								}).appendTo(td2);
+								count++;
+							// }
+						});
+
+						td_num++;
 					});
 
-					td_num++;
-				});
+					var buttonDiv = $("<div />", {
+						id: 'popButtonDiv'
+					}).appendTo(contents);
 
-				var buttonDiv = $("<div />", {
-					id: 'popButtonDiv'
-				}).appendTo(contents);
-
-				$('<button />', {
-					text: "ADD ENTRY",
-					click: function(event) {
-						/* Act on the event */
-						var newEntry = new Array();
-						var count = 0;
-						$.each($('#popTable input:checkbox'), function(index, elm) {
-							if ( $('#popTable input:checkbox').eq(index).prop('checked') ) {
-								var keyword = $('#popTable input:checkbox').eq(index).parent().parent().children(0).eq(0).text();
-								var id = $('#popTable input:checkbox').eq(index).attr('id');
-								var former_id = Number(id.substring(13, id.indexOf('-')));
-								var later_id = Number(id.substring(id.indexOf('-') + 1));
-								var target = $('.wixRecomTd').eq(former_id).children().eq(later_id).text().split('【')[1];
-								target = target.substring(0, target.length - 1);
-								newEntry[count] = {
-									'keyword' : keyword,
-									'target' : target
-								};
-								count++;
-							}
-						});
-						console.log(newEntry);
-						if ( newEntry.length != 0 ) {
-							data = {
-								'action': 'wix_new_entry_inserts',
-								'entry': newEntry,
-							};
-							$.ajax({
-								async: true,
-								dataType: "json",
-								type: "POST",
-								url: ajaxurl,
-								data: data,
-
-								success: function(json){
-									alert('完了しました');
-								},
-								error: function(xhr, textStatus, errorThrown){
-									alert('wixDecide.js DB Insert Error');
+					$('<button />', {
+						text: "ADD ENTRY",
+						click: function(event) {
+							/* Act on the event */
+							var newEntry = new Array();
+							var count = 0;
+							$.each($('#popTable input:checkbox'), function(index, elm) {
+								if ( $('#popTable input:checkbox').eq(index).prop('checked') ) {
+									var keyword = $('#popTable input:checkbox').eq(index).parent().parent().children(0).eq(0).text();
+									var id = $('#popTable input:checkbox').eq(index).attr('id');
+									var former_id = Number(id.substring(13, id.indexOf('-')));
+									var later_id = Number(id.substring(id.indexOf('-') + 1));
+									var target = $('.wixRecomTd').eq(former_id).children().eq(later_id).text().split('【')[1];
+									target = target.substring(0, target.length - 1);
+									newEntry[count] = {
+										'keyword' : keyword,
+										'target' : target
+									};
+									count++;
 								}
 							});
-						} else {
-							alert('選択してください');
+// console.log(newEntry);
+							if ( newEntry.length != 0 ) {
+								data = {
+									'action': 'wix_new_entry_inserts',
+									'entry': newEntry,
+								};
+								$.ajax({
+									async: true,
+									dataType: "json",
+									type: "POST",
+									url: ajaxurl,
+									data: data,
+
+									success: function(json){
+// console.log(json['entry']);
+										alert('完了しました');
+									},
+									error: function(xhr, textStatus, errorThrown){
+										alert('wixDecide.js DB Insert Error');
+									}
+								});
+							} else {
+								alert('選択してください');
+							}
 						}
-					}
-				}).appendTo(buttonDiv);
-				$('<button />', {
-					text: "CANSEL",
-					click : function(event) {
-						/* Act on the event */
-						pop.close();
-					}
-				}).appendTo(buttonDiv);
-				
+					}).appendTo(buttonDiv);
+					$('<button />', {
+						text: "CANSEL",
+						click : function(event) {
+							/* Act on the event */
+							pop.close();
+						}
+					}).appendTo(buttonDiv);
+				} else {
+					alert('推薦可能なエントリはありません');
+				}
 			},
 
 			error: function(xhr, textStatus, errorThrown){
@@ -233,16 +238,11 @@ jQuery(function($) {
 
 	  		//新規作成ページだったらmetaboxを隠しておく
 	  		if ( adminpage == 'post-new-php' ) {
-	  			$('#wix_decide_links').hide();
+	  			$('#wixDecide').hide();
 	  		}
 
 	  		//更新ページまたは、messageが出現していれば
 			if ( (adminpage == 'post-php' || location.href.indexOf('message') != -1) && $('#publish').length ) {
-				// $('#publish').hide();		
-
-				// $('#publish')
-				// 	.before('<input name="wix" type="button" class="button button-primary button-large" id="wixDecide" value="WIXDecide" >')
-				// 	.prev()
 				$('#wixDecide')
 					.click(function(evt) {
 						// $('#publish').trigger('click');
@@ -258,8 +258,8 @@ jQuery(function($) {
 						var target = $('#post-preview').attr('target');
 						var post_format = $('#post-formats-select :input:checked').val();
 						// var before_body_part = $('#content').html();
-						// var after_body_part = $('iframe:first').contents().find('#tinymce').eq(0).html();
-						var after_body_part = $('.wp-editor-area').eq(0).text();
+						var after_body_part = $('iframe:first').contents().find('#tinymce').eq(0).html();
+						// var after_body_part = $('.wp-editor-area').eq(0).text(); //これ使うと日本語だと全然上手くいかないww
 	/*現状、ページが編集された時に、エディタにあるものじゃなくて、保存されてるやつを取ってきてるから上手く行ってる。
 						本当は、↑のafterを使いたいけど、改行とかを全部繋げてしまっているため、decideの時と、attachの時が咬み合わない*/
 
@@ -608,31 +608,3 @@ function rest_popup() {
 	// decidemenu.style.left = decidemenu.previousSibling.offsetLeft + 'px';
 	// decidemenu.innerHTML = layer;
 // }
-
-
-
-
-
-//使ってない
-function wix_ajax_message( message ) {
-	var data = {
-		'action': 'wix_message',
-		'wix_ajax_message' : message
-	}
-
-	$.ajax({
-		async: true,
-		dataType: "json",
-		type: "POST",
-		url: ajaxurl,
-		data: data,
-		success: function(json) {
-			alert('Success');
-		},
-		error: function(xhr, textStatus, errorThrown){
-			alert('Error');
-		}
-	});
-
-	return false;
-}

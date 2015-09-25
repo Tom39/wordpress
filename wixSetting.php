@@ -10,7 +10,7 @@ $wixfile_table_version = 0.1;
 //  プラグイン有効の際に行うオプションの追加
 //
 //--------------------------------------------------------------------------
-register_activation_hook(__FILE__, 'wix_manual_decide_init' );
+register_activation_hook( __FILE__, 'wix_manual_decide_init' );
 function wix_manual_decide_init() {
 	update_option( 'manual_decideFlag', 'true' );
 }
@@ -20,7 +20,7 @@ function wix_manual_decide_init() {
 //  プラグイン有効の際に行うオプションの追加
 //
 //--------------------------------------------------------------------------
-register_activation_hook(__FILE__, 'wixfile_table_create' );
+register_activation_hook( __FILE__, 'wixfile_table_create' );
 function wixfile_table_create() {
 	global $wpdb;
 	$db_version = get_option('db_version', 0);
@@ -41,6 +41,78 @@ function wixfile_table_create() {
 
 	update_option("db_version", $wixfile_table_version);
 }
+
+register_activation_hook( __FILE__, 'wix_similarity_table_create' );
+function wix_similarity_table_create() {
+	global $wpdb;
+	$table_name = $wpdb->prefix . 'wix_keyword_similarity';
+	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+
+	if ( $is_db_exists == $table_name ) return;
+	$sql = "CREATE TABLE " . $table_name . " (
+	         doc_id bigint(20) UNSIGNED,
+		     keyword tinytext NOT NULL,
+		     tf float NOT NULL,
+		     idf float NOT NULL,
+		     tf_idf float NOT NULL,
+		     UNIQUE(doc_id,keyword(20)),
+		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
+		     ON UPDATE CASCADE ON DELETE CASCADE
+	        );";
+
+	require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+	dbDelta($sql);
+
+
+	$table_name = $wpdb->prefix . 'wix_document_similarity';
+	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+
+	if ( $is_db_exists == $table_name ) return;
+	$sql = "CREATE TABLE " . $table_name . " (
+	         doc_id bigint(20) UNSIGNED,
+		     doc_id2 bigint(20) UNSIGNED,
+		     cos_similarity float NOT NULL,
+		     UNIQUE(doc_id,doc_id2),
+		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
+		      ON UPDATE CASCADE ON DELETE CASCADE,
+		     FOREIGN KEY (doc_id2) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
+		      ON UPDATE CASCADE ON DELETE CASCADE
+	        );";
+	dbDelta($sql);
+
+
+	$table_name = $wpdb->prefix . 'posts';
+	if ( $is_db_exists == $table_name ) return;
+	$sql = "ALTER TABLE " . $table_name . " ADD COLUMN doc_length bigint DEFAULT 0 NOT NULL;";
+	dbDelta($sql);
+}
+
+// register_activation_hook( __FILE__, 'wix_document_similarity_table_create' );
+// function wix_document_similarity_table_create() {
+// 	global $wpdb;
+// 	$db_version = get_option('db_version', 0);
+// 	$table_name = $wpdb->prefix . 'document_similarity';
+// 	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+
+// 	if ( $is_db_exists == $table_name && $db_version >= $wixfile_table_version ) return;
+
+// 	$sql = "CREATE TABLE " . $table_name . " (
+// 	         doc_id bigint(20) UNSIGNED,
+// 		     doc_id2 bigint(20) UNSIGNED,
+// 		     cos_similarity float NOT NULL,
+// 		     UNIQUE(doc_id,doc_id2),
+// 		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
+// 		      ON UPDATE CASCADE ON DELETE CASCADE,
+// 		     FOREIGN KEY (doc_id2) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
+// 		      ON UPDATE CASCADE ON DELETE CASCADE
+// 	        );";
+
+// 	require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+// 	dbDelta($sql);
+
+// 	update_option("db_version", $wixfile_table_version);
+
+// }
 
 
 //--------------------------------------------------------------------------
@@ -69,14 +141,14 @@ function wix_admin_menu() {
 		'wix_admin_settings' 
 	);
 
-	// add_submenu_page(
-	// 	'wix-admin-settings',
-	// 	__('WIX FIle Settings', 'wixfile-settings'),
-	// 	__('WIX File Settings', 'wixfile-settings'),
-	// 	'administrator',
-	// 	'wix-admin-wixfile-settings',
-	// 	'wix_admin_wixfile_settings'
-	// );
+	add_submenu_page(
+		'wix-admin-settings',
+		__('WIX Similarity', 'wix-similarity'),
+		__('WIX Similarity', 'wix-similarity'),
+		'administrator',
+		'wix-admin-similarity',
+		'wix_admin_similarity'
+	);
 
 	add_action( 'admin_enqueue_scripts', 'wix_admin_settings_scripts' );
 	
@@ -268,6 +340,7 @@ function wix_admin_wixfile_settings() {
 						<td><label for=target>Targets</label></td>
 						<td><input type="text" size=30  name="targets[0]" /></td>
 					</tr>
+					<!-- オプション設置予定 -->
 					<!-- <tr>
 						<td></td>
 						<td>
@@ -294,15 +367,28 @@ function wix_admin_wixfile_settings() {
 				</tr>
 			</table>
 
-
-
-
 		</form>
 	</div>
 	
 </div>
 <?php
 }
+
+
+function wix_admin_similarity() {
+?>
+<div class="wrap">
+	<p>テスト</p>
+	<?php
+
+
+	?>
+</div>
+<?php
+}
+
+
+
 
 
 
@@ -451,46 +537,7 @@ function wixfile_settings_core() {
 						set_transient( 'wix_settings', '既にある情報、もしくはフォームに値がなかったため更新しませんでした', 1 );
 					}
 
-
-
-
-					// $table_name = $wpdb->prefix . 'wixfile';
-					// $existingKeywordArray = array();
-
-					// $sql = 'SELECT * FROM ' . $table_name;
-					// $results = $wpdb->get_results( $sql );
-
-					// $sql = 'INSERT INTO ' . $table_name . '(keyword, target) VALUES ';
-
-					// foreach ( $results as $index => $value ) {
-					// 	foreach ( $_POST['keywords'] as $key => $keyword ) {
-							//DBにまだないキーワードならinsert
-							// if ( $value->keyword != $keyword ) {
-								// $tmp = '("' . $keyword .'", "' . $_POST['targets'][$key] . '"), ';
-								// unset($_POST['keywords'][$key]);
-								// $sql = $sql . $tmp;
-							// } else {
-								//とりあえず配列に確保。その時今回同じキーワードを複数記述している時に対応
-								// if (isset($existingKeywordArray[$keyword]))
-								// 	$existingKeywordArray[$keyword] = $existingKeywordArray[$keyword] . ',' . $_POST['targets'][$key];
-								// else 
-								// 	$existingKeywordArray[$value->keyword] = $value->target . ',' . $_POST['targets'][$key];
-					// 		}
-					// 	}
-					// }
-
-					// $sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
-					// $results = $wpdb->query( $sql );
-
-
-					// foreach ($existingKeywordArray as $key => $value) {
-					// 	$sql = 'UPDATE ' . $table_name . ' SET target="' . $value . '" WHERE keyword="' . $key . '"';
-					// 	$results = $wpdb->query( $sql );
-					// }
-
 				}
-
-
 
 			}
 		} else {
@@ -593,7 +640,7 @@ function created_wixfiles() {
 function decide_management() {
 ?>
 <?php echo '<h3>' . __( 'WIX Decide Management', 'wix_decide_management' ) . '</h3>'; ?>
-<?php echo '<h4>' . __( 'Manual Decide', 'manual_decide' ) . '</h4>'; ?>
+<?php echo '<h4>' . __( '・Manual Decide', 'manual_decide' ) . '</h4>'; ?>
 
 	<div class="decide_management" id="manual_decide">
 <?php if ( get_option( 'manual_decideFlag' ) == 'true' ) { ?>

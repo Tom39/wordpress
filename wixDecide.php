@@ -21,8 +21,7 @@ $innerLinkArray = array();
 
 //Decide処理を行った時は強制Decideファイル作成しない　ためのフラグ
 $wixDecide_flag = false;
-$words_countArray_num = 0;
-$sample_title;
+$doc_title;
 
 
 //Javascript→phpへのAjax通信を可能にするための変数定義
@@ -56,7 +55,7 @@ function wix_decide_link() {
 	echo '<td>';
 	echo '<input name="wix" type="button" class="button button-primary button-large" id="wixDecide" value="WIXDecide" />';
 	echo '</td><td>';
-	echo '<input name="wix" type="button" class="button button-primary button-large" id="wix_tf_idf" value="Keyword Extract" />';
+	echo '<input name="wix" type="button" class="button button-primary button-large" id="wix_entry_recommendation" value="Keyword Extract" />';
 	echo '</td>';
 	echo '</tr></table>';
 
@@ -95,178 +94,66 @@ function wix_new_entry() {
 }
 
 //TF-IDFによるキーワード抽出
-add_action( 'wp_ajax_wix_tf_idf', 'wix_tf_idf' );
-add_action( 'wp_ajax_nopriv_wix_tf_idf', 'wix_tf_idf' );
-function wix_tf_idf() {
-	global $wpdb, $sample_title;
+add_action( 'wp_ajax_wix_entry_recommendation', 'wix_entry_recommendation' );
+add_action( 'wp_ajax_nopriv_wix_entry_recommendation', 'wix_entry_recommendation' );
+function wix_entry_recommendation() {
+	global $doc_title, $similarityObj;
 
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
 
-	$yahooID = 'dj0zaiZpPUlGTmRoTElndjRuVCZzPWNvbnN1bWVyc2VjcmV0Jng9Nzk-';
-	$sentence = $_POST['sentence'];
-	$sample_title = $_POST['sample-title'];
-	$url = "http://jlp.yahooapis.jp/MAService/V1/parse?appid=" . $yahooID . "&results=ma&sentence=" . urlencode($sentence);
-	//戻り値をパースする
-	$parse = simplexml_load_file($url);
+	$parse = wix_morphological_analysis($_POST['sentence']);
+	$wordsArray = wix_compound_noun_extract($parse);
 
-	$wordsArray = array();
-
-	//情報 と 工学科 などを繋げる
-	$tmpArray = array();
-	foreach($parse->ma_result->word_list->word as $value){
-		$word_class = $value->pos;
-		if ( $word_class == '名詞' || $word_class == '接尾辞' ) {
-			$word = trim($value->surface);
-			array_push($tmpArray, $word);
-		} else {
-			$tmp = '';
-			foreach ($tmpArray as $key => $value) {
-				$tmp = $tmp . $value;
-				unset($tmpArray[$key]);
-			}
-			array_push($wordsArray, $tmp);
-		}
-	}
-	if ( !empty($tmpArray) ) {
-		$tmp = '';
-		foreach ($tmpArray as $key => $value) {
-			$tmp = $tmp . $value;
-		}
-		array_push($wordsArray, $tmp);
-	}
-
+	// $words_countArray = array_word_count($wordsArray);
+	// $words_tfArray = wix_tf($words_countArray);
+	// $words_idfArray = wix_idf($words_countArray);
 	$words_countArray = array_word_count($wordsArray);
-	$words_tfArray = wix_tf($words_countArray);
-	$words_idfArray = wix_idf($words_countArray);
+	wix_tf($words_countArray);
+	wix_idf();
 
 	//tf-idf計算
-	foreach ($words_countArray as $word => $count) {
-		$tf_idf = $words_tfArray[$word] * $words_idfArray[$word];
-		$words_tf_idfArray[$word] = $tf_idf;
-	}
+	// foreach ($words_countArray as $word => $count) {
+	// 	$tf_idf = $words_tfArray[$word] * $words_idfArray[$word];
+	// 	$words_tf_idfArray[$word] = $tf_idf;
+	// }
 	//tf-idf値の降順に並び替え
-	arsort($words_tf_idfArray);
+	// arsort($words_tf_idfArray);
 
-	//wp_wixfileに入ってない単語が出現するページタイトルの提示
-	$returnValue = wix_post_title(no_wixfile_entry($words_tf_idfArray));
+
+
+
+	//tf-idf値の降順に並び替え
+	$tf_idfArray = array();
+	foreach ($similarityObj as $key => $value) {
+		$tf_idf = $value['tf'] * $value['idf'];
+		$value['tf-idf'] = $tf_idf;
+		$similarityObj[$key] = $value;
+
+		$tf_idfArray[] = $tf_idf;
+	}
+	array_multisort($tf_idfArray, SORT_DESC, SORT_NUMERIC, $similarityObj);
+
+
+
+
+
+	//wp_wixfileテーブルに入ってない単語が出現するページタイトルの提示
+/*これ違う気がする。テーブルに入ってない奴も推薦していいんじゃね？（2015/09/22）*/
+	// $doc_title = $_POST['doc-title'];
+	// $returnValue = wix_post_title(no_wixfile_entry($words_tf_idfArray));
 
 
 	$json = array(
-		"returnValue" => $returnValue,
+		// "returnValue" => $returnValue,
+		"similarity" => $similarityObj,
+		// "idf" => $words_idfArray,
 	);
 	echo json_encode( $json );
 
 	die();
 }
 
-function array_word_count($array) {
-	global $words_countArray_num;
-	$returnValue = array();
-
-	$words_countArray_num = 0;
-
-	foreach($array as $key => $word){
-		$word = trim($word);
-
-		if ( !empty($word) ) {
-			if ( array_key_exists($word, $returnValue) ) {
-				$count = $returnValue[$word] + 1;
-				$returnValue[$word] = $count;
-			} else {
-				$returnValue[$word] = 1;
-			} 
-		}
-		$words_countArray_num++;
-	}
-
-
-	return $returnValue;
-}
-
-function wix_tf($array) {
-	global $words_countArray_num;
-	$returnValue = array();
-	$all_words_len = count($array);
-
-	foreach ($array as $word => $count) {
-		$tf = $count / 	$words_countArray_num;
-		$returnValue[$word] = $tf;
-	}
-
-	return $returnValue;
-}
-
-function wix_idf($array) {
-	global $wpdb;
-	$returnValue = array();
-
-	$document_num = $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->posts WHERE post_status = \"publish\" OR post_status = \"draft\"");
-	$results = $wpdb->get_results("SELECT post_title, post_content FROM $wpdb->posts WHERE post_status = \"publish\" OR post_status = \"draft\"");
-
-	foreach ($array as $word => $count) {
-		$count = 0;
-		foreach ($results as $value) {
-			if ( strpos($value->post_content, $word) )
-				$count++;
-		}
-
-		//$count = 0だとInfinityになるから0にしてる
-		if ( $count != 0 ) {
-			$idf = log($document_num / $count);
-		} else {
-			$idf = 0;
-		}
-
-		$returnValue[$word] = $idf;
-	}
-
-	return $returnValue;
-}
-
-function no_wixfile_entry($array) {
-	global $wpdb;
-	$distinctKeywordsArray = array();
-	$returnValue = array();
-
-	$sql = 'SELECT distinct keyword FROM ' . $wpdb->prefix . 'wixfile';
-	$distinctKeywords_obj = $wpdb->get_results($sql);
-	foreach ($distinctKeywords_obj as $key => $value) {
-		array_push($distinctKeywordsArray, $value->keyword);
-	}
-
-	foreach ( $array as $keyword => $value ) {
-		if ( !in_array($keyword, $distinctKeywordsArray) ) {
-			array_push($returnValue, $keyword);
-		}
-
-	}
-
-	return $returnValue;
-}
-
-function wix_post_title($array) {
-	global $wpdb, $sample_title;
-	$returnValue = array();
-
-	$results = $wpdb->get_results("SELECT ID, post_title, post_content FROM $wpdb->posts WHERE post_status = \"publish\" OR post_status = \"draft\"");
-
-	foreach ($array as $key => $word) {
-		$tmpArray = array();
-		foreach ($results as $value) {
-			if ( strpos($value->post_content, $word) ) {
-				if ( $sample_title != $value->post_title ) {
-					$permalink = get_permalink($value->ID);
-					array_push($tmpArray, $value->post_title . ' 【' . urldecode($permalink) . '】' );
-				}
-			}
-		}
-		if ( !empty($tmpArray) )
-			$returnValue[$word] = $tmpArray;
-	}
-
-	return $returnValue;
-}
 
 //post.phpからのEntry情報をDBに挿入
 add_action( 'wp_ajax_wix_new_entry_insert', 'wix_new_entry_insert' );
@@ -345,13 +232,14 @@ $test = '';
 		$sql = 'INSERT INTO ' . $table_name . '(keyword, target) VALUES ' . $insertEntry;
 		$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
 		$results = $wpdb->query( $sql );
-		$test = 'success';
+		// $test = 'SUCCESS';
 	} else {
-		$test = 'fail';
+		$test = 'FAIL';
 	}
 
 	$json = array(
 		"test" => $test,
+		"entry" => $entry,
 	);
 	echo json_encode( $json );
 
@@ -684,64 +572,6 @@ function wix_decidefile_check() {
 
 
 
-//使ってない
-function wixfile_entry_info( $filenames ) {
-
-	$URL = 'http://trezia.db.ics.keio.ac.jp/WIXAuthorEditor_0.0.1/GetEntryInfo';
-	
-	$ch = curl_init();
-	$data = array(
-	    'filenames' => $filenames
-	);
-	$data = http_build_query($data, "", "&");
-
-	try {
-		//送信
-		curl_setopt( $ch, CURLOPT_URL, $URL );
-		curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded') );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_POST, true );
-		curl_setopt( $ch, CURLOPT_POSTFIELDS, $data );
-
-		$response = curl_exec($ch);
-
-		if ( $response === false ) {
-
-		    // エラー文字列を出力する
-		    echo 'エラーです. http_test.php';
-	    	echo curl_error( $ch );
-
-		}
-
-	} catch ( Exception $e ) {
-	
-		echo '捕捉した例外: ',  $e -> getMessage(), "\n";
-	
-	} finally {
-
-		curl_close($ch);
-	
-	}
-
-	return $response;
-
-}	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -800,14 +630,12 @@ add_filter( 'preview_post_link', 'nixcraft_preview_link', 10, 2 );
 
 
 
-
-
 //強制リダイレクト
 // add_action( 'publish_post', 'aaa', 99, 2 );
 function aaa($post_ID, $post) {
     // die("test");
-    wp_safe_redirect( 'http://localhost/wordpress/wp-admin/post.php?post=56&action=edit', 301 );
-    exit;
+    // wp_safe_redirect( 'http://localhost/wordpress/wp-admin/post.php?post=56&action=edit', 301 );
+    // exit;
 }
 
 

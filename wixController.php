@@ -13,17 +13,20 @@ define( 'PatternFile', dirname( __FILE__ ) . '/WixPattern.txt' );
 define( 'WixDecideFiles', dirname( __FILE__ ) . '/WIXDecideFiles/' );
 define( 'wix_settings_css', plugins_url('/css/wixSetting.css', __FILE__) );
 define( 'wix_decide_css', plugins_url('/css/wixDecide.css', __FILE__) );
+define( 'wix_eternal_link_css', plugins_url('/css/wixEternalLink.css', __FILE__) );
 define( 'popupwindow_css', plugins_url('/css/popupwindow.css', __FILE__) );
 define( 'wix_settings_js', plugins_url('/js/wixSetting.js', __FILE__) );
 define( 'wix_decide_js', plugins_url('/js/wixDecide.js', __FILE__) );
 define( 'wix_decide_iframe_js', plugins_url('/js/wixDecide_iframe.js', __FILE__) );
+define( 'wix_eternal_link_js', plugins_url('/js/wixEternalLink.js', __FILE__) );
 define( 'popupwindow_js', plugins_url('/js/popupwindow-1.8.1.js', __FILE__) );
 
 
 require_once( dirname( __FILE__ ) . '/newBody.php' );
 require_once( dirname( __FILE__ ) . '/wixSetting.php' );
 require_once( dirname( __FILE__ ) . '/wixDecide.php' );
-
+require_once( dirname( __FILE__ ) . '/wixSimilarity.php' );
+require_once( dirname( __FILE__ ) . '/wix_filecontents_autocreate.php' );
 
 
 
@@ -80,6 +83,15 @@ function wix_admin_decide_scripts($hook_suffix) {
     }
 
 }
+
+//外部リンクの明示化用ファイル読み込み
+add_action( 'wp_enqueue_scripts', 'wix_eternal_link_scripts' );
+function wix_eternal_link_scripts() {
+    wp_enqueue_style( 'wix-eternal-link-css', wix_eternal_link_css, array() );
+    wp_enqueue_script( 'wix-eternal-link-js', wix_eternal_link_js, array( 'jquery' ) );
+}
+
+
 
 // add_action( 'wp_head', 'wix_decide_popup_css' );
 function wix_decide_popup_css() {
