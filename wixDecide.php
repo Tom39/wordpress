@@ -104,30 +104,16 @@ function wix_entry_recommendation() {
 
 	$parse = wix_morphological_analysis($_POST['sentence']);
 	$wordsArray = wix_compound_noun_extract($parse);
-
-	// $words_countArray = array_word_count($wordsArray);
-	// $words_tfArray = wix_tf($words_countArray);
-	// $words_idfArray = wix_idf($words_countArray);
 	$words_countArray = array_word_count($wordsArray);
 	wix_tf($words_countArray);
 	wix_idf();
-
-	//tf-idf計算
-	// foreach ($words_countArray as $word => $count) {
-	// 	$tf_idf = $words_tfArray[$word] * $words_idfArray[$word];
-	// 	$words_tf_idfArray[$word] = $tf_idf;
-	// }
-	//tf-idf値の降順に並び替え
-	// arsort($words_tf_idfArray);
-
-
 
 
 	//tf-idf値の降順に並び替え
 	$tf_idfArray = array();
 	foreach ($similarityObj as $key => $value) {
 		$tf_idf = $value['tf'] * $value['idf'];
-		$value['tf-idf'] = $tf_idf;
+		$value['tf_idf'] = $tf_idf;
 		$similarityObj[$key] = $value;
 
 		$tf_idfArray[] = $tf_idf;
@@ -140,13 +126,13 @@ function wix_entry_recommendation() {
 
 	//wp_wixfileテーブルに入ってない単語が出現するページタイトルの提示
 /*これ違う気がする。テーブルに入ってない奴も推薦していいんじゃね？（2015/09/22）*/
-	// $doc_title = $_POST['doc-title'];
-	// $returnValue = wix_post_title(no_wixfile_entry($words_tf_idfArray));
+	$doc_title = $_POST['doc-title'];
+	$returnValue = wix_post_title(no_wixfile_entry($similarityObj));
 
 
 	$json = array(
-		// "returnValue" => $returnValue,
-		"similarity" => $similarityObj,
+		"returnValue" => $returnValue,
+		// "similarity" => $similarityObj,
 		// "idf" => $words_idfArray,
 	);
 	echo json_encode( $json );

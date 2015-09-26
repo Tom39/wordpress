@@ -90,7 +90,7 @@ jQuery(function($) {
 			data: entry_data,
 
 			success: function(json) {
-console.log(json['similarity']);
+// console.log(json['similarity']);
 // console.log(json['returnValue']);
 // console.log(json['idf']);
 				if ( json['returnValue'].length != 0 ) {

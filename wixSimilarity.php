@@ -86,22 +86,6 @@ function array_word_count($array) {
 }
 
 function wix_tf($array) {
-	/*
-	* $returnValue: [keyword => tf]
-	*/
-	// global $words_countArray_num, $similarityObj;
-	// $returnValue = array();
-	// $all_words_len = count($array);
-
-	// foreach ($array as $word => $count) {
-	// 	$tf = $count / 	$words_countArray_num;
-	// 	$returnValue[$word] = $tf;
-	// 	$similarityObj[$word] = ['tf' => $tf];
-	// }
-
-	// return $returnValue;
-
-
 	global $words_countArray_num, $similarityObj;
 	$all_words_len = count($array);
 
@@ -109,43 +93,9 @@ function wix_tf($array) {
 		$tf = $count / 	$words_countArray_num;
 		$similarityObj[$word] = ['tf' => $tf];
 	}
-
 }
 
 function wix_idf() {
-	// global $wpdb, $similarityObj;
-	// $returnValue = array();
-
-	// $document_num = $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->posts WHERE post_status = \"publish\" OR post_status = \"draft\"");
-	// $results = $wpdb->get_results("SELECT post_title, post_content FROM $wpdb->posts WHERE post_status = \"publish\" OR post_status = \"draft\"");
-	
-	// $document_num = $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->posts WHERE post_status!=\"inherit\" and post_status!=\"trash\" and post_status!=\"auto-save\" and post_status!=\"auto-draft\"");
-	// $results = $wpdb->get_results("SELECT post_title, post_content FROM $wpdb->posts WHERE post_status!=\"inherit\" and post_status!=\"trash\" and post_status!=\"auto-save\" and post_status!=\"auto-draft\"");
-
-	// foreach ($array as $word => $count) {
-	// 	//countはこの関数に持ってきてるけど、いらないから=0しちゃってるっぽい
-	// 	$count = 0;
-	// 	foreach ($results as $value) {
-	// 		if ( strpos($value->post_content, $word) )
-	// 			$count++;
-	// 	}
-
-	// 	//$count = 0だとInfinityになるから0にしてる
-	// 	if ( $count != 0 ) {
-	// 		$idf = log($document_num / $count);
-	// 	} else {
-	// 		$idf = 0;
-	// 	}
-
-	// 	$returnValue[$word] = $idf;
-
-
-	// 	$valueObj = $similarityObj[$word];
-	// 	$valueObj['idf'] = $idf;
-	// 	$similarityObj[$word] = $valueObj;
-	// }
-
-
 	global $wpdb, $similarityObj;
 	$document_num = (int) $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->posts WHERE post_status!=\"inherit\" and post_status!=\"trash\" and post_status!=\"auto-save\" and post_status!=\"auto-draft\"");
 
@@ -163,7 +113,6 @@ function wix_idf() {
 		$obj['idf'] = $idf;
 		$similarityObj[$keyword] = $obj;
 	}
-
 
 }
 
