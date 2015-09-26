@@ -42,7 +42,7 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 			wix_tf($words_countArray);
 			wix_idf();
 
-			//tf-idf計算
+			//tf_idf計算
 			foreach ($similarityObj as $key => $value) {
 				$tf_idf = $value['tf'] * $value['idf'];
 				$value['tf_idf'] = $tf_idf;
@@ -143,22 +143,27 @@ function wix_document_similarity_score_inserts_updates($doc_id) {
 				$subjectDocument_info = $wpdb->get_results($sql);
 
 				//行列値計算
-				$tmpArray = array();
+				$bunsi = 0;
+				$bunbo1 = 0;
+				$bunbo2 = 0;
 				foreach ($subjectDocument_info as $key => $array) {
 					$subjectDocument_keyword = $array->keyword;
 					$subjectDocument_tf_idf = $array->tf_idf;
 
 					if ( array_key_exists($subjectDocument_keyword, $similarityObj) ) {
-						array_push($tmpArray, $subjectDocument_tf_idf*$similarityObj[$array->keyword]['tf_idf']);
+						$bunsi = $bunsi + $subjectDocument_tf_idf * $similarityObj[$array->keyword]['tf_idf'];
 					}
+					$bunbo1 = $bunbo1 + $subjectDocument_tf_idf * $subjectDocument_tf_idf;
+				}
+				foreach ($similarityObj as $keyword => $value) {
+					$bunbo2 = $bunbo2 + $value['tf_idf'] * $value['tf_idf'];
 				}
 
-
-				//if( !empty($tmpArray) )をやるとINSERTされなくなるから書いてない
-				$cos_similarity = 0;
-				foreach ($tmpArray as $key => $value) {
-					$cos_similarity = $cos_similarity + $value;
-				}
+				//こうしないとWarningが出ちゃう
+				if ( $bunbo1 != 0 && $bunbo2 != 0 ) 
+					$cos_similarity = $bunsi / (sqrt($bunbo1) * sqrt($bunbo2));
+				else 
+					$cos_similarity = 0;
 
 
 				//(doc_id,doc_id2) = (○, △)順不同のエントリが存在するなら、挿入じゃなくて更新	
@@ -188,25 +193,28 @@ function wix_document_similarity_score_inserts_updates($doc_id) {
 			else
 				$doc_id2 = $value->doc_id;
 
-			$sql = 'SELECT keyword, tf_idf FROM ' . $wpdb->prefix . 'wix_keyword_similarity' . ' WHERE doc_id=' . $doc_id2;
+			$sql = 'SELECT keyword, tf_idf, tf FROM ' . $wpdb->prefix . 'wix_keyword_similarity' . ' WHERE doc_id=' . $doc_id2;
 			$subjectDocument_info = $wpdb->get_results($sql);
 
 			//行列値計算
-			$tmpArray = array();
+			$bunsi = 0;
+			$bunbo1 = 0;
+			$bunbo2 = 0;
 			foreach ($subjectDocument_info as $key => $array) {
 				$subjectDocument_keyword = $array->keyword;
 				$subjectDocument_tf_idf = $array->tf_idf;
 
 				if ( array_key_exists($subjectDocument_keyword, $similarityObj) ) {
-					array_push($tmpArray, $subjectDocument_tf_idf*$similarityObj[$array->keyword]['tf_idf']);
+					$bunsi = $bunsi + $subjectDocument_tf_idf * $similarityObj[$array->keyword]['tf_idf'];
 				}
+				$bunbo1 = $bunbo1 + $subjectDocument_tf_idf * $subjectDocument_tf_idf;
+			}
+			foreach ($similarityObj as $keyword => $value) {
+				$bunbo2 = $bunbo2 + $value['tf_idf'] * $value['tf_idf'];
 			}
 
-			if ( count($tmpArray) != 0 ) {
-				$cos_similarity = 0;
-				foreach ($tmpArray as $key => $value) {
-					$cos_similarity = $cos_similarity + $value;
-				}
+			if ( $bunsi != 0 ) {
+				$cos_similarity = $bunsi / (sqrt($bunbo1) * sqrt($bunbo2));
 
 				//更新
 				$sql = 'UPDATE ' . $table_name . ' SET cos_similarity = ' . $cos_similarity . ' WHERE (doc_id = ' . $doc_id . ' and doc_id2 = ' . $doc_id2 . ') OR (doc_id = ' . $doc_id2 . ' and doc_id2 = ' . $doc_id . ')';

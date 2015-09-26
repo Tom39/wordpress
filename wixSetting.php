@@ -87,34 +87,6 @@ function wix_similarity_table_create() {
 	dbDelta($sql);
 }
 
-// register_activation_hook( __FILE__, 'wix_document_similarity_table_create' );
-// function wix_document_similarity_table_create() {
-// 	global $wpdb;
-// 	$db_version = get_option('db_version', 0);
-// 	$table_name = $wpdb->prefix . 'document_similarity';
-// 	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-
-// 	if ( $is_db_exists == $table_name && $db_version >= $wixfile_table_version ) return;
-
-// 	$sql = "CREATE TABLE " . $table_name . " (
-// 	         doc_id bigint(20) UNSIGNED,
-// 		     doc_id2 bigint(20) UNSIGNED,
-// 		     cos_similarity float NOT NULL,
-// 		     UNIQUE(doc_id,doc_id2),
-// 		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
-// 		      ON UPDATE CASCADE ON DELETE CASCADE,
-// 		     FOREIGN KEY (doc_id2) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
-// 		      ON UPDATE CASCADE ON DELETE CASCADE
-// 	        );";
-
-// 	require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-// 	dbDelta($sql);
-
-// 	update_option("db_version", $wixfile_table_version);
-
-// }
-
-
 //--------------------------------------------------------------------------
 //
 //  プラグイン削除の際に行うオプションの削除
@@ -378,11 +350,83 @@ function wix_admin_wixfile_settings() {
 function wix_admin_similarity() {
 ?>
 <div class="wrap">
-	<p>テスト</p>
-	<?php
+<?php 
+	global $wpdb;
+	echo '<h2>' . __( 'WIX Similarity', 'wix_similarity' ) . '</h2>'; 
+?>
+
+<!-- ---------- -->
+	<div class="left">
+		<form id="wix_similarity_form" method="post" action="">
+
+			<?php wp_nonce_field( 'my-nonce-key', 'nonce_wix_similarity' ); ?>
+
+			<table id="document_list">
+				<tr>
+					<th>Document Type</th>
+					<th>Document Title</th>
+				</tr>
+				<?php
+					$sql = 'SELECT post_title, post_type, guid FROM ' . $wpdb->posts .
+					 ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" order by post_type, ID asc';
+					$documentsInfo = $wpdb->get_results($sql);
+
+					$post_type_page_flag = false;
+					$post_type_post_flag = false;
+
+					foreach ($documentsInfo as $key => $value) {
+						$post_title = $value->post_title;
+						$post_type = $value->post_type;
+						$url = $value->guid;
+
+						if ( $post_type == 'page' ) {
+							echo '<tr>';
+							if ( $post_type_page_flag === false ) {
+								echo '<th>' . $post_type . '</th>';
+								$post_type_page_flag = true;
+							} else {
+								echo '<th></th>';
+							}
+							echo '<td><a target="target_page" href="' . $url . '"">' . $post_title . '</a></td>';
+							echo '</tr>';
+						} else {
+							if ( $post_type_post_flag === false ) {
+								if ( $post_type_page_flag === true  ) echo '</tr>';
+								echo '<tr>';
+								echo '<th>' . $post_type . '</th>';
+								$post_type_post_flag = true;
+							} else {
+								echo '<tr>';
+								echo '<th></th>';
+							}
+							echo '<td><a target="target_page" href="' . $url . '"">' . $post_title . '</a></td>';
+							echo '</tr>';
+						}
+
+						// echo '<tr>';
+						// echo '<th>' . $post_type . '</th>';
+						// echo '<td>' . $post_title . '</td>';
+						// echo '</tr>';
+					}
+				?>
+			</table>
+
+			<!-- <ul>
+			<li><a href="http://localhost/wordpress/?page_id=19" target="target_box">Appleサイト表示</a></li>
+			<li><a href="http://www.db.ics.keio.ac.jp" target="target_box">Microsoftサイト表示</a></li>
+			</ul> -->
+		</form>
+	</div>
+	<div class="top">
+		<div id="frame-box">
+			<iframe id="frame-page" name="target_page"></iframe>
+		</div>
+	</div>
+
+<!-- ---------- -->
 
 
-	?>
+
 </div>
 <?php
 }
@@ -715,7 +759,6 @@ function created_wixfile_info() {
 
 
 
-
 add_action( 'wp_ajax_wix_manual_decide', 'wix_manual_decide' );
 add_action( 'wp_ajax_nopriv_wix_manual_decide', 'wix_manual_decide' );
 
@@ -737,62 +780,5 @@ function wix_manual_decide() {
     die();
 }
 
-
-
-
-
-  
-
-
-
-// function custom_gettext( $translated_text, $text, $domain ) {
-  	
-//  	switch ( $text ) {
-//  		case 'Dashboard':
-//  			$translated_text = __('Home',$domain);
-//  			break;
-//  	}
-
-// 	return $translated_text;
-// }
-// add_filter( 'gettext', 'custom_gettext', 20, 3 );
-
-
-
-// function patternFileContents() {
-// 	global $pm;
-// 	$patternFile = array();
-
-// 	try {
-// 		$file = fopen( PatternFile, 'r' );
- 
-// 		/* ファイルを1行ずつ出力 */
-// 		if( $file ){
-// 			$host_name = '';
-// 			$pattern_array = array();
-// 			$flag = false;
-
-// 			while ( $line = fgets($file) ) {
-// 				if ( $pm -> startsWith( $line, '<' ) ) {
-// 					if ( $flag == true ) {
-// 						$patternFile += array( $host_name => $pattern_array );
-// 						$pattern_array = array();
-// 					}
-// 					$host_name = $line;
-// 				} else {
-// 					$flag = true;
-// 					array_push( $pattern_array, $line );
-// 				}
-// 			}
-// 			$patternFile += array( $host_name => $pattern_array );
-// 		}
-// 	} catch ( Exception $e ) {
-// 		echo '捕捉した例外: ',  $e -> getMessage(), "\n";
-// 	} finally {
-// 		fclose( $file );
-// 	}
-
-// 	return $patternFile;
-// }
 
 ?>

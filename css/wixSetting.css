@@ -6,8 +6,9 @@
 
   ----------------------------------------------------------------------------------------------------------*/
 
-html {
+html, body {
 	height:100%;
+    margin: 0;
 }
 
 textarea {
@@ -39,7 +40,7 @@ textarea {
 
 /*----------------------------------------------------------------------------------------------------------
 
-　　ベースレイアウト
+　　WIX Admin Settings
 
   ----------------------------------------------------------------------------------------------------------*/
 
@@ -90,9 +91,86 @@ textarea {
     right: 0px; 
 }
 
+/*----------------------------------------------------------------------------------------------------------
+
+　　WIX Similarity
+
+  ----------------------------------------------------------------------------------------------------------*/
+
+.left{
+    float: left;
+    width: 30%;
+    height: 100%;
+    font-size: 10pt;
+    overflow: hidden;
+    border: 1px solid white;
+}
+#wix_similarity_form {
+    overflow: auto;
+    height: 90vh;
+    width: 100%;
+}
+#wix_similarity_form a{
+    text-decoration: none;
+}
 
 
 
+.top{
+    float: right;
+    width: 68%;
+    height: 100%;
+    font-size: 10pt;
+}
+#frame-box {
+    width: 100%;
+    height: 45vh;
+}
+#frame-page {
+    width: 100%;
+    height: 100%;
+    border : 1px solid black;
+    -webkit-transform: scale(0.99);
+    -webkit-transform-origin: 0 0;
+    -ms-transform: scale(0.99);
+    -ms-transform-origin: 0 0;
+    -o-transform: scale(0.99);
+    -o-transform-origin: 0 0;
+    -moz-transform: scale(0.99);
+    -moz-transform-origin: 0 0;
+}
+
+.left table,.left th,.left td,.top table,.top th,.top td{
+    font-size:10pt;
+}
+
+/*.main h2,.main h3,.left h4,.right h4,.left h5,.right h5{
+    margin:auto;
+    margin-top:0px;
+    margin-bottom:0px;
+    height:30px;
+    line-height:30px;
+    background-position:top left;
+    background-repeat:no-repeat;
+    overflow: hidden;
+}*/
+
+/*.left h4,.right h4{
+    font-size:8pt;
+    width:100%;
+    text-align:center;
+    vertical-align: bottom;
+    background-image:url(./images/external-link-icons/PNG/aqua/external-link-aqua02-Shapes4FREE.png);
+    background-size: 100%;
+}*/
+/*.left h5,.right h5{
+    font-size:8pt;
+    width:100%;
+    text-align:center;
+    vertical-align: bottom;
+    background-image:url(./image/external-link-icons/PNG/aqua/external-link-aqua02-Shapes4FREE.png);
+    background-size: 100%;
+}*/
 
 
 
