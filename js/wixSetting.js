@@ -185,6 +185,57 @@ jQuery(function($) {
 
     });
 
+    //WIXFileのエントリ候補をwix_document_similarityテーブルから推薦
+    $('.wix_similarity_entry').click(function(e) {
+    	var doc_id = $(this).attr('id');
+    	var data = {
+			'action': 'wix_similarity_entry_recommend',
+			'doc_id' : doc_id
+		};
+
+		$.ajax({
+			async: true,
+			dataType: "json",
+			type: "POST",
+			url: ajaxurl,
+			data: data,
+
+			success: function(json) {
+// console.log(json['entrys']);
+				var test = '<tr><th>Keyword in Doc</th><th>Document Title</th></tr>';
+				if ( json['entrys'].length != 0 ) {
+					$.each(json['entrys'], function(keyword, obj) {
+						// console.log(obj);
+
+						var keyword_flag = false;
+						$.each(obj, function(index, el) {
+							var title = '<a id=' + el.ID 
+								+ ' class="wix_similarity_entry" target="target_page" href="' 
+								+ el.guid 
+								+ '">'
+								+ el.post_title 
+								+ '</a>';
+							if ( keyword_flag == false ) {
+								test = test + '<tr><td>' + keyword + '</td>' + '<td>' + title + '</td></tr>';
+								keyword_flag = true;
+							} else {
+								test = test + '<tr><td>' + '' + '</td>' + '<td>' + title + '</td></tr>';
+							}
+						});
+					});
+				} else {
+					alert('推薦出来る候補エントリがありません');
+				}
+				$('#similarity_entrys').empty();
+				$('#similarity_entrys').append(test);
+			},
+
+			error: function(xhr, textStatus, errorThrown){
+				alert('wixSetting.js Error');
+			}
+		});
+    });
+
 
 
 

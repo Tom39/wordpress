@@ -233,7 +233,6 @@ $test = '';
 }
 
 
-
 //Manula Decideプレビュー画面のBody
 add_action( 'wp_ajax_wix_decide_preview', 'wix_decide_preview' );
 add_action( 'wp_ajax_nopriv_wix_decide_preview', 'wix_decide_preview' );
@@ -244,18 +243,18 @@ function wix_decide_preview() {
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
 
-	$post_ID = (int) substr( $_POST['target'], strlen('wp-preview-') );
-	$_POST['ID'] = $post_ID;
+	$post_id = (int) substr( $_POST['target'], strlen('wp-preview-') );
+	$_POST['ID'] = $post_id;
 
-	if ( ! $post = get_post( $post_ID ) ) {
+	if ( ! $post = get_post( $post_id ) ) {
 		wp_die( __( 'You are not allowed to edit this post.' ) );
 	}
 	if ( ! current_user_can( 'edit_post', $post->ID ) ) {
 		wp_die( __( 'You are not allowed to edit this post.' ) );
 	}
 
-	$post_page = get_post_type( $post_ID );
-	$page_status = get_post_status( $post_ID );
+	$post_page = get_post_type( $post_id );
+	$page_status = get_post_status( $post_id );
 
 	if ( $page_status == 'publish' ) {
 
@@ -291,13 +290,14 @@ function wix_decide_preview() {
 
 			//編集後のBodyに、アタッチしてから置換
 			//pタグとかを省いたbodyを対象として、アタッチ対象文字列位置を求めている(ppBody的な)
-			$innerLinkArray = keyword_location(strip_tags($_POST['after_body_part']));
+			// $innerLinkArray = keyword_location( strip_tags($_POST['after_body_part']) );
+			$innerLinkArray = keyword_location( strip_tags(wpautop($_POST['after_body_part'])) );
 
 			if ( count($innerLinkArray) != 0 ) {
 				$tmp = json_encode($innerLinkArray, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
-				$newBody = new_body($_POST['after_body_part'], $tmp);
+				$newBody = new_body( wpautop($_POST['after_body_part']), $tmp);
 			} else {
-				$newBody = new_body($_POST['after_body_part']);
+				$newBody = new_body( wpautop($_POST['after_body_part']) );
 			}
 			
 			$start = strpos($response_html, '<div class="entry-content">') + strlen('<div class="entry-content">');
@@ -316,8 +316,9 @@ function wix_decide_preview() {
 
 		$json = array(
 			"html" => $returnValue,
-			// "test" => $innerLinkArray,
-			"test" => $test,
+			"test" => $innerLinkArray,
+			"js" => $_POST['after_body_part'],
+			"js2" => wpautop($_POST['after_body_part']),
 		);
 		echo json_encode( $json );
 
@@ -331,10 +332,21 @@ function wix_decide_preview() {
     die();
 }
 
-//WIXファイルのキーワード + パターンファイル記述済みのWIXファイル を元にドキュメント内でのキーワード位置を求める
+//DB内のWIXファイル + パターンファイル記述済みのWIXファイル を元にドキュメント内でのキーワード位置を求める
 function keyword_location($body) {
 	global $wpdb;
 	$returnValue = array();
+	/*
+	* $returnValue : 
+	*	[start
+			[
+				end: ,
+				keyword: ,
+				targets: ,
+				nextStart: 
+			]
+		]
+	*/
 
 	$table_name = $wpdb->prefix . 'wixfile';
 	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
@@ -358,11 +370,12 @@ function keyword_location($body) {
 			$allLocationArray = array();
 			$offset = 0;
 
+			//wixfileテーブル内のキーワード毎にループを回す
 			foreach ($distinctKeywords as $key => $value) {
 				$keyword = $value->keyword;
 				$len = mb_strlen($keyword, "UTF-8");
 				$offset = 0;
-				/* locationArray : 文字列マッチングが成立した位置を保持 */
+				/* locationArray : 文字列マッチングが成立した位置を保持（start取得） */
 				$locationArray = array();
 				while ( ($pos = mb_strpos($body, $keyword, $offset, "UTF-8")) !== false ) {
 					if ( in_array($pos, $allLocationArray) == false ) {
@@ -372,6 +385,7 @@ function keyword_location($body) {
 					$offset = $pos + $len;
 				}
 
+				//end, keyword, targetの作成
 				if ( count($locationArray) != 0 ) {
 					$locationArray_len = count($locationArray);
 					$sql = 'SELECT target FROM ' . $table_name . ' WHERE keyword="' . $keyword . '"';
@@ -392,6 +406,7 @@ function keyword_location($body) {
 			sort($allLocationArray);
 			asort($returnValue);
 
+			//nextStartの作成
 			if ( count($allLocationArray) != 0 ) {
 				$returnValue_len = count($returnValue);
 				$count = 1;
@@ -411,8 +426,41 @@ function keyword_location($body) {
 	return $returnValue;
 }
 
-//Decide処理が行われなかったら、勝手にDecideファイルを作成してエントリ確保
-add_filter( 'wp_insert_post_data' , 'force_create_decideFile' , 99, 2 );
+// add_action('init', function() {
+//     remove_filter('the_title', 'wptexturize');
+//     remove_filter('the_content', 'wptexturize');
+//     remove_filter('the_excerpt', 'wptexturize');
+//     remove_filter('the_title', 'wpautop');
+//     remove_filter('the_content', 'wpautop');
+//     remove_filter('the_excerpt', 'wpautop');
+//     remove_filter('the_editor_content', 'wp_richedit_pre');
+// });
+ 
+// add_filter('tiny_mce_before_init', function($init) {
+//     $init['wpautop'] = false;
+//     return $init;
+// });
+
+
+// add_action('save_post', 'save_custom_field_postdata');
+function save_custom_field_postdata( $post_id, $content = '' ) {
+	global $wpdb;
+
+	remove_action('save_post', 'force_update_post');
+
+	// $content = '<h1>大槻研究室</h1><p>慶應義塾大学 情報工学科<br> 情報工学専修</p><h3>研究分野</h3><ul><li>無線通信</li><li>見守り・セキュリティ</li></ul><div class=\"staff_urls\"><a href=\"http://www.ohtsuki.ics.keio.ac.jp\" target=\"_blank\" data-mce-href=\"http://www.ohtsuki.ics.keio.ac.jp\">研究室HP</a> | <a href=\"http://k-ris.keio.ac.jp/Profiles/76/0007557/profile.html\" target=\"_blank\" data-mce-href=\"http://k-ris.keio.ac.jp/Profiles/76/0007557/profile.html\">研究者プロフィール</a></div>';
+	$sql = 'UPDATE ' . $wpdb->posts . ' SET post_content = "' . $content . '" WHERE ID = ' . $post_id;
+	$wpdb->query( $sql );
+
+	// remove_action('save_post', 'save_custom_field_postdata');
+	add_action('save_post', 'save_custom_field_postdata');
+
+}
+
+
+//Decide処理が行われなかったら、ドキュメント保存時に強制的にDecideファイルを作成してエントリ確保するフィルター
+//今使ってない（2015/9/29）
+// add_filter( 'wp_insert_post_data' , 'force_create_decideFile' , 99, 2 );
 function force_create_decideFile( $data ) {
 	global $wixDecide_flag;
 

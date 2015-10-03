@@ -11,33 +11,6 @@ html, body {
     margin: 0;
 }
 
-textarea {
-	resize: horizontal;
-	height: 500px;
-	width: 50%;
-
-	font-size: 120%;
-	border:1px solid #777;
-    padding: 5px;
-
-    -webkit-border-radius: 5px;
-     
-    /* Firefox */
-    -moz-border-radius: 5px;
-    border-radius: 5px;
-     
-    /* IE */
-    color: #FFFAF0;
-    background-color: #444444;
-    background: -webkit-gradient(linear, left top, left bottom, from(#444444), to(#333333));
-    background-image: -webkit-linear-gradient(to bottom, #444444 0%, #333333 100%) repeat scroll 0 0 rgba(0, 0, 0, 0);
-    background-image: -moz-linear-gradient(to bottom, #444444 0%, #333333 100%) repeat scroll 0 0 rgba(0, 0, 0, 0);
-    background-image: -o-linear-gradient(to bottom, #444444 0%, #333333 100%) repeat scroll 0 0 rgba(0, 0, 0, 0);
-    background-image: linear-gradient(to bottom, #444444 0%, #333333 100%) repeat scroll 0 0 rgba(0, 0, 0, 0);
-
-
-}
-
 /*----------------------------------------------------------------------------------------------------------
 
 　　WIX Admin Settings
@@ -106,9 +79,9 @@ textarea {
     border: 1px solid white;
 }
 #wix_similarity_form {
-    overflow: auto;
     height: 90vh;
     width: 100%;
+    overflow: auto;
 }
 #wix_similarity_form a{
     text-decoration: none;
@@ -124,12 +97,12 @@ textarea {
 }
 #frame-box {
     width: 100%;
-    height: 45vh;
+    height: 40vh;
 }
 #frame-page {
+    border : 1px solid black;
     width: 100%;
     height: 100%;
-    border : 1px solid black;
     -webkit-transform: scale(0.99);
     -webkit-transform-origin: 0 0;
     -ms-transform: scale(0.99);
@@ -140,7 +113,38 @@ textarea {
     -moz-transform-origin: 0 0;
 }
 
-.left table,.left th,.left td,.top table,.top th,.top td{
+
+.bottom {
+    float: right;
+    width: 68%;
+    height: 100%;
+    font-size: 10pt;
+}
+#bottom_contents {
+    width: 100%;
+    height: 100%;
+    font-size: 10pt;
+}
+#similarity_info {
+    float: left;
+    width: 60%;
+    height: 50vh;
+    border: 1px solid blue;
+    overflow: auto;
+}
+#similarity_entrys {
+    width: 100%;
+}
+#wixfile_info {
+    width: 39%;
+    height: 50vh;
+    border: 1px solid red;
+    overflow: auto;
+}
+
+
+
+.left table,.left th,.left td,.top table,.top th,.top td, .bottom table,.bottom th,.bottom td{
     font-size:10pt;
 }
 

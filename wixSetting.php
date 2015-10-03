@@ -367,7 +367,7 @@ function wix_admin_similarity() {
 					<th>Document Title</th>
 				</tr>
 				<?php
-					$sql = 'SELECT post_title, post_type, guid FROM ' . $wpdb->posts .
+					$sql = 'SELECT ID, post_title, post_type, guid FROM ' . $wpdb->posts .
 					 ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" order by post_type, ID asc';
 					$documentsInfo = $wpdb->get_results($sql);
 
@@ -378,6 +378,7 @@ function wix_admin_similarity() {
 						$post_title = $value->post_title;
 						$post_type = $value->post_type;
 						$url = $value->guid;
+						$id = $value->ID;
 
 						if ( $post_type == 'page' ) {
 							echo '<tr>';
@@ -387,7 +388,7 @@ function wix_admin_similarity() {
 							} else {
 								echo '<th></th>';
 							}
-							echo '<td><a target="target_page" href="' . $url . '"">' . $post_title . '</a></td>';
+							echo '<td><a id= '. $id . ' class="wix_similarity_entry" target="target_page" href="' . $url . '">' . $post_title . '</a></td>';
 							echo '</tr>';
 						} else {
 							if ( $post_type_post_flag === false ) {
@@ -399,7 +400,7 @@ function wix_admin_similarity() {
 								echo '<tr>';
 								echo '<th></th>';
 							}
-							echo '<td><a target="target_page" href="' . $url . '"">' . $post_title . '</a></td>';
+							echo '<td><a id= '. $id . ' class="wix_similarity_entry" target="target_page" href="' . $url . '">' . $post_title . '</a></td>';
 							echo '</tr>';
 						}
 
@@ -411,10 +412,6 @@ function wix_admin_similarity() {
 				?>
 			</table>
 
-			<!-- <ul>
-			<li><a href="http://localhost/wordpress/?page_id=19" target="target_box">Appleサイト表示</a></li>
-			<li><a href="http://www.db.ics.keio.ac.jp" target="target_box">Microsoftサイト表示</a></li>
-			</ul> -->
 		</form>
 	</div>
 	<div class="top">
@@ -422,6 +419,48 @@ function wix_admin_similarity() {
 			<iframe id="frame-page" name="target_page"></iframe>
 		</div>
 	</div>
+	<div class="bottom">
+		<div id="bottom_contents">
+			<div id="similarity_info">
+				<table id="similarity_entrys">
+					<tr>
+						<th>Keyword in Doc</th>
+						<th>Document Title</th>
+					</tr>
+				</table>
+			</div>
+
+			<div id="wixfile_info">
+				<table id="wixfile_contents">
+					<tr>
+						<th>Keyword</th>
+						<th>Targets</th>
+					</tr>
+				<?php 
+					$table_name = $wpdb->prefix . 'wixfile';
+					$sql = 'SELECT COUNT(*) FROM ' . $table_name;
+					if ( $wpdb->get_var($sql) != 0 ) {
+						$sql = 'SELECT keyword, target FROM ' . $table_name;
+						$results = $wpdb->get_results($sql);
+						$count = 0;
+						foreach ($results as $value) {
+							// $keyword = '<input type="text" name="keywords[' . $count . ']" value="' . esc_html($value->keyword) . '">';
+							// $target = '<input type="text" name="targets[' . $count . ']" value="' . esc_html($value->target) . '">';
+							$keyword = esc_html($value->keyword);
+							$target = mb_strimwidth(esc_html($value->target), 0, 30, '...');
+							echo '<tr>';
+							echo '<th width="100">' . $keyword . '</th>';
+							echo '<th width="100">' . $target . '</th>';
+							echo '</tr>';
+							$count++;
+						}
+					} 
+				?>
+				</table>
+			</div>
+		</div>
+	</div>
+
 
 <!-- ---------- -->
 
@@ -758,11 +797,9 @@ function created_wixfile_info() {
 }
 
 
-
+//manual_decideFlagを返す
 add_action( 'wp_ajax_wix_manual_decide', 'wix_manual_decide' );
 add_action( 'wp_ajax_nopriv_wix_manual_decide', 'wix_manual_decide' );
-
-//manual_decideFlagを返す
 function wix_manual_decide() {
 
 	header("Access-Control-Allow-Origin: *");
@@ -772,6 +809,67 @@ function wix_manual_decide() {
 	update_option( 'manual_decideFlag', $manual_decideFlag );
 	$json = array(
 		"data" => $manual_decideFlag
+	);
+
+	echo json_encode( $json );
+
+	
+    die();
+}
+
+//WIXFileのエントリ候補をwix_document_similarityテーブルから推薦
+add_action( 'wp_ajax_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );
+add_action( 'wp_ajax_nopriv_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );
+function wix_similarity_entry_recommend() {
+	global $wpdb;
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$doc_id = $_POST['doc_id'];
+
+	//候補キーワード群
+	$sql = 'SELECT * FROM ' . $wpdb->prefix . 'wix_keyword_similarity' .
+			 ' WHERE doc_id = ' . $doc_id . ' AND tf_idf != 0 order by tf_idf desc';
+	$candidate_keywords = $wpdb->get_results($sql);
+
+	//クリックされたドキュメントとの関連度を持つドキュメント群
+	$sql = 'SELECT * FROM ' . $wpdb->prefix . 'wix_document_similarity' .
+	 ' WHERE cos_similarity != 0 AND (doc_id=' . $doc_id . ' OR doc_id2=' . $doc_id . ') order by cos_similarity desc';
+	$similar_documents = $wpdb->get_results($sql);
+
+
+	if ( !empty($candidate_keywords) && !empty($similar_documents) ) {
+		//候補ターゲット群をDBから持ってくる
+		$selectQuery = '';
+		foreach ($similar_documents as $key => $value) {
+			if ( (int)$value->doc_id == $doc_id )
+				$candidate_doc_id = $value->doc_id2;
+			else
+				$candidate_doc_id = $value->doc_id;
+
+
+			if ( empty($selectQuery) )
+				$selectQuery = 'ID=' . $candidate_doc_id . ' ';
+			else
+				$selectQuery = $selectQuery . 'OR ID=' . $candidate_doc_id . ' ';
+		}
+		$sql = 'SELECT ID, post_title, guid FROM ' . $wpdb->posts . ' WHERE ' . $selectQuery;
+		$candidate_targets = $wpdb->get_results($sql);
+
+		$returnValue = array();
+		foreach ($candidate_keywords as $key => $value) {
+			$returnValue[$value->keyword] = $candidate_targets;
+		}
+
+
+	} else {
+		$returnValue = array();
+	}
+
+	$json = array(
+		"entrys" => $returnValue,
+		// "entrys" => $similar_documents,
 	);
 
 	echo json_encode( $json );

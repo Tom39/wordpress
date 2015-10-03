@@ -22,6 +22,40 @@ jQuery(function($) {
 	windowHeight = $(window).height();
 
 
+
+
+	// $(window).load(function(){
+	// 	var href =  decodeURI( $('#post-preview').attr('href') );
+	// 	var target = $('#post-preview').attr('target');
+	// 	var body = $('iframe:first').contents().find('#tinymce').eq(0).html();
+
+	// 	var data = {
+	// 		'action': 'wix_force_body_insert',
+	// 		'target' : target,
+	// 		'body' : body
+	// 	};
+
+	// 	$.ajax({
+	// 		async: true,
+	// 		dataType: "json",
+	// 		type: "POST",
+	// 		url: ajaxurl,
+	// 		data: data,
+
+	// 		success: function(json) {
+	// 			alert(json['test']);
+	// 		},
+
+	// 		error: function(xhr, textStatus, errorThrown){
+	// 			// alert('Error');
+	// 			console.log(textStatus);
+	// 		}
+
+	// 	});
+	// });
+
+
+
   	$('#detail_show').click(function(){
   		$('#detail_show').hide();
   		$('#detailSettings').show();
@@ -258,10 +292,12 @@ jQuery(function($) {
 						var target = $('#post-preview').attr('target');
 						var post_format = $('#post-formats-select :input:checked').val();
 						// var before_body_part = $('#content').html();
+
 						var after_body_part = $('iframe:first').contents().find('#tinymce').eq(0).html();
-						// var after_body_part = $('.wp-editor-area').eq(0).text(); //これ使うと日本語だと全然上手くいかないww
+						// var after_body_part = $('.wp-editor-area').eq(0).text();
 	/*現状、ページが編集された時に、エディタにあるものじゃなくて、保存されてるやつを取ってきてるから上手く行ってる。
-						本当は、↑のafterを使いたいけど、改行とかを全部繋げてしまっているため、decideの時と、attachの時が咬み合わない*/
+						本当は、前述のafterを使いたいけど、改行とかを全部繋げてしまっているため、decideの時と、attachの時が咬み合わない*/
+
 
 						var data = {
 							'action': 'wix_decide_preview',
@@ -280,7 +316,9 @@ jQuery(function($) {
 
 							success: function(json) {
 // console.log(json['html']);
-// console.log(json['test']);
+console.log(json['test']);
+console.log(json['js']);
+console.log(json['js2']);
 
 								var contents = $("<iframe />", {
 									id: 'wixDecideIframe'
@@ -319,7 +357,9 @@ jQuery(function($) {
 												var post_decideLink = new Array();
 												var nextStartArray = new Array();
 
-												rest_popup();
+												//Decide処理で回収していない残りもDecideファイルに入れるようにしてる
+												//今使ってない（2015/9/29）
+												// rest_popup();
 
 												$.each(decideLink, function(index, ar) {
 													if (ar !== undefined) {
@@ -539,6 +579,7 @@ function createPreDecideFile(object){
 }
 
 //Decide時にポップアップをクリックしていないものも、デフォルトで回収
+//今使ってない（2015/9/29）
 function rest_popup() {
 	var test = new Array();
 	var start, keyword, target, end;
@@ -563,48 +604,4 @@ function rest_popup() {
 	//クリックされたキーワードの色変更
 	// object.parents('span').prev().css('background', '#ccccff');
 	// object.css('cssText','color: blue !important;');
-// }
-
-
-
-// function displayMode(block_none, popupIndex) {
-// 	// $('#decidemenu' + popupIndex).css('display', block_none);
-// 	$('#wixDecideIframe').contents().find('#decidemenu' + popupIndex).css('display', block_none);
-// }
-// function popupMenu(keyword, target, targetStart, popupIndex) {
-	// popupMenuItem = new Array();
-	// for ( var i = 0; i < keyword.length; i++ ) {
-	// 	// var att = "class = 'wix-authorLink' target = \"_blank\" href = '\"' ";
-
-	// 	var att = "class='wix-pre-authorLink' href='javascript:void(0)' target='" + target[i] + "' start='" + targetStart + "'";
-	// 		popupMenuItem.push(target[i], att);
-	// }
-	// // メニュー作成
-	// var layer;
-	// var roop;
-	// var url;
-	// var subject;
-	// layer = "<div class='predecidetable' onmouseover=\"window.parent.displayMode('block', " + popupIndex + ");\" onmouseout=\"window.parent.displayMode('none', " + popupIndex + ");\" style=\"\">";
-	// layer += "<thead><tr><th scope='col'>WIX Decide</th></tr></thead>";
-	// roop = popupMenuItem.length / 2;
-	// for (i = 0; i < roop; i++) {
-	// 	url = i * 2 + 1;
-	// 	subject = i * 2;
-	// 	layer += "<tr>";
-	// 	layer += "<td>";
-	// 	layer += "<a " + popupMenuItem[url] + ">" + popupMenuItem[subject] + "</a><br>";
-	// 	layer += "</td>";
-	// 	layer += "</tr>";
-	// }
-	// layer += "<tfoot><tr><th scope='col'></th></tr></tfoot>";
-	// layer += "</table>";
-	// // ポップアップメニュー表示
-	// var offsetLeft = $('#wixDecideIframe').contents().find('#decidemenu' + popupIndex).prev().offset().left;
-	// $('#wixDecideIframe').contents().find('#decidemenu' + popupIndex)
-	// 									.css('display', 'block')
-	// 									.css('left', offsetLeft + 'px')
-	// 									.html(layer);
-	// decidemenu.style.display = 'block';	
-	// decidemenu.style.left = decidemenu.previousSibling.offsetLeft + 'px';
-	// decidemenu.innerHTML = layer;
 // }

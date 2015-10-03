@@ -13,7 +13,7 @@ add_filter( 'the_content', 'new_body' );
 // remove_all_filters( 'the_content' );
 remove_filter('the_content', 'wptexturize'); //-などの特殊文字への変換を停止
 
-function new_body( $content, $decideFileArray = '') {
+function new_body( $content, $decideFileArray = '' ) {
 	global $start;
 	if( is_preview() == false ) {
 
@@ -24,7 +24,6 @@ function new_body( $content, $decideFileArray = '') {
 		$patternMatching = new patternMatching;
 		$WixID = $patternMatching -> returnWixID();
 
-		// if ( $WixID != 0 ) {
 			if ( !empty($decideFileArray) ) {
 				/* Decide処理なら */
 				$attachURL = 'http://trezia.db.ics.keio.ac.jp/sakusa_WIXServer_0.3.5/PreviewAttach';
@@ -79,8 +78,8 @@ function new_body( $content, $decideFileArray = '') {
 				$response = curl_exec($ch);
 
 				if ( $response === false ) {
-				    // エラー文字列を出力する
 				    $response = 'エラーです. newBody.php-> ' .curl_error( $ch );
+				    // $response = $content;
 				}
 			} catch ( Exception $e ) {
 				$response = '捕捉した例外: ' . $e -> getMessage() . "\n";
@@ -90,12 +89,6 @@ function new_body( $content, $decideFileArray = '') {
 
 			// $response = $content;
 			return $response;
-
-		// } else {
-
-		// 	return $content;
-
-		// }
 		
 	} else {
 		

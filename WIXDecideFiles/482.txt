@@ -1,2 +1,2 @@
-start:7,end:13,nextStart:14,keyword:慶應義塾大学,target:http://www.keio.ac.jp,http://localhost/wordpress/%E3%83%87%E3%83%A2/
-start:14,end:19,nextStart:0,keyword:情報工学科,target:http://www.ics.keio.ac.jp/
+start:6,end:12,nextStart:13,keyword:慶應義塾大学,target:http://www.keio.ac.jp
+start:13,end:18,nextStart:0,keyword:情報工学科,target:http://www.ics.keio.ac.jp/
