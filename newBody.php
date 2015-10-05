@@ -17,10 +17,6 @@ function new_body( $content, $decideFileArray = '' ) {
 	global $start;
 	if( is_preview() == false ) {
 
-		//プレビューと違ってEnterキーによる空白(空行)を1文字としてカウントしてしまって、preview_attachとattachが噛み合わなくなってたからこうしている。
-		//これよくない！
-		// $content = preg_replace('/(\s|　)/','',$content);
-
 		$patternMatching = new patternMatching;
 		$WixID = $patternMatching -> returnWixID();
 
@@ -48,13 +44,13 @@ function new_body( $content, $decideFileArray = '' ) {
 					global $id;
 					while ( ($file = readdir($pointer)) !== false ) {
 						if ( $file === $id.'.txt' ) {
-							$DecideFileInfo = json_encode(DecideFileInfo(WixDecideFiles.$file), JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+							$DecideFileInfo = json_encode(decideFileInfo(WixDecideFiles.$file), JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+							// $DecideFileInfo = decideFileInfo(WixDecideFiles.$file);
 							break;
 						}
 					}
 					closedir($pointer);
 				}
-
 				$attachURL = 'http://trezia.db.ics.keio.ac.jp/sakusa_WIXServer_0.3.5/attach';
 				$ch = curl_init();
 				$data = array(
@@ -77,10 +73,9 @@ function new_body( $content, $decideFileArray = '' ) {
 
 				$response = curl_exec($ch);
 
-				if ( $response === false ) {
-				    $response = 'エラーです. newBody.php-> ' .curl_error( $ch );
-				    // $response = $content;
-				}
+				if ( $response === false ) 
+					$response = 'エラーです. newBody.php-> ' .curl_error( $ch );
+				
 			} catch ( Exception $e ) {
 				$response = '捕捉した例外: ' . $e -> getMessage() . "\n";
 			} finally {
@@ -98,7 +93,7 @@ function new_body( $content, $decideFileArray = '' ) {
 }
 
 //Decideファイル情報を連想配列に整形
-function DecideFileInfo($filename) {
+function decideFileInfo($filename) {
 	$returnValue = array();
 
 	$file = fopen($filename, 'r');
@@ -125,9 +120,14 @@ function DecideFileInfo($filename) {
 	fclose($file);
 
 	return $returnValue;
-
 }
 
+//リクエストHTMLに対して、適用可能なWIXファイルエントリ情報を抽出し、連想配列に整形
+function wixFileInfo() {
+	global $wpdb;
+
+
+}
 
 
 

@@ -150,36 +150,98 @@ function wix_new_entry_insert() {
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
 
-	$table_name = $wpdb->prefix . 'wixfile';
-	$insertEntry = '';
+
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
+	$insertKeywordArray = array();
+	$insertTargetArray = array();
+	$latest_id = 0;
 
 	$keyword = $_POST['keyword'];
 	$target = $_POST['target'];
+	if ( !empty($keyword) ) {
+		$sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta . ' WHERE keyword="' . $keyword . '"';
+		//まだwixfilemetaテーブルに存在しないキーワードの場合(つまりこれから挿入しなければならない)
+		if ( $wpdb->get_var($sql) == 0 ) {
+			$sql = 'SELECT MAX(id) FROM ' . $wixfilemeta;
+			if ( $wpdb->get_var($sql) == NULL ) {
+				$latest_id = count($insertKeywordArray); //DBにまだなんの行もない時
+			} else {
+				$tmp = (int) $wpdb->get_var($sql);
+				$latest_id = $tmp + count($insertKeywordArray) + 1;
+			}
+			
+			array_push($insertKeywordArray, 
+						array(
+							'id' => $latest_id,
+							'keyword' => $keyword
+							)
+						);
+			array_push($insertTargetArray, 
+						array(
+							'keyword_id' => $latest_id,
+							'target' => $target
+							)
+						);
 
-	$sql = 'SELECT COUNT(*) FROM ' . $table_name . ' WHERE keyword="' . $keyword . '"';
-	$keywordNum_inDB = $wpdb->get_var($sql);
+		} else {
+			//wixfile_targetsテーブルに該当ターゲットが既に存在しなければ、キーワードのidを返す
+			$sql = 'SELECT wm.id FROM ' . $wixfilemeta . ' wm WHERE wm.keyword="' . $keyword . 
+						'" AND wm.id NOT IN (SELECT wt.keyword_id FROM ' . 
+							$wixfile_targets . ' wt WHERE wt.target="' . $target . '")';
+			$keyword_idObj = $wpdb->get_results($sql);
 
-	$test = '';
-
-	//まだテーブルにないキーワードの場合	
-	if ( $keywordNum_inDB == 0 ) {
-		$insertEntry = '("' . $keyword .'", "' . $target . '"), ';
-	} else {
-		$sql = 'SELECT COUNT(*) FROM ' . $table_name . ' WHERE keyword="' . $keyword . '" and target="' . $target . '"';
-		$targetNum_inDB = $wpdb->get_var( $sql );
-
-		if ( $targetNum_inDB == 0 ) {
-			$insertEntry = '("' . $keyword .'", "' . $target . '"), ';
+			if ( !empty($keyword_idObj) ) {
+				array_push($insertTargetArray, 
+							array(
+								'keyword_id' => (int)$keyword_idObj[0]->id,
+								'target' => $target
+								)
+							);
+			}
 		}
 	}
 
-	if ( !empty($insertEntry)) {
-		$sql = 'INSERT INTO ' . $table_name . '(keyword, target) VALUES ' . $insertEntry;
+	if ( !empty($insertKeywordArray) ) {
+		$insertKeyword = '';
+
+		foreach ($insertKeywordArray as $index => $valueArray) {
+			$keyword = $valueArray['keyword'];
+			$id = $valueArray['id'];
+			if ( $index == 0 ) {
+				$insertKeyword = '(' . $id . ', "' . $keyword .'"), ';
+			} else {
+				$insertKeyword = $insertKeyword . '(' . $id . ', "' . $keyword .'"), ';
+			}
+		}
+
+		$sql = 'INSERT INTO ' . $wixfilemeta . '(id, keyword) VALUES ' . $insertKeyword;
 		$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
-		$results = $wpdb->query( $sql );
-		$test = 'success';
-	} else {
-		$test = 'fail';
+		$result = $wpdb->query( $sql );					
+
+		if ( $result != 0 ) $test = 'SUCESS';
+		else $test = 'FAIL';
+	}
+
+	if ( !empty($insertTargetArray) ) {
+		$insertTarget = '';
+
+		foreach ($insertTargetArray as $index => $valueArray) {
+			$target = $valueArray['target'];
+			$id = $valueArray['keyword_id'];
+			if ( $index == 0 ) {
+				$insertTarget = '(' . $id . ', "' . $target . '"), ';
+			} else {
+				$insertTarget = $insertTarget . '(' . $id . ', "' . $target . '"), ';
+			}
+		}
+
+		$sql = 'INSERT INTO ' . $wixfile_targets . '(keyword_id, target) VALUES ' . $insertTarget;
+		$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
+		$result = $wpdb->query( $sql );					
+
+		if ( $result != 0 ) $test = 'SUCESS';
+		else $test = 'FAIL 2';
 	}
 
 	$json = array(
@@ -199,33 +261,146 @@ function wix_new_entry_inserts() {
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
 
-	$table_name = $wpdb->prefix . 'wixfile';
-	$insertEntry = '';
-$test = '';
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
+	$target_checker = array();
+	$insertKeywordArray = array();
+	$insertTargetArray = array();
+	$latest_id = 0;
+
 	$entry = $_POST['entry'];
 
-	foreach ($entry as $key => $obj) {
+	foreach ($entry as $index => $obj) {
 		$keyword = $obj['keyword'];
 		$target = $obj['target'];
 
-		if ( empty($insertEntry) )
-			$insertEntry = '("' . $keyword .'", "' . $target . '"), ';
-		else
-			$insertEntry = $insertEntry . '("' . $keyword .'", "' . $target . '"), ';
+		if ( !empty($keyword) ) {
+			$keyword_flag = false;
+			$target_flag = false;
+
+			//二重挿入しないようにフラグ立てる
+			foreach ($target_checker as $key => $valueArray) {
+				if ( $key == $keyword ) {
+					$keyword_flag = true;
+					foreach ($valueArray as $i => $value) {
+						if ( $value == $target ) {
+							$target_flag = true;
+							break;
+						}
+					}
+				}
+			}
+
+			if ( $target_flag == false ) {
+				$sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta . ' WHERE keyword="' . $keyword . '"';
+				//まだwixfilemetaテーブルに存在しないキーワードの場合(つまりこれから挿入しなければならない)
+				if ( $wpdb->get_var($sql) == 0 ) {
+					//キーワードが既に挿入用Arrayにセットされていたら今回はいれない.そしてidを合わせる
+					if ( $keyword_flag == false ) {
+						$sql = 'SELECT MAX(id) FROM ' . $wixfilemeta;
+						if ( $wpdb->get_var($sql) == NULL ) {
+							$latest_id = count($insertKeywordArray); //DBにまだなんの行もない時
+						} else {
+							$tmp = (int) $wpdb->get_var($sql);
+							$latest_id = $tmp + count($insertKeywordArray) + 1;
+						}
+						
+						array_push($insertKeywordArray, 
+									array(
+										'id' => $latest_id,
+										'keyword' => $keyword
+										)
+									);
+					} else {
+						foreach ($insertKeywordArray as $key => $value) {
+							if ( $value['keyword'] == $keyword ) $latest_id = $value['id'];
+						}
+					}
+					array_push($insertTargetArray, 
+								array(
+									'keyword_id' => $latest_id,
+									'target' => $target
+									)
+								);
+
+				} else {
+					//wixfile_targetsテーブルに該当ターゲットが既に存在しなければ、キーワードのidを返す
+					$sql = 'SELECT wm.id FROM ' . $wixfilemeta . ' wm WHERE wm.keyword="' . $keyword . 
+								'" AND wm.id NOT IN (SELECT wt.keyword_id FROM ' . 
+									$wixfile_targets . ' wt WHERE wt.target="' . $target . '")';
+					$keyword_idObj = $wpdb->get_results($sql);
+
+					if ( !empty($keyword_idObj) ) {
+						array_push($insertTargetArray, 
+									array(
+										'keyword_id' => (int)$keyword_idObj[0]->id,
+										'target' => $target
+										)
+									);
+					}
+				}
+
+				//二重挿入チェッカーに追加
+				if ( empty($target_checker) ) {
+					$target_checker[$keyword] = array($target);
+				} else {
+					if ( array_key_exists($keyword, $target_checker) ) {
+						$valueArray = $target_checker[$keyword];
+						array_push($valueArray, $target);
+						$target_checker[$keyword] = $valueArray;
+					} else {
+						$target_checker[$keyword] = array($target);
+					}
+				}
+			}
+		}
 	}
 
-	if ( !empty($insertEntry)) {
-		$sql = 'INSERT INTO ' . $table_name . '(keyword, target) VALUES ' . $insertEntry;
+	if ( !empty($insertKeywordArray) ) {
+		$insertKeyword = '';
+
+		foreach ($insertKeywordArray as $index => $valueArray) {
+			$keyword = $valueArray['keyword'];
+			$id = $valueArray['id'];
+			if ( $index == 0 ) {
+				$insertKeyword = '(' . $id . ', "' . $keyword .'"), ';
+			} else {
+				$insertKeyword = $insertKeyword . '(' . $id . ', "' . $keyword .'"), ';
+			}
+		}
+
+		$sql = 'INSERT INTO ' . $wixfilemeta . '(id, keyword) VALUES ' . $insertKeyword;
 		$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
-		$results = $wpdb->query( $sql );
-		// $test = 'SUCCESS';
-	} else {
-		$test = 'FAIL';
+		$result = $wpdb->query( $sql );					
+
+		if ( $result != 0 ) $test = 'SUCESS';
+		else $test = 'FAIL';
+	}
+
+	if ( !empty($insertTargetArray) ) {
+		$insertTarget = '';
+
+		foreach ($insertTargetArray as $index => $valueArray) {
+			$target = $valueArray['target'];
+			$id = $valueArray['keyword_id'];
+			if ( $index == 0 ) {
+				$insertTarget = '(' . $id . ', "' . $target . '"), ';
+			} else {
+				$insertTarget = $insertTarget . '(' . $id . ', "' . $target . '"), ';
+			}
+		}
+
+		$sql = 'INSERT INTO ' . $wixfile_targets . '(keyword_id, target) VALUES ' . $insertTarget;
+		$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
+		$result = $wpdb->query( $sql );					
+
+		if ( $result != 0 ) $test = 'SUCESS 2';
+		else $test = 'FAIL 2';
 	}
 
 	$json = array(
 		"test" => $test,
-		"entry" => $entry,
+		// "entry" => $entry,
 	);
 	echo json_encode( $json );
 
@@ -290,6 +465,7 @@ function wix_decide_preview() {
 
 			//編集後のBodyに、アタッチしてから置換
 			//pタグとかを省いたbodyを対象として、アタッチ対象文字列位置を求めている(ppBody的な)
+			/* wpautopを使ってるから、必ずpタグ自動挿入の影響を受ける。the_contentにremove_filterしてると合わなくなる */
 			// $innerLinkArray = keyword_location( strip_tags($_POST['after_body_part']) );
 			$innerLinkArray = keyword_location( strip_tags(wpautop($_POST['after_body_part'])) );
 
@@ -317,8 +493,8 @@ function wix_decide_preview() {
 		$json = array(
 			"html" => $returnValue,
 			"test" => $innerLinkArray,
-			"js" => $_POST['after_body_part'],
-			"js2" => wpautop($_POST['after_body_part']),
+			// "js" => $_POST['after_body_part'],
+			// "js2" => wpautop($_POST['after_body_part']),
 		);
 		echo json_encode( $json );
 
@@ -348,15 +524,16 @@ function keyword_location($body) {
 		]
 	*/
 
-	$table_name = $wpdb->prefix . 'wixfile';
-	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
+	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $wixfilemeta));
 
-	if ( $is_db_exists == $table_name ) {
+	if ( $is_db_exists == $wixfilemeta ) {
 
-		$sql = 'SELECT COUNT(*) FROM ' . $table_name;
+		$sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta;
 		if ( $wpdb->get_var($sql) != 0 ) {
 
-			$sql = 'SELECT distinct keyword FROM ' . $table_name;
+			$sql = 'SELECT keyword FROM ' . $wixfilemeta;
 			$distinctKeywords = $wpdb->get_results($sql);
 
 			/* $keyword_sort_array : キーワードを文字列の長い順番にして、キーワード間の部分一致対策*/
@@ -388,7 +565,7 @@ function keyword_location($body) {
 				//end, keyword, targetの作成
 				if ( count($locationArray) != 0 ) {
 					$locationArray_len = count($locationArray);
-					$sql = 'SELECT target FROM ' . $table_name . ' WHERE keyword="' . $keyword . '"';
+					$sql = 'SELECT wt.target FROM ' . $wixfilemeta . ' wm, ' . $wixfile_targets . ' wt WHERE wm.id = wt.keyword_id AND wm.keyword="' . $keyword . '"';
 					$results = $wpdb->get_results($sql);
 					$targetArray = array();
 					foreach ($results as $key => $value) {
@@ -425,38 +602,6 @@ function keyword_location($body) {
 
 	return $returnValue;
 }
-
-// add_action('init', function() {
-//     remove_filter('the_title', 'wptexturize');
-//     remove_filter('the_content', 'wptexturize');
-//     remove_filter('the_excerpt', 'wptexturize');
-//     remove_filter('the_title', 'wpautop');
-//     remove_filter('the_content', 'wpautop');
-//     remove_filter('the_excerpt', 'wpautop');
-//     remove_filter('the_editor_content', 'wp_richedit_pre');
-// });
- 
-// add_filter('tiny_mce_before_init', function($init) {
-//     $init['wpautop'] = false;
-//     return $init;
-// });
-
-
-// add_action('save_post', 'save_custom_field_postdata');
-function save_custom_field_postdata( $post_id, $content = '' ) {
-	global $wpdb;
-
-	remove_action('save_post', 'force_update_post');
-
-	// $content = '<h1>大槻研究室</h1><p>慶應義塾大学 情報工学科<br> 情報工学専修</p><h3>研究分野</h3><ul><li>無線通信</li><li>見守り・セキュリティ</li></ul><div class=\"staff_urls\"><a href=\"http://www.ohtsuki.ics.keio.ac.jp\" target=\"_blank\" data-mce-href=\"http://www.ohtsuki.ics.keio.ac.jp\">研究室HP</a> | <a href=\"http://k-ris.keio.ac.jp/Profiles/76/0007557/profile.html\" target=\"_blank\" data-mce-href=\"http://k-ris.keio.ac.jp/Profiles/76/0007557/profile.html\">研究者プロフィール</a></div>';
-	$sql = 'UPDATE ' . $wpdb->posts . ' SET post_content = "' . $content . '" WHERE ID = ' . $post_id;
-	$wpdb->query( $sql );
-
-	// remove_action('save_post', 'save_custom_field_postdata');
-	add_action('save_post', 'save_custom_field_postdata');
-
-}
-
 
 //Decide処理が行われなかったら、ドキュメント保存時に強制的にDecideファイルを作成してエントリ確保するフィルター
 //今使ってない（2015/9/29）
@@ -605,49 +750,6 @@ function wix_decidefile_check() {
 }
 
 
-
-
-
-
-// $preview;
-function nixcraft_preview_link($url, $post) {
-    // $slug = basename(get_permalink());
-    // $mydomain = 'http://server1.cyberciti.biz';
-    // $mydir = '/faq/';
-    // $mynewpurl = "$mydomain$mydir$slug&preview=true";
-    // return "$mynewpurl";
-
-    global $preview;
-    $preview = $url;
-
-    // var_dump($preview);
-    // var_dump(get_permalink());
-
-    return $url;
-}
-add_filter( 'preview_post_link', 'nixcraft_preview_link', 10, 2 );
-
-
-
-
-
-	// if ( isset( $_GET['post'] ) )
-	//  	$post_id = $post_ID = (int) $_GET['post'];
-	// elseif ( isset( $_POST['post_ID'] ) )
-	//  	$post_id = $post_ID = (int) $_POST['post_ID'];
-	// else
-	//  	$post_id = $post_ID = 0;
-
-	// global $post;
-
-	// var_dump($post_id);
-	// var_dump($_GET['preview_nonce']);
-	// var_dump( urldecode(get_permalink( $post->ID )) );
-
-
-
-
-
 //post.phpでID取得
 // if ( isset( $_GET['post'] ) )
 //  	$post_id = $post_ID = (int) $_GET['post'];
@@ -659,11 +761,6 @@ add_filter( 'preview_post_link', 'nixcraft_preview_link', 10, 2 );
 
 
 
-
-
-
-
-
 //強制リダイレクト
 // add_action( 'publish_post', 'aaa', 99, 2 );
 function aaa($post_ID, $post) {
@@ -671,10 +768,6 @@ function aaa($post_ID, $post) {
     // wp_safe_redirect( 'http://localhost/wordpress/wp-admin/post.php?post=56&action=edit', 301 );
     // exit;
 }
-
-
-
-
 
 
 
@@ -759,10 +852,6 @@ function post_unpublished( $new_status, $old_status, $post ) {
 
 
 
-
-
-
-
 // add_action('submitpost_box', 'hidden_fields');
 // function hidden_fields(){
 // 	// var_dump('ここにいるよ');
@@ -776,7 +865,6 @@ function post_unpublished( $new_status, $old_status, $post ) {
 
 // 公開する前にアラートを表示する
 // add_action('admin_footer', 'publish_confirm', 10);
-
 function publish_confirm() {
 
 	$c_message = '記事を公開します。宜しいでしょうか？';

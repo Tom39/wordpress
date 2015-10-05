@@ -21,41 +21,6 @@ jQuery(function($) {
 	windowWidth = $(window).width();
 	windowHeight = $(window).height();
 
-
-
-
-	// $(window).load(function(){
-	// 	var href =  decodeURI( $('#post-preview').attr('href') );
-	// 	var target = $('#post-preview').attr('target');
-	// 	var body = $('iframe:first').contents().find('#tinymce').eq(0).html();
-
-	// 	var data = {
-	// 		'action': 'wix_force_body_insert',
-	// 		'target' : target,
-	// 		'body' : body
-	// 	};
-
-	// 	$.ajax({
-	// 		async: true,
-	// 		dataType: "json",
-	// 		type: "POST",
-	// 		url: ajaxurl,
-	// 		data: data,
-
-	// 		success: function(json) {
-	// 			alert(json['test']);
-	// 		},
-
-	// 		error: function(xhr, textStatus, errorThrown){
-	// 			// alert('Error');
-	// 			console.log(textStatus);
-	// 		}
-
-	// 	});
-	// });
-
-
-
   	$('#detail_show').click(function(){
   		$('#detail_show').hide();
   		$('#detailSettings').show();
@@ -82,7 +47,7 @@ jQuery(function($) {
 				data: entry_data,
 
 				success: function(json) {
-					if ( json['test'] == 'success') {
+					if ( json['test'] == 'SUCCESS') {
 						$('#newEntry input:text').eq(0).val('');
   						$('#newEntry input:text').eq(1).val('');
   						$('#insert_success').show();
@@ -235,6 +200,7 @@ jQuery(function($) {
 									data: data,
 
 									success: function(json){
+// console.log(json['test']);
 // console.log(json['entry']);
 										alert('完了しました');
 									},
@@ -285,13 +251,11 @@ jQuery(function($) {
 						* href: プレビュー先URL 
 						* target: 編集中コンテンツID
 						* post_format: フォーマットの種類
-						* before_body_part: 差し替え前のBody
 						* after_body_part: 差し替え用のBody
 						*/
 						var href =  decodeURI( $('#post-preview').attr('href') );
 						var target = $('#post-preview').attr('target');
 						var post_format = $('#post-formats-select :input:checked').val();
-						// var before_body_part = $('#content').html();
 
 						var after_body_part = $('iframe:first').contents().find('#tinymce').eq(0).html();
 						// var after_body_part = $('.wp-editor-area').eq(0).text();
@@ -303,7 +267,6 @@ jQuery(function($) {
 							'action': 'wix_decide_preview',
 							'target' : target,
 							'post_format' : post_format,
-							// 'before_body_part' : before_body_part,
 							'after_body_part' : after_body_part
 						};
 
@@ -317,8 +280,8 @@ jQuery(function($) {
 							success: function(json) {
 // console.log(json['html']);
 console.log(json['test']);
-console.log(json['js']);
-console.log(json['js2']);
+// console.log(json['js']);
+// console.log(json['js2']);
 
 								var contents = $("<iframe />", {
 									id: 'wixDecideIframe'

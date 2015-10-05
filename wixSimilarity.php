@@ -55,7 +55,7 @@ function wix_compound_noun_extract($parse){
 	return $returnValue;
 }
 
-//キーワード数の出現カウンター
+//作成ドキュメントにおけるキーワード数の出現カウンター
 function array_word_count($array) {
 	/*
 	* $returnValue: [keyword => count]
@@ -121,7 +121,7 @@ function no_wixfile_entry($array) {
 	$distinctKeywordsArray = array();
 	$returnValue = array();
 
-	$sql = 'SELECT distinct keyword FROM ' . $wpdb->prefix . 'wixfile';
+	$sql = 'SELECT keyword FROM ' . $wpdb->prefix . 'wixfilemeta';
 	$distinctKeywords_obj = $wpdb->get_results($sql);
 	foreach ($distinctKeywords_obj as $key => $value) {
 		array_push($distinctKeywordsArray, $value->keyword);
