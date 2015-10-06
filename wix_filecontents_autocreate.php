@@ -8,8 +8,8 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 	//ゴミ箱行きだったらDELTE.次にリビジョンに対するエントリを作らないように.
 	if ( $new_status == 'trash' ) {
 
-	wix_similarity_score_deletes($post->ID, 'wix_keyword_similarity');
-	wix_similarity_score_deletes($post->ID, 'wix_document_similarity');
+		wix_similarity_score_deletes($post->ID, 'wix_keyword_similarity');
+		wix_similarity_score_deletes($post->ID, 'wix_document_similarity');
 
 	} else if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
 		$parse = wix_morphological_analysis($post->post_content);

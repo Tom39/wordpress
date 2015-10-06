@@ -1,2 +1,3 @@
-start:6,end:12,nextStart:13,keyword:慶應義塾大学,target:http://www.keio.ac.jp
-start:13,end:18,nextStart:0,keyword:情報工学科,target:http://www.ics.keio.ac.jp/
+start:0,end:5,nextStart:6,keyword:大槻研究室,target:no_attach
+start:6,end:12,nextStart:13,keyword:慶應義塾大学,target:http://localhost/wordpress/
+start:13,end:18,nextStart:0,keyword:情報工学科,target:http://localhost/wordpress/デモ/

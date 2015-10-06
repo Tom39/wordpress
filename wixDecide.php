@@ -536,65 +536,67 @@ function keyword_location($body) {
 			$sql = 'SELECT keyword FROM ' . $wixfilemeta;
 			$distinctKeywords = $wpdb->get_results($sql);
 
-			/* $keyword_sort_array : キーワードを文字列の長い順番にして、キーワード間の部分一致対策*/
-			$keyword_sort_array = array();
-			foreach ($distinctKeywords as $key => $value) {
-				$keyword_sort_array[$key] = strlen($value->keyword);
-			}
-			array_multisort($keyword_sort_array, SORT_DESC, $distinctKeywords);
+			if ( !empty($distinctKeywords) ) {
+				/* $keyword_sort_array : キーワードを文字列の長い順番にして、キーワード間の部分一致対策*/
+				$keyword_sort_array = array();
+				foreach ($distinctKeywords as $key => $value) {
+					$keyword_sort_array[$key] = strlen($value->keyword);
+				}
+				array_multisort($keyword_sort_array, SORT_DESC, $distinctKeywords);
 
-			//全位置情報
-			$allLocationArray = array();
-			$offset = 0;
-
-			//wixfileテーブル内のキーワード毎にループを回す
-			foreach ($distinctKeywords as $key => $value) {
-				$keyword = $value->keyword;
-				$len = mb_strlen($keyword, "UTF-8");
+				//全位置情報
+				$allLocationArray = array();
 				$offset = 0;
-				/* locationArray : 文字列マッチングが成立した位置を保持（start取得） */
-				$locationArray = array();
-				while ( ($pos = mb_strpos($body, $keyword, $offset, "UTF-8")) !== false ) {
-					if ( in_array($pos, $allLocationArray) == false ) {
-						array_push($locationArray, $pos);
-						array_push($allLocationArray, $pos);
-					}
-					$offset = $pos + $len;
-				}
 
-				//end, keyword, targetの作成
-				if ( count($locationArray) != 0 ) {
-					$locationArray_len = count($locationArray);
-					$sql = 'SELECT wt.target FROM ' . $wixfilemeta . ' wm, ' . $wixfile_targets . ' wt WHERE wm.id = wt.keyword_id AND wm.keyword="' . $keyword . '"';
-					$results = $wpdb->get_results($sql);
-					$targetArray = array();
-					foreach ($results as $key => $value) {
-						array_push($targetArray, $value->target);
+				//wixfileテーブル内のキーワード毎にループを回す
+				foreach ($distinctKeywords as $key => $value) {
+					$keyword = $value->keyword;
+					$len = mb_strlen($keyword, "UTF-8");
+					$offset = 0;
+					/* locationArray : 文字列マッチングが成立した位置を保持（start取得） */
+					$locationArray = array();
+					while ( ($pos = mb_strpos($body, $keyword, $offset, "UTF-8")) !== false ) {
+						if ( in_array($pos, $allLocationArray) == false ) {
+							array_push($locationArray, $pos);
+							array_push($allLocationArray, $pos);
+						}
+						$offset = $pos + $len;
 					}
 
-					foreach ($locationArray as $key => $start) {
-						$end = intval($start) + $len;
-						if ( $key < $locationArray_len ) 
-							$returnValue[intval($start)] = array('end'=>array(strval($end)), 'keyword'=>array($keyword), 'targets'=>$targetArray);
+					//end, keyword, targetの作成
+					if ( count($locationArray) != 0 ) {
+						$locationArray_len = count($locationArray);
+						$sql = 'SELECT wt.target FROM ' . $wixfilemeta . ' wm, ' . $wixfile_targets . ' wt WHERE wm.id = wt.keyword_id AND wm.keyword="' . $keyword . '"';
+						$results = $wpdb->get_results($sql);
+						$targetArray = array();
+						foreach ($results as $key => $value) {
+							array_push($targetArray, $value->target);
+						}
+
+						foreach ($locationArray as $key => $start) {
+							$end = intval($start) + $len;
+							if ( $key < $locationArray_len ) 
+								$returnValue[intval($start)] = array('end'=>array(strval($end)), 'keyword'=>array($keyword), 'targets'=>$targetArray);
+						}
 					}
 				}
-			}
 			
-			sort($allLocationArray);
-			asort($returnValue);
+				sort($allLocationArray);
+				asort($returnValue);
 
-			//nextStartの作成
-			if ( count($allLocationArray) != 0 ) {
-				$returnValue_len = count($returnValue);
-				$count = 1;
-				foreach ($returnValue as $start => $array) {
-					if ( $returnValue_len != $count )
-						$array['nextStart'] = array(strval($allLocationArray[$count]));
-					else
-						$array['nextStart'] = array('0');
-					
-					$returnValue[$start] = $array;
-					$count++;
+				//nextStartの作成
+				if ( count($allLocationArray) != 0 ) {
+					$returnValue_len = count($returnValue);
+					$count = 1;
+					foreach ($returnValue as $start => $array) {
+						if ( $returnValue_len != $count )
+							$array['nextStart'] = array(strval($allLocationArray[$count]));
+						else
+							$array['nextStart'] = array('0');
+						
+						$returnValue[$start] = $array;
+						$count++;
+					}
 				}
 			}
 		}

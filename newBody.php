@@ -10,7 +10,6 @@ require_once( dirname( __FILE__ ) . '/patternMatching.php' );
 
 add_filter( 'the_excerpt', 'new_body' );
 add_filter( 'the_content', 'new_body' );
-// remove_all_filters( 'the_content' );
 remove_filter('the_content', 'wptexturize'); //-などの特殊文字への変換を停止
 
 function new_body( $content, $decideFileArray = '' ) {
@@ -39,18 +38,50 @@ function new_body( $content, $decideFileArray = '' ) {
 			} else {
 
 				$DecideFileInfo = '';
+				$WIXFileInfo = '';
 
+				//WIXファイル情報を抽出
+				$WIXFileInfo = wixFileInfo( strip_tags($content) );
+
+				//Decideファイル情報の抽出
 				if ( $pointer = opendir(WixDecideFiles) ) {
 					global $id;
 					while ( ($file = readdir($pointer)) !== false ) {
 						if ( $file === $id.'.txt' ) {
-							$DecideFileInfo = json_encode(decideFileInfo(WixDecideFiles.$file), JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
-							// $DecideFileInfo = decideFileInfo(WixDecideFiles.$file);
+							$DecideFileInfo = decideFileInfo(WixDecideFiles.$file);
 							break;
 						}
 					}
 					closedir($pointer);
 				}
+
+				if ( !empty($DecideFileInfo) ) $AttachInfo = $DecideFileInfo + $WIXFileInfo;
+				else $AttachInfo = $WIXFileInfo;
+				
+				if ( !empty($AttachInfo) ) {
+					asort($AttachInfo);
+
+					$tmpArray = '';
+					$tmp = '';
+					$flag = false;
+					foreach ($AttachInfo as $start => $value) {
+						if ( $flag == false ) {
+							$nextStart = $value['nextStart'];
+							if ( $nextStart == '0' ) {
+								$tmpArray = $value;
+								$tmp = $start;
+								$flag = true;
+							}
+						} else {
+							$tmpArray['nextStart'] = strval($start);
+							$AttachInfo[$tmp] = $tmpArray;
+							break;
+						}
+					}
+
+					$AttachInfo = json_encode($AttachInfo, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+				}
+
 				$attachURL = 'http://trezia.db.ics.keio.ac.jp/sakusa_WIXServer_0.3.5/attach';
 				$ch = curl_init();
 				$data = array(
@@ -58,7 +89,7 @@ function new_body( $content, $decideFileArray = '' ) {
 				    'rewriteAnchorText' => 'false',
 				    'bookmarkedWIX' => $WixID,
 				    'body' => mb_convert_encoding($content, 'UTF-8'),
-				    'decideFileInfo' => $DecideFileInfo,
+				    'decideFileInfo' => $AttachInfo,
 				);
 				$data = http_build_query($data, "", "&");
 			}
@@ -75,7 +106,8 @@ function new_body( $content, $decideFileArray = '' ) {
 
 				if ( $response === false ) 
 					$response = 'エラーです. newBody.php-> ' .curl_error( $ch );
-				
+
+				// $response = $content;
 			} catch ( Exception $e ) {
 				$response = '捕捉した例外: ' . $e -> getMessage() . "\n";
 			} finally {
@@ -123,9 +155,89 @@ function decideFileInfo($filename) {
 }
 
 //リクエストHTMLに対して、適用可能なWIXファイルエントリ情報を抽出し、連想配列に整形
-function wixFileInfo() {
-	global $wpdb;
+function wixFileInfo( $body ) {
+	global $wpdb, $post;
+	$returnValue = array();
 
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
+	$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
+
+	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $wixfilemeta));
+
+	if ( $is_db_exists == $wixfilemeta ) {
+
+		$sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta;
+		if ( $wpdb->get_var($sql) != 0 ) {
+
+			$sql = 'SELECT keyword FROM ' . $wixfilemeta . ' wm, ' . $wixfilemeta_posts . ' wmp WHERE wmp.doc_id = ' . $post->ID . ' AND wm.id = wmp.keyword_id';
+			$distinctKeywords = $wpdb->get_results($sql);
+
+			/* $keyword_sort_array : キーワードを文字列の長い順番にして、キーワード間の部分一致対策*/
+			$keyword_sort_array = array();
+			foreach ($distinctKeywords as $key => $value) {
+				$keyword_sort_array[$key] = strlen($value->keyword);
+			}
+			array_multisort($keyword_sort_array, SORT_DESC, $distinctKeywords);
+
+			//全位置情報
+			$allLocationArray = array();
+			$offset = 0;
+
+			//wixfileテーブル内のキーワード毎にループを回す
+			foreach ($distinctKeywords as $key => $value) {
+				$keyword = $value->keyword;
+				$len = mb_strlen($keyword, "UTF-8");
+				$offset = 0;
+				/* locationArray : 文字列マッチングが成立した位置を保持（start取得） */
+				$locationArray = array();
+				while ( ($pos = mb_strpos($body, $keyword, $offset, "UTF-8")) !== false ) {
+					if ( in_array($pos, $allLocationArray) == false ) {
+						array_push($locationArray, $pos);
+						array_push($allLocationArray, $pos);
+					}
+					$offset = $pos + $len;
+				}
+
+				//end, keyword, targetの作成
+				if ( count($locationArray) != 0 ) {
+					$locationArray_len = count($locationArray);
+					$sql = 'SELECT wt.target FROM ' . $wixfilemeta . ' wm, ' . $wixfile_targets . ' wt WHERE wm.id = wt.keyword_id AND wm.keyword="' . $keyword . '"';
+					$results = $wpdb->get_results($sql);
+					$targetArray = array();
+					foreach ($results as $key => $value) {
+						array_push($targetArray, $value->target);
+					}
+
+					foreach ($locationArray as $key => $start) {
+						$end = intval($start) + $len;
+						if ( $key < $locationArray_len ) 
+							$returnValue[intval($start)] = array('end'=>strval($end), 'keyword'=>$keyword, 'target'=>$targetArray[0]);
+					}
+				}
+			}
+
+			sort($allLocationArray);
+			asort($returnValue);
+
+			//nextStartの作成
+			if ( count($allLocationArray) != 0 ) {
+				$returnValue_len = count($returnValue);
+				$count = 1;
+				foreach ($returnValue as $start => $array) {
+					if ( $returnValue_len != $count )
+						$array['nextStart'] = strval($allLocationArray[$count]);
+					else
+						$array['nextStart'] = '0';
+					
+					$returnValue[$start] = $array;
+					$count++;
+				}
+			}
+		}
+	}
+
+	return $returnValue;
 
 }
 
