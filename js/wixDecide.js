@@ -258,10 +258,8 @@ jQuery(function($) {
 						var post_format = $('#post-formats-select :input:checked').val();
 
 						var after_body_part = $('iframe:first').contents().find('#tinymce').eq(0).html();
-						// var after_body_part = $('.wp-editor-area').eq(0).text();
-	/*現状、ページが編集された時に、エディタにあるものじゃなくて、保存されてるやつを取ってきてるから上手く行ってる。
-						本当は、前述のafterを使いたいけど、改行とかを全部繋げてしまっているため、decideの時と、attachの時が咬み合わない*/
-
+						if ( after_body_part == null )
+							after_body_part = $('#content-textarea-clone').text(); 
 
 						var data = {
 							'action': 'wix_decide_preview',

@@ -523,7 +523,7 @@ function wix_keyword_appearance_in_doc( $new_status, $old_status, $post ) {
 		//まだDBに１つもドキュメントがなかったら計算しない.(基本的に0にならないみたい)
 		$sql = 'SELECT COUNT(*) FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft"';
 		if ( $wpdb->get_var($sql) == 0 ) return;
-		
+
 		$insertArray = wix_correspond_keywords( $post->post_content );
 		if ( !empty($insertArray) ) {
 			$insertEntry = '';
@@ -547,8 +547,12 @@ function wix_keyword_appearance_in_doc( $new_status, $old_status, $post ) {
 
 }
 
+//WIXファイル内のどのキーワードが出現するか
 function wix_correspond_keywords( $body ) {
 	global $wpdb;
+	/*
+	* $correspondKeywords: [wixfilemeta_postsテーブルのid]
+	*/
 
 	$sql = 'SELECT id, keyword FROM ' . $wpdb->prefix . 'wixfilemeta';
 	$distinctKeywords = $wpdb->get_results($sql);

@@ -24,7 +24,6 @@ define( 'popupwindow_js', plugins_url('/js/popupwindow-1.8.1.js', __FILE__) );
 
 require_once( dirname( __FILE__ ) . '/newBody.php' );
 require_once( dirname( __FILE__ ) . '/wixSetting.php' );
-require_once( dirname( __FILE__ ) . '/wixSetting_core.php' );
 require_once( dirname( __FILE__ ) . '/wixDecide.php' );
 require_once( dirname( __FILE__ ) . '/wixSimilarity.php' );
 require_once( dirname( __FILE__ ) . '/wix_filecontents_autocreate.php' );

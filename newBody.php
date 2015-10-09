@@ -12,14 +12,13 @@ add_filter( 'the_excerpt', 'new_body' );
 add_filter( 'the_content', 'new_body' );
 remove_filter('the_content', 'wptexturize'); //-などの特殊文字への変換を停止
 
-function new_body( $content, $decideFileArray = '' ) {
+function new_body( $content, $decideFileArray = '', $decideFlag = false ) {
 	global $start;
 	if( is_preview() == false ) {
 
 		$patternMatching = new patternMatching;
 		$WixID = $patternMatching -> returnWixID();
-
-			if ( !empty($decideFileArray) ) {
+			if ( $decideFlag == true ) {
 				/* Decide処理なら */
 				$attachURL = 'http://trezia.db.ics.keio.ac.jp/sakusa_WIXServer_0.3.5/PreviewAttach';
 				
@@ -34,9 +33,8 @@ function new_body( $content, $decideFileArray = '' ) {
 				    'innerLinkArray' => $decideFileArray
 				);
 				$data = http_build_query($data, "", "&");
-
+			
 			} else {
-
 				$DecideFileInfo = '';
 				$WIXFileInfo = '';
 
@@ -55,43 +53,63 @@ function new_body( $content, $decideFileArray = '' ) {
 					closedir($pointer);
 				}
 
-				if ( !empty($DecideFileInfo) ) $AttachInfo = $DecideFileInfo + $WIXFileInfo;
-				else $AttachInfo = $WIXFileInfo;
-				
-				if ( !empty($AttachInfo) ) {
-					asort($AttachInfo);
+				if ( !empty($DecideFileInfo) ) {
+					$AttachInfo = $DecideFileInfo + $WIXFileInfo;
+					if ( !empty($AttachInfo) ) {
+						asort($AttachInfo);
 
-					$tmpArray = '';
-					$tmp = '';
-					$flag = false;
-					foreach ($AttachInfo as $start => $value) {
-						if ( $flag == false ) {
-							$nextStart = $value['nextStart'];
-							if ( $nextStart == '0' ) {
-								$tmpArray = $value;
-								$tmp = $start;
-								$flag = true;
+						$tmpArray = '';
+						$tmp = '';
+						$flag = false;
+						foreach ($AttachInfo as $start => $value) {
+							if ( $flag == false ) {
+								$nextStart = $value['nextStart'];
+								if ( $nextStart == '0' ) {
+									$tmpArray = $value;
+									$tmp = $start;
+									$flag = true;
+								}
+							} else {
+								$tmpArray['nextStart'] = strval($start);
+								$AttachInfo[$tmp] = $tmpArray;
+								break;
 							}
-						} else {
-							$tmpArray['nextStart'] = strval($start);
-							$AttachInfo[$tmp] = $tmpArray;
-							break;
 						}
 					}
 
-					$AttachInfo = json_encode($AttachInfo, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+				} else {
+					$AttachInfo = $WIXFileInfo;
 				}
 
-				$attachURL = 'http://trezia.db.ics.keio.ac.jp/sakusa_WIXServer_0.3.5/attach';
-				$ch = curl_init();
-				$data = array(
-				    'minLength' => 3,
-				    'rewriteAnchorText' => 'false',
-				    'bookmarkedWIX' => $WixID,
-				    'body' => mb_convert_encoding($content, 'UTF-8'),
-				    'decideFileInfo' => $AttachInfo,
-				);
-				$data = http_build_query($data, "", "&");
+				if ( !empty($AttachInfo) ) {
+
+					$AttachInfo = json_encode($AttachInfo, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+
+					$attachURL = 'http://trezia.db.ics.keio.ac.jp/sakusa_WIXServer_0.3.5/attach';
+					$ch = curl_init();
+					$data = array(
+					    'minLength' => 3,
+					    'rewriteAnchorText' => 'false',
+					    'bookmarkedWIX' => $WixID,
+					    'body' => mb_convert_encoding($content, 'UTF-8'),
+					    'attachInfo' => $AttachInfo,
+					);
+					$data = http_build_query($data, "", "&");
+				
+				} else {
+
+					$attachURL = 'http://trezia.db.ics.keio.ac.jp/sakusa_WIXServer_0.3.5/attach';
+					$ch = curl_init();
+					$data = array(
+					    'minLength' => 3,
+					    'rewriteAnchorText' => 'false',
+					    'bookmarkedWIX' => $WixID,
+					    'body' => mb_convert_encoding($content, 'UTF-8'),
+					);
+					$data = http_build_query($data, "", "&");
+
+				}
+
 			}
 
 			try {
@@ -107,14 +125,12 @@ function new_body( $content, $decideFileArray = '' ) {
 				if ( $response === false ) 
 					$response = 'エラーです. newBody.php-> ' .curl_error( $ch );
 
-				// $response = $content;
 			} catch ( Exception $e ) {
 				$response = '捕捉した例外: ' . $e -> getMessage() . "\n";
 			} finally {
 				curl_close($ch);
 			}
 
-			// $response = $content;
 			return $response;
 		
 	} else {

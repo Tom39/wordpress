@@ -1,5 +1,2 @@
-start:0,end:5,nextStart:14,keyword:遠山研究室,target:http://localhost/wordpress/遠山研究室/
-start:14,end:20,nextStart:21,keyword:慶應義塾大学,target:http://www.keio.ac.jp
-start:21,end:26,nextStart:58,keyword:情報工学科,target:http://www.ics.keio.ac.jp/
-start:58,end:62,nextStart:63,keyword:佐草友也,target:http://localhost/wordpress/遠山研究室/
-start:63,end:68,nextStart:0,keyword:遠山研究室,target:http://localhost/wordpress/遠山研究室/
+start:10,end:16,nextStart:52,keyword:慶應義塾大学,target:http://localhost/wordpress/
+start:52,end:56,nextStart:0,keyword:佐草友也,target:http://www.keio.ac.jp/index-jp.html

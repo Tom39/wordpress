@@ -1,6 +1,7 @@
 <?php
 
 require_once( dirname( __FILE__ ) . '/patternMatching.php' );
+require_once( dirname( __FILE__ ) . '/wixSetting_core.php' );
 //登録済みWIXファイル
 $wids_filenames = array();
 

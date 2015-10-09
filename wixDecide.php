@@ -447,8 +447,8 @@ function wix_decide_preview() {
 		$url = add_query_arg( $query_args, urldecode(esc_url_raw(get_permalink( $post->ID ))) );
 		$response = wp_remote_get( $url );
 
-		$publish_post_url = $wpdb->get_var("SELECT guid FROM " . $wpdb->prefix . "posts 
-										 WHERE post_type='post' AND post_status='publish'
+		$publish_post_url = $wpdb->get_var("SELECT guid FROM " . $wpdb->posts . " 
+										 WHERE (post_type='post' OR post_type='page') AND post_status='publish'
 										 ORDER BY ID DESC"
 										);
 		$response = wp_remote_get( $publish_post_url );
@@ -471,9 +471,9 @@ function wix_decide_preview() {
 
 			if ( count($innerLinkArray) != 0 ) {
 				$tmp = json_encode($innerLinkArray, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
-				$newBody = new_body( wpautop($_POST['after_body_part']), $tmp);
+				$newBody = new_body( wpautop($_POST['after_body_part']), $tmp, true );
 			} else {
-				$newBody = new_body( wpautop($_POST['after_body_part']) );
+				$newBody = new_body( wpautop($_POST['after_body_part']), '', true );
 			}
 			
 			$start = strpos($response_html, '<div class="entry-content">') + strlen('<div class="entry-content">');
@@ -493,8 +493,8 @@ function wix_decide_preview() {
 		$json = array(
 			"html" => $returnValue,
 			"test" => $innerLinkArray,
-			// "js" => $_POST['after_body_part'],
-			// "js2" => wpautop($_POST['after_body_part']),
+			// "js" => $tmp,
+			// "js2" => html_entity_decode($_POST['after_body_part']),
 		);
 		echo json_encode( $json );
 

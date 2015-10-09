@@ -96,24 +96,33 @@ function wix_tf($array) {
 }
 
 function wix_idf() {
-	global $wpdb, $similarityObj;
+	global $wpdb, $post, $similarityObj;
 	$document_num = (int) $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->posts WHERE post_status!=\"inherit\" and post_status!=\"trash\" and post_status!=\"auto-save\" and post_status!=\"auto-draft\"");
+	$table_name = $wpdb->prefix . 'wix_keyword_similarity';
 
 	foreach ($similarityObj as $keyword => $obj) {
-		$sql = 'SELECT COUNT(*) FROM ' . $wpdb->prefix . 'wix_keyword_similarity' . ' WHERE keyword = "' . $keyword . '"';
-		$count = (int) $wpdb->get_var($sql);
-		if ( $count != 0 ) {
-			//logの定数を10にするか、e(ただのlog()は底がe)にするか
-			$idf = log($document_num / $count);
-			// $idf = log10($document_num / $count);
+		//「テーブル内に該当キーワードがあるあないか」、「エントリの挿入か、更新か」でcountが変わる
+		$count = 0;
+		$tmp = 0;
+		$sql = 'SELECT COUNT(*) FROM ' . $table_name . ' WHERE keyword = "' . $keyword . '"';
+		if ( $wpdb->get_var($sql) == 0 ) {
+			$count = 1;
 		} else {
-			$idf = 0;
+			$tmp = $wpdb->get_var($sql);
+			$sql = 'SELECT COUNT(*) FROM ' . $table_name . ' WHERE doc_id = ' . $post->ID . ' AND keyword = "' . $keyword . '"';
+			if ( $wpdb->get_var($sql) == 0 ) {
+				$tmp++;
+			}
+			$count = $tmp;
 		}
+
+		//logの定数を10にするか、e(ただのlog()は底がe)にするか
+		$idf = log($document_num / $count);
+		// $idf = log10($document_num / $count);
 
 		$obj['idf'] = $idf;
 		$similarityObj[$keyword] = $obj;
 	}
-
 }
 
 function no_wixfile_entry($array) {
