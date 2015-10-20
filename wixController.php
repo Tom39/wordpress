@@ -11,6 +11,7 @@ Text Domain: WIX
 
 define( 'PatternFile', dirname( __FILE__ ) . '/WixPattern.txt' );
 define( 'WixDecideFiles', dirname( __FILE__ ) . '/WIXDecideFiles/' );
+define( 'wiximage', dirname( __FILE__ ) . '/css/images/' );
 define( 'wix_settings_css', plugins_url('/css/wixSetting.css', __FILE__) );
 define( 'wix_decide_css', plugins_url('/css/wixDecide.css', __FILE__) );
 define( 'wix_eternal_link_css', plugins_url('/css/wixEternalLink.css', __FILE__) );
@@ -44,6 +45,7 @@ function wix_admin_init() {
     wp_register_script( 'popupwindow-js', popupwindow_js );
 
 	add_action( 'admin_enqueue_scripts', 'wix_admin_decide_scripts' );
+    add_action( 'admin_enqueue_scripts', 'wix_admin_setting_scripts' );
 }
 
 //スクリプトの読み込み
@@ -77,11 +79,21 @@ function wix_admin_decide_scripts($hook_suffix) {
         wp_enqueue_script( 'popupwindow-js', popupwindow_js );
 
         //ManualDecideを行うかどうか(wixDecideボタンを出現させるか否か)
-        $str = "<script type=\"text/javascript\"> var manual_decideFlag = '%s' </script>";
-        $manual_decideFlag = get_option('manual_decideFlag');
-        printf($str, $manual_decideFlag);
+        /* 今使ってない (2015/10/19) */
+        // $str = "<script type=\"text/javascript\"> var manual_decide = '%s' </script>";
+        // $manual_decideFlag = get_option('manual_decide');
+        // printf($str, $manual_decideFlag);
     }
 
+}
+
+function wix_admin_setting_scripts($hook_suffix) {
+    $post_pages = array('toplevel_page_wix-admin-settings');
+
+    if ( in_array($hook_suffix, $post_pages) ) {
+        wp_enqueue_style( 'popupwindow-css', popupwindow_css, array() );
+        wp_enqueue_script( 'popupwindow-js', popupwindow_js );
+    }
 }
 
 //外部リンクの明示化用ファイル読み込み

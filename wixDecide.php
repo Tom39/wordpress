@@ -3,24 +3,6 @@
 //innerLinkArrayは自動生成したWIXファイルのキーワードから、位置を算出して作るもの
 $innerLinkArray = array();
 
-// $innerLinkArray[0] = array('end'=>array('2'), 'nextStart'=>array('5'), 'keyword'=>array('女優'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
-// $innerLinkArray[5] = array('end'=>array('13'), 'nextStart'=>array('15'), 'keyword'=>array('エクソンモービル'), 'targets'=>array('http://yahoo.co.jp'));
-// $innerLinkArray[15] = array('end'=>array('19'), 'nextStart'=>array('24'), 'keyword'=>array('菅田将暉'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
-// $innerLinkArray[24] = array('end'=>array('25'), 'nextStart'=>array('30'), 'keyword'=>array('佐草'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
-// $innerLinkArray[30] = array('end'=>array('34'), 'nextStart'=>array('500'), 'keyword'=>array('オンエア'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
-// // $innerLinkArray[73] = array('end'=>array('77'), 'nextStart'=>array('500'), 'keyword'=>array('大島優子'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
-// $innerLinkArray[500] = array('end'=>array('501'), 'nextStart'=>array('0'), 'keyword'=>array('場'), 'targets'=>array('http://www.db.ics.keio.ac.jp', 'http://aqua.db.ics.keio.ac.jp'));
-
-// $innerLinkArray[0] = array('end'=>array('3'), 'nextStart'=>array('4'), 'keyword'=>array('遠山研'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
-// $innerLinkArray[4] = array('end'=>array('10'), 'nextStart'=>array('30'), 'keyword'=>array('データベース'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
-// $innerLinkArray[30] = array('end'=>array('40'), 'nextStart'=>array('0'), 'keyword'=>array('各'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
-
-// $innerLinkArray[0] = array('end'=>array('6'), 'nextStart'=>array('7'), 'keyword'=>array('慶應義塾大学'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
-// $innerLinkArray[7] = array('end'=>array('13'), 'nextStart'=>array('16'), 'keyword'=>array('慶應義塾大学'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
-// $innerLinkArray[16] = array('end'=>array('21'), 'nextStart'=>array('0'), 'keyword'=>array('早稲田大学'), 'targets'=>array('http://aqua.db.ics.keio.ac.jp'));
-
-//Decide処理を行った時は強制Decideファイル作成しない　ためのフラグ
-$wixDecide_flag = false;
 $doc_title;
 
 
@@ -52,13 +34,15 @@ function wix_meta_box() {
 }
 function wix_decide_link() {
 	echo '<table><tr>';
+	if ( get_option('manual_decide') == 'true' ) {
 	echo '<td>';
 	echo '<input name="wix" type="button" class="button button-primary button-large" id="wixDecide" value="WIXDecide" />';
-	echo '</td><td>';
+	echo '</td>';
+	}
+	echo '<td>';
 	echo '<input name="wix" type="button" class="button button-primary button-large" id="wix_entry_recommendation" value="Keyword Extract" />';
 	echo '</td>';
 	echo '</tr></table>';
-
 }
 function wix_new_entry() {
 	echo '<div id="newWIXFiles">
@@ -92,6 +76,23 @@ function wix_new_entry() {
 			</table>
 		</div>';
 }
+
+
+//ManualDecideするかいなかのフラグをjs側へ返す
+add_action( 'wp_ajax_wix_manual_decide_check', 'wix_manual_decide_check' );
+add_action( 'wp_ajax_nopriv_wix_manual_decide_check', 'wix_manual_decide_check' );
+function wix_manual_decide_check() {
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$json = array(
+		"manual_decide_check" => get_option('manual_decide'),
+	);
+	echo json_encode( $json );
+
+	die();
+}
+
 
 //TF-IDFによるキーワード抽出
 add_action( 'wp_ajax_wix_entry_recommendation', 'wix_entry_recommendation' );
@@ -605,64 +606,12 @@ function keyword_location($body) {
 	return $returnValue;
 }
 
-//Decide処理が行われなかったら、ドキュメント保存時に強制的にDecideファイルを作成してエントリ確保するフィルター
-//今使ってない（2015/9/29）
-// add_filter( 'wp_insert_post_data' , 'force_create_decideFile' , 99, 2 );
-function force_create_decideFile( $data ) {
-	global $wixDecide_flag;
-
-	$guid = $data['guid'];
-	$start = intval(strpos($guid, '?page_id=')) + strlen('?page_id=');
-	$id = substr( $guid, $start );
-
-	if ( !file_exists(WixDecideFiles . $id . '.txt') && $wixDecide_flag == false ) {
-		$dirname = dirname( __FILE__ ) . '/WIXDecideFiles/';
-		if ( !file_exists($dirname) ) {
-			mkdir($dirname, 0777, true);
-		}
-		$body = $data['post_content'];
-
-		$object = array();
-		$object = keyword_location( strip_tags($body) );
-
-		foreach ($object as $start => $array) {
-			$end = $array['end'][0];
-			$nextStart = $array['nextStart'][0];
-			$keyword = $array['keyword'][0];
-
-			$targets = $array['targets'];
-			$target = '';
-			if ( count($targets) == 0 ) {
-				$target = $targets[0];
-			} else {
-				foreach ($targets as $key => $value) {
-					if ( $key == 0 ) 
-						$target = $value;
-					else 
-						$target = $target . ',' . $value;
-				}
-			}
-
-			$line = 'start:' . $start . ',end:' . $end . ',nextStart:' . $nextStart . ',keyword:' . $keyword . ',target:' . $target . "\n";
-			file_put_contents( $dirname.$id.'.txt', $line, FILE_APPEND | LOCK_EX );
-		}
-	}
-
-
-	return $data;
-}
-
-
 //各ページのDecideファイル作成
 add_action( 'wp_ajax_wix_create_decidefile', 'wix_create_decidefile' );
 add_action( 'wp_ajax_nopriv_wix_create_decidefile', 'wix_create_decidefile' );
 function wix_create_decidefile() {
-	global $wixDecide_flag;
-
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
-
-	$wixDecide_flag = true;
 
 	$post_ID = (int) substr( $_POST['post_ID'], strlen('wp-preview-') );
 

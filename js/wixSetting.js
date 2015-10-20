@@ -1,5 +1,25 @@
 jQuery(function($) {
 
+	//タブ機能
+	$('.tabbox:first').show();
+	$('#tab li:first').addClass('active');
+	$('#tab li').click(function() {
+		$('#tab li').removeClass('active');
+		$(this).addClass('active');
+		$('.tabbox').hide();
+		$($(this).find('a').attr('href')).fadeIn();
+		return false;
+	});
+	$('.wixfile_tabbox:first').show();
+	$('#wixfile_tab li:first').addClass('active');
+	$('#wixfile_tab li').click(function() {
+		$('#wixfile_tab li').removeClass('active');
+		$(this).addClass('active');
+		$('.wixfile_tabbox').hide();
+		$($(this).find('a').attr('href')).fadeIn();
+		return false;
+	});
+
 	//パターンファイルのフォーム追加
 	$('#add_patternFile').click(function() {
 		var parentElementName = '#wix_settings_form #pattern_filename ';
@@ -134,6 +154,253 @@ jQuery(function($) {
 
 	});
 
+	$('.wixfile_entry_edit').click(function() {
+		$(this)
+			.parent()
+			.hide()
+			.next()
+			.show('slow/400/fast', function() {
+				$(this)
+					.find('.wixfile_keyword_edit input[type=text]')
+					.focus();
+
+				$('.wixfile_entry_decide').off();
+				$(this)
+					.find('.wixfile_entry_decide')
+					.click(function(event) {
+						var update_keyword, update_target;
+
+						//DB内のWIXファイル更新用要素と、元の要素を複製を作成
+						var count = ($('.update_element').length) / 2;
+						if ( $(this).parent().next('input:text').size() == 0 ) {
+							var org_keyword = $(this)
+												.parent()
+												.prev()
+												.find('.wixfile_keyword span')
+												.text();
+
+							var org_target = $(this)
+												.parent()
+												.prev()
+												.find('.wixfile_target span a')
+												.attr('href');
+
+							$(this)
+								.parent()
+								.after( '<input type="text" id=org_update_element' 
+											+ count 
+											+ ' class="org_update_element" name="org_update_keywords[' 
+											+ count 
+											+ ']" value="' 
+											+ org_keyword 
+											+ '" style="display:none">')
+								.after( '<input type="text" id=org_update_element' 
+											+ count 
+											+ ' class="org_update_element" name="org_update_targets[' 
+											+ count 
+											+ ']" value="' 
+											+ org_target 
+											+ '" style="display:none">');
+
+						} else {
+							//既に更新用要素が生成されてたら一旦削除して新規で要素作成
+							count = $(this)
+								.parent()
+								.next('input:text')
+								.attr('id')
+								.substr( 'update_element'.length );
+
+							$(this)
+								.parent()
+								.nextAll('input:text')
+								.remove('.update_element');
+						}
+
+						$.each($(this).nextAll(), function(index, element) {
+							//編集したテキストの中身に変更
+							if ( index == 0 ) {
+								var new_keyword = $(element).children().val();
+								update_keyword = $(element).children().val();
+
+								$(this)
+									.parent()
+									.prev()
+									.find('.wixfile_keyword span')
+									.text(new_keyword);
+							} else if ( index == 1 ) {
+								var new_target = $(element).children().val();
+								update_target = $(element).children().val();
+
+								$(this)
+									.parent()
+									.prev()
+									.find('.wixfile_target span a')
+									.text(new_target.substr(0, 27) + '...')
+									.attr('href', new_target);
+							}
+						});
+
+						$(this)
+							.parent()
+							.after( '<input type="text" id=update_element' 
+										+ count 
+										+ ' class="update_element" name="update_keywords[' 
+										+ count 
+										+ ']" value="' 
+										+ update_keyword 
+										+ '" style="display:none">')
+							.after( '<input type="text" id=update_element' 
+										+ count 
+										+ ' class="update_element" name="update_targets[' 
+										+ count 
+										+ ']" value="' 
+										+ update_target 
+										+ '" style="display:none">');
+
+
+						$(this)
+							.parent()
+							.hide()
+							.prev()
+							.show();
+					});
+			});
+
+
+			// $('.wixfile_keyword_edit, .wixfile_target_edit')
+			// 	.on({
+			// 		/* focus+click か mouseupか。とりあえずmouseupだけでいく*/
+
+			// 		// 'focus': function() {
+			// 		// 	$(this).select();
+			// 		// },
+			// 		// 'click': function() {
+			// 		// 	$(this).select();
+			// 		// 	return false;
+			// 		// },
+			// 		'mouseup': function() {
+			// 			$(this).select();
+			// 		},
+			// 		'click': function() {
+			// 			alert('a');
+			// 		},
+			// 		'focus': function() {
+			// 			alert('a');
+			// 		},
+
+			// 	});
+
+	});
+
+	$('.wixfile_entry_delete').click(function(event) {
+		var content = '';
+		$.each($(this).nextAll(), function(index, el) {
+			if ( index == 0 )
+				content =  $(this).text();
+			if ( index == 1 )
+				content = content + '<br>と<br>' + $(this).text() + '<br>を削除しますがよろしいですか？';
+		});;
+
+		var pop = new $pop(content , {
+			type: 'confirm',
+			title: 'WIXファイルデータ削除',
+			YES: function () {
+				//DB内のWIXファイル削除用要素を作成
+				var count = ($('.delete_element').length) / 2;
+				var delete_keyword, delete_target;
+
+				$.each($(event.target).parents('td').nextAll(), function(index, el) {
+					if ( index == 0 ) 
+						delete_keyword = $(this).text();
+					if ( index == 1 )
+						delete_target = $(this).find('a').attr('href');
+				});
+
+				$(event.target)
+					.parents('tr')
+					.next()
+					.after( '<input type="text" class="delete_element" name="delete_keywords[' 
+								+ count
+								+ ']" value="' 
+								+ delete_keyword 
+								+ '" style="display:none">' );
+				$(event.target)
+					.parents('tr')
+					.next()
+					.after( '<input type="text" class="delete_element" name="delete_targets[' 
+								+ count
+								+ ']" value="' 
+								+ delete_target 
+								+ '" style="display:none">' );
+
+				//対象要素を削除
+		  		$(event.target)
+					.parents('tr')
+					.next()
+					.remove();
+
+				$(event.target)
+					.parents('tr')
+					.remove();
+			},
+			NO: function () {
+				return false;
+			},
+			close: true,
+			resize: true
+		});
+	});
+
+
+
+
+
+	// $('.wixfile_entry_edit')
+	// 	.on({
+	// 		'click': function() {
+	// 			var id_number = $(this).attr('id').substr($(this).attr('class').length);
+	// 			$.each($(this).nextAll('td'), function(index, element) {
+	// 				if ( index == 0 ) return true; 
+
+	// 				var now_class = $(this).attr('class') + '_now';  
+	// 				var now_id = $(this).attr('class') + '_now' + id_number;
+
+	// 				if ( index == 1 ) {
+	// 					var text = ( $(this).text() != "" ) ? $(this).text() : $(this).val();//kokotigau
+	// 					$(element)
+	// 						.children()
+	// 						.replaceWith('<input type="text" id="' + now_id + '" class="' + now_class + '" value="' + text + '">');
+	// 				} else if ( index == 2 ) {
+	// 					var href = $(element).children().children().attr('href');
+	// 					$(element)
+	// 						.children()
+	// 						.replaceWith('<input type="text" id="' + now_id + '" class="' + now_class + '" value="' + href + '">');
+	// 				}
+
+
+	// 				$('.wixfile_keyword_now, .wixfile_target_now')
+	// 					.on({
+	// 						/* focus+click か mouseupか。とりあえずmouseupだけでいく*/
+
+	// 						// 'focus': function() {
+	// 						// 	$(this).select();
+	// 						// },
+	// 						// 'click': function() {
+	// 						// 	$(this).select();
+	// 						// 	return false;
+	// 						// },
+	// 						'mouseup': function() {
+	// 							$(this).select();
+	// 						}
+	// 					});
+	// 			});
+
+	// 			// $(this).off();
+	// 		},
+
+	// 	});
+
+
 	// $(document).on('click', '#wixfile_settings_form #wixfile_contents input[type="button"]', function(e) {
 	// 	var parentElementName = '#wixfile_settings_form #wixfile_contents ';
 	// 	var count = 0;
@@ -159,32 +426,33 @@ jQuery(function($) {
 
 	
 	//WIX Manual Decideの設定をAjaxで更新
-    $('#manual_decide input[type=checkbox]').click(function(){
-    	var manual_decideFlag = $('.decide_management input[type=checkbox]').prop("checked");
+	//今使ってない(2015/10/14)
+  //   $('#manual_decide input[type=checkbox]').click(function(){
+  //   	var manual_decideFlag = $('.decide_management input[type=checkbox]').prop("checked");
 
-    	var data = {
-			'action': 'wix_manual_decide',
-			'manual_decideFlag' : manual_decideFlag
-		};
+  //   	var data = {
+		// 	'action': 'wix_manual_decide',
+		// 	'manual_decideFlag' : manual_decideFlag
+		// };
 
-		$.ajax({
-			async: true,
-			dataType: "json",
-			type: "POST",
-			url: ajaxurl,
-			data: data,
+		// $.ajax({
+		// 	async: true,
+		// 	dataType: "json",
+		// 	type: "POST",
+		// 	url: ajaxurl,
+		// 	data: data,
 
-			success: function(json) {
-				console.log(json['data']);
-			},
+		// 	success: function(json) {
+		// 		console.log(json['data']);
+		// 	},
 
-			error: function(xhr, textStatus, errorThrown){
-				alert('wixSetting.js Error');
-			}
-		});
+		// 	error: function(xhr, textStatus, errorThrown){
+		// 		alert('wixSetting.js Error');
+		// 	}
+		// });
 
-    });
-
+  //   });
+/***************************************************************************************************************************************************/
     //WIXFileのエントリ候補をwix_document_similarityテーブルから推薦
     $('.wix_similarity_entry').click(function(e) {
     	var doc_id = $(this).attr('id');

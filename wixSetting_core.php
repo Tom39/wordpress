@@ -110,7 +110,7 @@ function wix_uninstall_hook () {
 
 
 
-
+/* 設定部分 */
 add_action( 'admin_init', 'wix_settings_core' );
 function wix_settings_core() {
 	global $wids_filenames;
@@ -157,6 +157,14 @@ function wix_settings_core() {
 						$pattern_filename = "\t" . stripslashes('/*') . ' : 0' . "\n";
 						file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
 					}
+
+					if ( isset( $_POST['decidefile_manualupdate'] ) && $_POST['decidefile_manualupdate'] ) {
+						if ( $_POST['decidefile_manualupdate'] == 'true' )
+							add_option( 'manual_decide', 'true' );
+						else 
+							add_option( 'manual_decide', 'false' );
+					}
+
 					set_transient( 'wix_init_settings', '初期設定完了しました', 10 );
 
 				} else {
@@ -177,24 +185,60 @@ function wix_settings_core() {
 
 			if ( isset( $_POST['wix_settings'] ) && $_POST['wix_settings'] ) {
 
-				if ( isset( $_POST['pattern'] ) && $_POST['pattern'] && isset( $_POST['filename'] ) && $_POST['filename'] ) {
+				// if ( isset( $_POST['pattern'] ) && $_POST['pattern'] && isset( $_POST['filename'] ) && $_POST['filename'] ) {
 
-					$hostName = '<' . get_option( 'wix_host_name' ) . '>' . "\n";
+				// 	$hostName = '<' . get_option( 'wix_host_name' ) . '>' . "\n";
 
-					file_put_contents( PatternFile, $hostName, FILE_USE_INCLUDE_PATH | LOCK_EX );
+				// 	file_put_contents( PatternFile, $hostName, FILE_USE_INCLUDE_PATH | LOCK_EX );
 
-					foreach ( $_POST['pattern'] as $key => $pattern ) {
-						foreach ($wids_filenames as $wid => $filename) {
-							if ( $filename == $_POST['filename'][$key] ) {
-								$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . $wid . "\n";
-								file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
-								break;
-							}
-						}
-					}
+				// 	foreach ( $_POST['pattern'] as $key => $pattern ) {
+				// 		foreach ($wids_filenames as $wid => $filename) {
+				// 			if ( $filename == $_POST['filename'][$key] ) {
+				// 				$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . $wid . "\n";
+				// 				file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
+				// 				break;
+				// 			}
+				// 		}
+				// 	}
 
-					set_transient( 'wix_settings', '設定更新しました', 10 );
+				// 	set_transient( 'wix_settings', '設定更新しました', 10 );
+				// }
+
+				//WIXファイル系
+				if ( isset( $_POST['wixfile_autocreate'] ) && $_POST['wixfile_autocreate'] ) {
+					if ( $_POST['wixfile_autocreate'] == 'true' )
+						update_option( 'wixfile_autocreate', 'true' );
+					else
+						update_option( 'wixfile_autocreate', 'false' );
 				}
+				if ( isset( $_POST['wixfile_manualupdate'] ) && $_POST['wixfile_manualupdate'] ) {
+					if ( $_POST['wixfile_manualupdate'] == 'true' )
+						update_option( 'wixfile_manualupdate', 'true' );
+					else
+						update_option( 'wixfile_manualupdate', 'false' );
+				}
+
+				//Decideファイル系
+				if ( isset( $_POST['decidefile_apply'] ) && $_POST['decidefile_apply'] ) {
+					if ( $_POST['decidefile_apply'] == 'true' )
+						update_option( 'decidefile_apply', 'true' );
+					else
+						update_option( 'decidefile_apply', 'false' );
+				}
+				if ( isset( $_POST['decidefile_autocreate'] ) && $_POST['decidefile_autocreate'] ) {
+					if ( $_POST['decidefile_autocreate'] == 'true' )
+						update_option( 'decidefile_autocreate', 'true' );
+					else
+						update_option( 'decidefile_autocreate', 'false' );
+				}
+				if ( isset( $_POST['decidefile_manualupdate'] ) && $_POST['decidefile_manualupdate'] ) {
+					if ( $_POST['decidefile_manualupdate'] == 'true' )
+						update_option( 'manual_decide', 'true' );
+					else 
+						update_option( 'manual_decide', 'false' );
+				}
+
+				set_transient( 'wix_settings', '設定更新しました', 10 );
 			}
 		} else {
 			$e -> add('error', __( 'Please check various form', 'wix_settings' ) );
@@ -213,13 +257,13 @@ function wixfile_settings_core() {
 		if ( check_admin_referer( 'my-nonce-key', 'nonce_wixfile_settings' ) ) {
 
 			$e = new WP_Error();
-
 			if ( isset( $_POST['wixfile_settings'] ) && $_POST['wixfile_settings'] ) {
+				$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+				$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
 
+				//エントリ挿入用モジュール
 				if ( isset( $_POST['keywords'] ) && $_POST['keywords'] && isset( $_POST['targets'] ) && $_POST['targets'] ) {
 					
-					$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
-					$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
 					$target_checker = array();
 					$insertKeywordArray = array();
 					$insertTargetArray = array();
@@ -357,6 +401,57 @@ function wixfile_settings_core() {
 					}
 				}
 
+				//エントリ更新用モジュール
+				if ( isset( $_POST['update_keywords'] ) && $_POST['update_keywords'] && isset( $_POST['update_targets'] ) && $_POST['update_targets'] ) {
+
+					foreach ($_POST['update_keywords'] as $index => $keyword) {
+						$target = $_POST['update_targets'][$index];
+						$org_keyword = $_POST['org_update_keywords'][$index];
+						$org_target = $_POST['org_update_targets'][$index];
+
+						$sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta . ' wm, ' . 
+									$wixfile_targets . ' wt WHERE wm.id = wt.keyword_id AND wm.keyword="' . 
+									$org_keyword . '" AND wt.target="' . $org_target . '"';
+
+						if ( $wpdb->get_var($sql) != 0 ) {
+							$sql = 'UPDATE ' . $wixfilemeta . ', ' . $wixfile_targets . ' SET keyword="' . $keyword . '", target="' . $target . '" WHERE id = keyword_id AND keyword="' . $org_keyword . '" AND target="' . $org_target . '"';
+							$wpdb->query( $sql );
+						}
+
+					}
+
+
+				}
+
+				//エントリ削除用モジュール
+				if ( isset( $_POST['delete_keywords'] ) && $_POST['delete_keywords'] && isset( $_POST['delete_targets'] ) && $_POST['delete_targets'] ) {
+
+					foreach ($_POST['delete_keywords'] as $index => $keyword) {
+						$target = $_POST['delete_targets'][$index];
+						$sql = 'SELECT id FROM ' . $wixfilemeta . ' wm, ' . 
+									$wixfile_targets . ' wt WHERE wm.keyword="' . $keyword . 
+										'" AND wt.target="' . $target . 
+										'" AND wm.id = wt.keyword_id';
+						$keyword_idObj = $wpdb->get_results($sql);
+						if ( !empty($keyword_idObj) ) {
+							$id = (int)$keyword_idObj[0]->id;
+
+							$sql = 'DELETE FROM ' . $wixfile_targets . ' WHERE keyword_id = ' . $id . ' AND target = "' . $target . '"';
+							$wpdb->query( $sql );
+
+							//該当エントリのターゲット要素がwixfile_targetsテーブルに存在しないならキーワードを削除する
+							$sql = 'SELECT COUNT(*) FROM wp_wixfile_targets WHERE keyword_id = ' . $id;
+							if ( $wpdb->get_var($sql) == 0 ) {
+								$sql = 'DELETE FROM ' . $wixfilemeta . ' WHERE id = ' . $id . ' AND keyword = "' . $keyword . '"';
+								$wpdb->query( $sql );
+								//この時、wixfilemeta_postsの行はカスケードDELETEされる
+							}
+						}
+
+					}
+
+				}
+				set_transient( 'wix_settings', 'WIXファイル 更新しました', 1 );
 			}
 		} else {
 			$e -> add('error', __( 'Please check various WIX FIle form', 'wixfile_settings' ) );
@@ -421,27 +516,6 @@ function created_wixfile_info() {
 	
 	}
 
-}
-
-
-//manual_decideFlagを返す
-add_action( 'wp_ajax_wix_manual_decide', 'wix_manual_decide' );
-add_action( 'wp_ajax_nopriv_wix_manual_decide', 'wix_manual_decide' );
-function wix_manual_decide() {
-
-	header("Access-Control-Allow-Origin: *");
-	header('Content-type: application/javascript; charset=utf-8');
-		
-	$manual_decideFlag = (string)$_POST['manual_decideFlag'];
-	update_option( 'manual_decideFlag', $manual_decideFlag );
-	$json = array(
-		"data" => $manual_decideFlag
-	);
-
-	echo json_encode( $json );
-
-	
-    die();
 }
 
 //WIXFileのエントリ候補をwix_document_similarityテーブルから推薦
@@ -520,11 +594,12 @@ function wix_keyword_appearance_in_doc( $new_status, $old_status, $post ) {
 		$wpdb->query( $sql );
 
 	} else if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
-		//まだDBに１つもドキュメントがなかったら計算しない.(基本的に0にならないみたい)
+		//まだDBに１つもドキュメントがなかったら計算しない.(でも基本的に0にならないみたい)
 		$sql = 'SELECT COUNT(*) FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft"';
 		if ( $wpdb->get_var($sql) == 0 ) return;
 
 		$insertArray = wix_correspond_keywords( $post->post_content );
+		//全削除からの全挿入
 		if ( !empty($insertArray) ) {
 			$insertEntry = '';
 			foreach ($insertArray as $index => $keyword_id) {
@@ -542,12 +617,18 @@ function wix_keyword_appearance_in_doc( $new_status, $old_status, $post ) {
 			$sql = 'INSERT INTO ' . $table_name . '(keyword_id, doc_id) VALUES ' . $insertEntry;
 			$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
 			$wpdb->query( $sql );
+		} else {
+			$sql = 'SELECT COUNT(*) FROM ' . $table_name . ' WHERE doc_id = ' . $doc_id;
+			if ( $wpdb->get_var($sql) != 0 ) {
+				$sql = 'DELETE FROM ' . $table_name . ' WHERE doc_id = ' . $doc_id;
+				$wpdb->query( $sql );
+			}
 		}
 	}
 
 }
 
-//WIXファイル内のどのキーワードが出現するか
+//WIXファイル内のどのキーワードが「その」ドキュメント上に出現するか
 function wix_correspond_keywords( $body ) {
 	global $wpdb;
 	/*

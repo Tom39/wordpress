@@ -37,121 +37,482 @@ function wix_admin_menu() {
 function wix_admin_settings(){
 ?>
 <div class="wrap">
+	<ul id="tab">
+		<li class="selected"><a href="#tab1">タブ1</a></li>
+		<li><a href="#tab2">タブ2</a></li>
+	</ul>
+	<div id="contents">
+		<div class="tabbox" id="tab1">
+			<div id="wix_settings">
+				<?php
+					global $wids_filenames;
+					if ( file_exists( PatternFile ) && is_readable( PatternFile ) ) {
+						global $pm;
+						$patternFile = $pm -> returnCandidates();
+						$hostName = $pm -> requestURL_part( PHP_URL_HOST );
+				?>
+				<form id="wix_settings_form" method="post" action="">
+						<?php wp_nonce_field( 'my-nonce-key', 'nonce_settings' ); ?>
+					<div id="init_settings">
+						<p>
+							サーバホスト名: 
+							<input type="text" name="hostName" value="<?php echo get_option('wix_host_name'); ?>" readonly="readonly">
+						</p>
+						<p>
+							オーサ名: 
+							<input type="text" name="authorName" value="<?php echo get_option('wix_author_name'); ?>" readonly="readonly">
+						</p>
+						<p>
+							URLパターン : WIXファイル名 
+								<input type="button" id="add_patternFile" 
+								value= "<?php echo esc_attr( __( 'Form Add', 'wix_patternFile_adding' ) ); ?>" 
+								class="button button-primary button-large" >
+						</p>
+						<ol id="pattern_filename">
+							<?php
+								$roop = 0;
+								foreach ( $patternFile as $key => $value ) {
+									if ( strpos( $value, '-only' ) !== false ) $value = str_replace( '-', ':', $value );
+									else $value = str_replace( '-', ',', $value );
+
+									foreach ($wids_filenames as $wid => $filename) {
+										if ( $wid == $value ) {
+											echo '<li>';
+											echo '<input type="text" name="pattern[' . $roop . ']" value=' . esc_attr( $key ) . '> ';
+											echo '<input type="text" name="filename[' . $roop . ']" value=' . esc_attr( $filename ) . '> ';
+											//フォームが１個なら削除ボタンは生成しない
+											if ( count($patternFile) != 1 ) {
+											echo '<input type="button" value="' . 
+													esc_attr( __( 'Delete', 'wix_patternFile_adding' ) ) . 
+													'" class="button button-primary button-large">';
+											}
+											echo '</li>';
+										}	
+									}
+									
+									$roop++;
+								}
+							?>		
+						</ol>
+					</div> <!-- #init_settings -->
+
+				<?php } else { ?> <!-- PatternFileがなければ -->
+				<form id="wix_settings_form" method="post" action="">
+						<?php 
+							wp_nonce_field( 'my-nonce-key', 'nonce_init_settings' ); 
+							global $pm;
+							$hostName = $pm -> requestURL_part( PHP_URL_HOST );
+						?>
+					<div id="init_settings">
+							<p>
+								サーバホスト名: 
+								<input type="text" name="hostName" placeholder="<?php echo $hostName ?>">
+							</p>
+							<p>
+								オーサ名: 
+								<input type="text" name="authorName" value="">
+							</p>
+
+							<?php echo '<h3>' . __( 'WIX PatternFile Options', 'wix_patternfile_options' ) . '</h3>'; ?>	
+							<p>
+								URLパターン : WIXファイル名 
+									<input type="button" id="add_patternFile" 
+									value= "<?php echo esc_attr( __( 'Form Add', 'wix_patternFile_adding' ) ); ?>" 
+									class="button button-primary button-large" >
+
+								<ol id="pattern_filename">
+									<li>
+										<input type="text" name="pattern[0]" placeholder="/test.html">
+										<input type="text" name="filename[0]" placeholder="Wikipedia">
+									</li>
+								</ol>
+							</p>
+					</div> <!-- #init_settings -->
+				<?php } ?>
+	
+					<div id="option_settings">
+						<div class="contents_option" id="wixfile_option_settings">
+							<strong>WIXファイル</strong>
+							<fieldset name="wixfile_option" form="wixfile_option1">
+								<legend>[自動生成]</legend>
+								<?php 
+								if ( get_option('wixfile_autocreate') == 'true' ) {
+								?>
+								<input type="radio" name="wixfile_autocreate" id="wixfile_autocreate_on" value="true" checked>
+								<label for="wixfile_autocreate_on" class="switch-on">YES</label>
+								<input type="radio" name="wixfile_autocreate" id="wixfile_autocreate_off" value="false">
+								<label for="wixfile_autocreate_off" class="switch-off">No</label>
+								<?php
+								} else {
+								?>
+								<input type="radio" name="wixfile_autocreate" id="wixfile_autocreate_on" value="true">
+								<label for="wixfile_autocreate_on" class="switch-on">YES</label>
+								<input type="radio" name="wixfile_autocreate" id="wixfile_autocreate_off" value="false" checked>
+								<label for="wixfile_autocreate_off" class="switch-off">No</label>
+								<?php
+								}
+								?>
+							</fieldset>
+							<fieldset name="wixfile_option" form="wixfile_option2">
+								<legend>[ドキュメント作成画面における更新操作]</legend>
+								<?php 
+								if ( get_option('decidefile_autocreate') == 'true' ) {
+								?>
+								<input type="radio" name="wixfile_manualupdate" id="wixfile_manualupdate_on" value="true" checked>
+								<label for="wixfile_manualupdate_on" class="switch-on">YES</label>
+								<input type="radio" name="wixfile_manualupdate" id="wixfile_manualupdate_off" value="false">
+								<label for="wixfile_manualupdate_off" class="switch-off">No</label>
+								<?php
+								} else {
+								?>
+								<input type="radio" name="wixfile_manualupdate" id="wixfile_manualupdate_on" value="true">
+								<label for="wixfile_manualupdate_on" class="switch-on">YES</label>
+								<input type="radio" name="wixfile_manualupdate" id="wixfile_manualupdate_off" value="false" checked>
+								<label for="wixfile_manualupdate_off" class="switch-off">No</label>
+								<?php
+								}
+								?>
+							</fieldset>
+						</div>
+						<div class="contents_option" id="decidefile_option_settings">
+							<strong>Decideファイル</strong>
+							<fieldset name="decidefile_option" form="decidefile_option1">
+								<legend>[Decideファイル適用]</legend>
+								<?php 
+								if ( get_option('decidefile_autocreate') == 'true' ) {
+								?>
+								<input type="radio" name="decidefile_apply" id="decidefile_apply_on" value="true" checked>
+								<label for="decidefile_apply_on" class="switch-on">YES</label>
+								<input type="radio" name="decidefile_apply" id="decidefile_apply_off" value="false">
+								<label for="decidefile_apply_off" class="switch-off">No</label>
+								<?php
+								} else {
+								?>
+								<input type="radio" name="decidefile_apply" id="decidefile_apply_on" value="true">
+								<label for="decidefile_apply_on" class="switch-on">YES</label>
+								<input type="radio" name="decidefile_apply" id="decidefile_apply_off" value="false" checked>
+								<label for="decidefile_apply_off" class="switch-off">No</label>
+								<?php
+								}
+								?>
+							</fieldset>
+							<fieldset name="decidefile_option" form="decidefile_option3">
+								<legend>[自動生成]</legend>
+								<?php 
+								if ( get_option('decidefile_autocreate') == 'true' ) {
+								?>
+								<input type="radio" name="decidefile_autocreate" id="decidefile_autocreate_on" value="true" checked>
+								<label for="decidefile_autocreate_on" class="switch-on">YES</label>
+								<input type="radio" name="decidefile_autocreate" id="decidefile_autocreate_off" value="false">
+								<label for="decidefile_autocreate_off" class="switch-off">No</label>
+								<?php
+								} else {
+								?>
+								<input type="radio" name="decidefile_autocreate" id="decidefile_autocreate_on" value="true">
+								<label for="decidefile_autocreate_on" class="switch-on">YES</label>
+								<input type="radio" name="decidefile_autocreate" id="decidefile_autocreate_off" value="false" checked>
+								<label for="decidefile_autocreate_off" class="switch-off">No</label>
+								<?php
+								}
+								?>
+							</fieldset>
+							<fieldset name="decidefile_option" form="decidefile_option3">
+								<legend>[ドキュメント作成画面における更新操作]</legend>
+								<?php 
+								if ( get_option('manual_decide') == 'true' ) {
+								?>
+								<input type="radio" name="decidefile_manualupdate" id="decidefile_manualupdate_on" value="true" checked>
+								<label for="decidefile_manualupdate_on" class="switch-on">YES</label>
+								<input type="radio" name="decidefile_manualupdate" id="decidefile_manualupdate_off" value="false">
+								<label for="decidefile_manualupdate_off" class="switch-off">No</label>
+								<?php
+								} else {
+								?>
+								<input type="radio" name="decidefile_manualupdate" id="decidefile_manualupdate_on" value="true">
+								<label for="decidefile_manualupdate_on" class="switch-on">YES</label>
+								<input type="radio" name="decidefile_manualupdate" id="decidefile_manualupdate_off" value="false" checked>
+								<label for="decidefile_manualupdate_off" class="switch-off">No</label>
+								<?php
+								}
+								?>
+							</fieldset>
+						</div>
+					</div> <!-- #option_settings -->
+					<?php
+						if ( file_exists( PatternFile ) && is_readable( PatternFile ) ) {
+					?>
+					<input type="submit" name="wix_settings" 
+						value= "<?php echo esc_attr( __( 'WIX Settings', 'wix_settings' ) ); ?>" 
+						id="wix_settings_button" class="button button-primary button-large" >
+					<?php } else { ?>
+					<input type="submit" name="wix_init_settings" 
+						value= "<?php echo esc_attr( __( 'WIX Initial Settings', 'wix_initial_settings' ) ); ?>" 
+						id="wix_init_settings_button" class="button button-primary button-large" >
+					<?php } ?>
+				</form>
+			</div> <!-- #wix_settings -->
+
+			<div id="wixfile">
+				<ul id="wixfile_tab">
+					<?php
+						global $wpdb;
+						$sql = 'SELECT keyword, target FROM wp_wixfilemeta wm, wp_wixfile_targets wt WHERE wm.id = wt.keyword_id';
+						$entrys = $wpdb->get_results($sql);
+						// $entryNum = count($entrys);
+						$entryNum = 80;
+						echo '<li class="selected"><a href="#wixfile_tab1">タブ1</a></li>';
+						if ( $entryNum > 20 ) {
+							$count = 2;
+							while ( $entryNum > 20 ) {
+								echo '<li><a href="#wixfile_tab' . $count . '">タブ' . $count . '</a></li>';
+								$count++;
+								$entryNum = $entryNum - 20;
+							}
+						}
+					?>
+				</ul>
+				<div id="wixfile_operation_contents">
+					<form id="wixfile_settings_form" method="post" action="">
+						<?php wp_nonce_field( 'my-nonce-key', 'nonce_wixfile_settings' ); ?>
+
+						<div id="wixfile_contents">
+							<?php
+								// $entryNum = count($entrys);
+								$entryNum = 80;
+								if ( $entryNum < 20 ) {
+									echo '<div id="wixfile_tab1" class="wixfile_tabbox">';
+										echo '<table id="wixfile_table1" class="wixfile_table">';
+											echo '<thead>';
+												echo '<tr class="wixfile_table_heading">';
+													echo '<th colspan="3"></th><th>キーワード</th><th>ターゲット</th>';
+												echo '</tr>';
+												echo '</thead>';
+											echo '<tbody>';
+
+												$tmpCount = 0;
+												while ( $tmpCount < $entryNum ) {
+												if ( ($tmpCount % 2) == 0 )
+												echo '<tr id="wixfile_entry' . $tmpCount . '" class="wixfile_even">';
+												else 
+												echo '<tr id="wixfile_entry' . $tmpCount . '" class="wixfile_odd">';
+													echo '<td class="wixfile_entry_select">';
+														echo '<span>';
+														echo '<input type="checkbox" id="wixfile_entry_checkbox' . $tmpCount . '" class="wixfile_entry_checkbox">';
+														echo '</span>';
+													echo '</td>';
+													echo '<td id="wixfile_entry_edit' . $tmpCount . '" class="wixfile_entry_edit">';
+														echo '<span><a>編集</a></span>';
+													echo '</td>';
+													echo '<td id="wixfile_entry_delete' . $tmpCount . '" class="wixfile_entry_delete">';
+														echo '<span><a>削除</a></span>';
+													echo '</td>';
+													echo '<td id="wixfile_keyword' . $tmpCount . '" class="wixfile_keyword">';
+														echo '<span>' . $entrys[$tmpCount]->keyword . '</span>';
+													echo '</td>';
+													echo '<td id="wixfile_target' . $tmpCount . '" class="wixfile_target">';
+														echo '<span><a target="target_page" href="' . esc_html($entrys[$tmpCount]->target) . '">'  
+																	. mb_strimwidth(esc_html($entrys[$tmpCount]->target), 0, 30, '...') . '</a></span>';
+													echo '</td>';
+												echo '</tr>';
+												if ( ($tmpCount % 2) == 0 )
+												echo '<tr id="wixfile_entry_hidden' . $tmpCount . '" class="wixfile_even" style="display:none" >';
+												else 
+												echo '<tr id="wixfile_entry_hidden' . $tmpCount . '" class="wixfile_odd" style="display:none" >';
+													echo '<td colspan="1"></td>';
+													echo '<td id="wixfile_entry_decide' . $tmpCount . '" class="wixfile_entry_decide" colspan="2">';
+														echo '<span><a>決定</a></span>';
+													echo '</td>';
+													echo '<td id="wixfile_keyword_edit' . $tmpCount . '" class="wixfile_keyword_edit">';
+														echo '<input type="text" value="' . $entrys[$tmpCount]->keyword . '">';
+													echo '</td>';
+													echo '<td id="wixfile_target_edit' . $tmpCount . '" class="wixfile_target_edit">';
+														echo '<input type="text" value="' . esc_html($entrys[$tmpCount]->target) . '">';
+													echo '</td>';
+												echo '</tr>';
+													$tmpCount++;
+												}
+											echo '</tbody>';
+										echo '</table>';
+									echo '</div>';
+								} else {
+									$tmpEntryNum = 0;
+									$tmpIndex = 0;
+									$count = 1;
+									while ( $tmpEntryNum < $entryNum ) {
+										echo '<div id="wixfile_tab' . $count . '" class="wixfile_tabbox">';
+											echo '<table id="wixfile_table' . $count . '" class="wixfile_table">';
+												echo '<thead>';
+													echo '<tr class="wixfile_table_heading">';
+														echo '<th colspan="3"></th><th>キーワード</th><th>ターゲット</th>';
+													echo '</tr>';
+													echo '</thead>';
+												echo '<tbody>';
+
+													$tmpCount = 0;
+													while ( $tmpCount < 20 ) {
+														if ( $tmpIndex < $entryNum ) {
+														if ( ($tmpIndex % 2) == 0 )
+														echo '<tr id="wixfile_entry' . $tmpIndex . '" class="wixfile_even">';
+														else 
+														echo '<tr id="wixfile_entry' . $tmpIndex . '" class="wixfile_odd">';
+															echo '<td class="wixfile_entry_select">';
+																echo '<span>';
+																echo '<input type="checkbox" id="wixfile_entry_checkbox' . $tmpIndex . '" class="wixfile_entry_checkbox">';
+																echo '</span>';
+															echo '</td>';
+															echo '<td id="wixfile_entry_edit' . $tmpIndex . '" class="wixfile_entry_edit">';
+																echo '<span><a>編集</a></span>';
+															echo '</td>';
+															echo '<td id="wixfile_entry_delete' . $tmpIndex . '" class="wixfile_entry_delete">';
+																echo '<span><a>削除</a></span>';
+															echo '</td>';
+															// '<td id="wixfile_keyword' . $tmpIndex . '" class="wixfile_keyword">';
+															// 	echo '<span>' . $entrys[$tmpIndex]->keyword . '</span>';
+															// echo '</td>';
+															// echo '<td id="wixfile_target' . $tmpIndex . '" class="wixfile_target">';
+															// 	echo '<span><a target="target_page" href="' . esc_html($entrys[$tmpCount]->target) . '">'  
+															//			. mb_strimwidth(esc_html($entrys[$tmpCount]->target), 0, 30, '...') . '</a></span>';
+															// echo '</td>';
+														/*----この中削除ok-----*/
+															echo '<td id="wixfile_keyword' . $tmpIndex . '" class="wixfile_keyword">';
+																echo '<span>佐草友也</span>';
+															echo '</td>';
+															echo '<td id="wixfile_target' . $tmpIndex . '" class="wixfile_target">';
+															echo '<span><a target="target_page" href="http://www.db.ics.keio.ac.jp">http://www.db.ics.keio.ac.jp</a></span>';
+															echo '</td>';
+														/*---------*/
+															if ( ($tmpIndex % 2) == 0 )
+															echo '<tr id="wixfile_entry_hidden' . $tmpIndex . '" class="wixfile_even" style="display:none" >';
+															else 
+															echo '<tr id="wixfile_entry_hidden' . $tmpIndex . '" class="wixfile_odd" style="display:none" >';
+																echo '<td colspan="1"></td>';
+																echo '<td id="wixfile_entry_decide' . $tmpIndex . '" class="wixfile_entry_decide" colspan="2">';
+																	echo '<span><a>決定</a></span>';
+																echo '</td>';
+																// echo '<td id="wixfile_keyword_edit' . $tmpIndex . '" class="wixfile_keyword_edit">';
+																// 	echo '<input type="text" value="' . $entrys[$tmpIndex]->keyword . '">';
+																// echo '</td>';
+																// echo '<td id="wixfile_target_edit' . $tmpCount . '" class="wixfile_target_edit">';
+																// 	echo '<input type="text" value="' . esc_html($entrys[$tmpIndex]->target) . '">';
+																// echo '</td>';
+														/*-----この中削除ok----*/
+																echo '<td id="wixfile_keyword_edit' . $tmpIndex . '" class="wixfile_keyword_edit">';
+																	echo '<input type="text" value="テスト">';
+																echo '</td>';
+																echo '<td id="wixfile_target_edit' . $tmpCount . '" class="wixfile_target_edit">';
+																	echo '<input type="text" value="http://www.keio.ac.jp/index-jp.html">';
+																echo '</td>';
+														/*---------*/
+															echo '</tr>';
+														echo '</tr>';
+															$tmpIndex++;
+															$tmpCount++;
+														} else {
+															break;
+														}
+													}
+												echo '</tbody>';
+											echo '</table>';
+										echo '</div>';
+										$count++;
+										$tmpEntryNum += 20;
+									}
+									unset($tmpCount); unset($tmpIndex); unset($count);
+								}
+								unset($entrys); unset($entryNum);
+							?>
+						</div>	<!-- #wixfile_contents -->
+						<div id="wixfile_entry_operation">
+							<img class="selectallarrow" src="../wp-content/plugins/WIX/css/images/arrow_ltr.png" alt="with" selected>
+							<input type="checkbox" id="wixfile_entry_allcheck">
+							<label for="wixfile_entry_allcheck">Check All</label>
+							<i>With Selected: </i>
+							<span><img src="../wp-content/plugins/WIX/css/images/b_edit.png" alt="change"><a>編集</a></span>
+							<span><img src="../wp-content/plugins/WIX/css/images/b_drop.png" alt="delete"><a>削除</a></span>
+						</div>
+						<div id="wixfile_entry_import">
+							<!-- エントリ挿入(未実装) -->
+
+						</div>
+						<input type="submit" name="wixfile_settings" 
+							value= "<?php echo esc_attr( __( 'WIXFIle Setting', 'wixfile_setting' ) ); ?>" 
+							id="wixfile_settings_button" class="button button-primary" >
+					</form>
+				</div> <!-- #wixfile_operation_contents -->
+				<div class="wixfile_iframe">
+					<div id="wixfile_iframe_inline_div">
+						<iframe id="wixfile_entry_iframe" name="target_page"></iframe>
+					</div>
+				</div>
+			</div> <!-- #wixfile -->
+
+		</div> <!-- #tab1 -->
+
+		<div class="tabbox" id="tab2">
+			<p>タブ2の内容</p>
+		</div> <!-- #tab2 -->
+	</div> <!-- #contents -->
+
+</div> <!-- .wrap -->
+<?php
+}
+
+/*
+<!-- 作成済みWIXファイル群 -->
+<!-- <?php created_wixfiles(); ?> -->
+<!-- Decide処理するかオプション -->
+<!-- <?php decide_management(); ?> -->
+<!-- WIXファイル作成 -->
+<!-- <?php wix_admin_wixfile_settings(); ?> -->
+*/
+
+//Library登録済みWIXファイル一覧
+function created_wixfiles() {
+?>
+<?php echo '<h3>' . __( 'Created WIXFile List', 'created_wixfile_list' ) . '</h3>'; ?>
+
+	<div id="created_wixfiles">
 <?php
 	global $wids_filenames;
 
-	if ( file_exists( PatternFile ) && is_readable( PatternFile ) ) {
-		global $pm;
-		$patternFile = $pm -> returnCandidates();
-		$hostName = $pm -> requestURL_part( PHP_URL_HOST );
-?>
-	<?php echo '<h2>' . __( 'WIX Settings', 'wix_settings' ) . '</h2>'; ?>
-
-	<div>
-		<form id="wix_settings_form" method="post" action="">
-			<input type="submit" name="wix_settings" 
-				value= "<?php echo esc_attr( __( 'WIX Settings', 'wix_settings' ) ); ?>" 
-				class="button button-primary button-large" >
-
-			<?php wp_nonce_field( 'my-nonce-key', 'nonce_settings' ); ?>
-			<p>
-				サーバホスト名: 
-				<input type="text" name="hostName" value="<?php echo get_option('wix_host_name'); ?>" readonly="readonly">
-			</p>
-			<p>
-				オーサ名: 
-				<input type="text" name="authorName" value="<?php echo get_option('wix_author_name'); ?>" readonly="readonly">
-			</p>
-
-			<p>
-				URLパターン : WIXファイル名 
-					<input type="button" id="add_patternFile" 
-					value= "<?php echo esc_attr( __( 'Form Add', 'wix_patternFile_adding' ) ); ?>" 
-					class="button button-primary button-large" >
-			</p>	
-
-			<ol id="pattern_filename">
-<?php
-		$roop = 0;
-		foreach ( $patternFile as $key => $value ) {
-			if ( strpos( $value, '-only' ) !== false ) $value = str_replace( '-', ':', $value );
-			else $value = str_replace( '-', ',', $value );
-
-			foreach ($wids_filenames as $wid => $filename) {
-				if ( $wid == $value ) {
-					echo '<li>';
-					echo '<input type="text" name="pattern[' . $roop . ']" value=' . esc_attr( $key ) . '> ';
-					echo '<input type="text" name="filename[' . $roop . ']" value=' . esc_attr( $filename ) . '> ';
-					//フォームが１個なら削除ボタンは生成しない
-					if ( count($patternFile) != 1 ) {
-					echo '<input type="button" value="' . 
-							esc_attr( __( 'Delete', 'wix_patternFile_adding' ) ) . 
-							'" class="button button-primary button-large">';
-					}
-					echo '</li>';
-				}	
-			}
-			
-			$roop++;
+	if ( !empty($wids_filenames) ) {
+		echo '<p>';
+		foreach ($wids_filenames as $wid => $filename) {
+			echo $filename . '<br>';
 		}
-?>		
-			</ol>
-		</form>
+		echo '</p>';
+	} else {
+		echo '<p>';
+		echo __( '登録済みのWIXファイルがありません', 'Not Exist your submitted WIXFiles' );
+		echo '</p>';
+	}
+?>
 	</div>
-
-<?php } else { ?> <!-- PatternFileがなければ -->
-	<?php echo '<h2>' . __( 'WIX Init Settings', 'wix_init_settings' ) . '</h2>'; ?>
-
-	<div>
-		<form id="wix_settings_form" method="post" action="">
-			<input type="submit" name="wix_init_settings" 
-				value= "<?php echo esc_attr( __( 'WIX Initial Settings', 'wix_initial_settings' ) ); ?>" 
-				class="button button-primary button-large" >
-
-			<?php 
-				wp_nonce_field( 'my-nonce-key', 'nonce_init_settings' ); 
-				global $pm;
-				$hostName = $pm -> requestURL_part( PHP_URL_HOST );
-			?>
-
-			<p>
-				サーバホスト名: 
-				<input type="text" name="hostName" placeholder="<?php echo $hostName ?>">
-			</p>
-			<p>
-				オーサ名: 
-				<input type="text" name="authorName" value="">
-			</p>
-
-
-			<?php echo '<h3>' . __( 'WIX PatternFile Options', 'wix_patternfile_options' ) . '</h3>'; ?>	
-			<p>
-				URLパターン : WIXファイル名 
-					<input type="button" id="add_patternFile" 
-					value= "<?php echo esc_attr( __( 'Form Add', 'wix_patternFile_adding' ) ); ?>" 
-					class="button button-primary button-large" >
-
-				<ol id="pattern_filename">
-					<li>
-						<input type="text" name="pattern[0]" placeholder="/test.html">
-						<input type="text" name="filename[0]" placeholder="Wikipedia">
-					</li>
-				</ol>
-			</p>
-		</form>
-	</div>
-
-<?php } ?>
-
-<?php created_wixfiles(); ?>
-
-<?php decide_management(); ?>
-
-<?php wix_admin_wixfile_settings(); ?>
-
-</div>
 <?php
 }
+
+
+//decide_management欄
+/* 今使ってない(2015/10/19) */
+function decide_management() {
+?>
+<?php echo '<h3>' . __( 'WIX Decide Management', 'wix_decide_management' ) . '</h3>'; ?>
+<?php echo '<h4>' . __( '・Manual Decide', 'manual_decide' ) . '</h4>'; ?>
+
+	<div class="decide_management" id="manual_decide">
+<?php if ( get_option( 'manual_decideFlag' ) == 'true' ) { ?>
+	    <input type="checkbox" name="decide_management" class="decide_management-checkbox" id="myonoffswitch" checked>
+<?php } else { ?>
+	    <input type="checkbox" name="decide_management" class="decide_management-checkbox" id="myonoffswitch">
+<?php } ?>
+	    <label class="decide_management-label" for="myonoffswitch">
+	        <span class="decide_management-inner"></span>
+	        <span class="decide_management-switch"></span>
+	    </label>
+	</div>
+<?php
+}
+
 
 
 function wix_admin_wixfile_settings() {
@@ -430,53 +791,6 @@ function wix_settings_notices() {
 		</ul>
 	</div>
 	<?php endif; ?>
-<?php
-}
-
-
-//Library登録済みWIXファイル一覧
-function created_wixfiles() {
-?>
-<?php echo '<h3>' . __( 'Created WIXFile List', 'created_wixfile_list' ) . '</h3>'; ?>
-
-	<div id="created_wixfiles">
-<?php
-	global $wids_filenames;
-
-	if ( isset($wids_filenames) ) {
-		echo '<p>';
-		foreach ($wids_filenames as $wid => $filename) {
-			echo $filename . '<br>';
-		}
-		echo '</p>';
-	} else {
-		echo '<p>';
-		echo __( '登録済みのWIXファイルがありません', 'Not Exist your submitted WIXFiles' );
-		echo '</p>';
-	}
-?>
-	</div>
-<?php
-}
-
-
-//decide_management欄
-function decide_management() {
-?>
-<?php echo '<h3>' . __( 'WIX Decide Management', 'wix_decide_management' ) . '</h3>'; ?>
-<?php echo '<h4>' . __( '・Manual Decide', 'manual_decide' ) . '</h4>'; ?>
-
-	<div class="decide_management" id="manual_decide">
-<?php if ( get_option( 'manual_decideFlag' ) == 'true' ) { ?>
-	    <input type="checkbox" name="decide_management" class="decide_management-checkbox" id="myonoffswitch" checked>
-<?php } else { ?>
-	    <input type="checkbox" name="decide_management" class="decide_management-checkbox" id="myonoffswitch">
-<?php } ?>
-	    <label class="decide_management-label" for="myonoffswitch">
-	        <span class="decide_management-inner"></span>
-	        <span class="decide_management-switch"></span>
-	    </label>
-	</div>
 <?php
 }
 

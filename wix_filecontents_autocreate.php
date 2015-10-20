@@ -12,22 +12,18 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 		wix_similarity_score_deletes($post->ID, 'wix_document_similarity');
 
 	} else if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
+		/*
+		* $parse: 形態素解析結果
+		* $wordsArray: [(複合)名詞]
+		* $words_countArray: [単語 => 単語数]
+		*/
 		$parse = wix_morphological_analysis($post->post_content);
 		$wordsArray = wix_compound_noun_extract($parse);
 		$words_countArray = array_word_count($wordsArray);
 
 		//まだDBに１つもドキュメントがなかったら計算しないでDBに挿入するだけ.	
 		$sql = 'SELECT COUNT(*) FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft"';
-		if ( $wpdb->get_var($sql) == 0 ) {
-/*
-*
-*
-*
-*
-*
-*
-*/
-		} else if ( $wpdb->get_var($sql) == 1 ) {
+		if ( $wpdb->get_var($sql) == 1 ) {
 			//ドキュメント数2になるなら、まだ計算してない１つ目のドキュメントに対する計算
 /*
 *
@@ -139,6 +135,8 @@ function wix_document_similarity_score_inserts_updates($doc_id) {
 		if ( !empty($subjectDocumentList) ) {
 			foreach ($subjectDocumentList as $key => $value) {
 				$doc_id2 = $value->ID;
+
+				//ここからCosSimilarityの計算
 				$sql = 'SELECT keyword, tf_idf FROM ' . $wpdb->prefix . 'wix_keyword_similarity' . ' WHERE doc_id=' . $doc_id2;
 				$subjectDocument_info = $wpdb->get_results($sql);
 
