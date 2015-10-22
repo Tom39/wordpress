@@ -79,9 +79,10 @@ jQuery(function($) {
   	$('#wix_entry_recommendation').click(function(){
   		var sentence = $('iframe:first').contents().find('#tinymce').eq(0).html();
   		var entry_data = {
-			'action': 'wix_entry_recommendation',
+			'action': 'wix_entry_recommendation_creating_document',
 			'sentence': sentence,
 			'doc-title': $('#titlewrap input:text').val(),
+			'target': $('#post-preview').attr('target'),
 		};
 		$.ajax({
 			async: true,
@@ -93,7 +94,6 @@ jQuery(function($) {
 			success: function(json) {
 // console.log(json['similarity']);
 // console.log(json['returnValue']);
-// console.log(json['idf']);
 				if ( json['returnValue'].length != 0 ) {
 					var contents = $("<div />", {
 						id: 'wixRecommendDiv'

@@ -94,20 +94,22 @@ function wix_manual_decide_check() {
 }
 
 
-//TF-IDFによるキーワード抽出
-add_action( 'wp_ajax_wix_entry_recommendation', 'wix_entry_recommendation' );
-add_action( 'wp_ajax_nopriv_wix_entry_recommendation', 'wix_entry_recommendation' );
-function wix_entry_recommendation() {
+//ドキュメント作成中に行うエントリ推薦
+add_action( 'wp_ajax_wix_entry_recommendation_creating_document', 'wix_entry_recommendation_creating_document' );
+add_action( 'wp_ajax_nopriv_wix_entry_recommendation_creating_document', 'wix_entry_recommendation_creating_document' );
+function wix_entry_recommendation_creating_document() {
 	global $doc_title, $similarityObj;
 
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
 
+	$post_id = (int) substr( $_POST['target'], strlen('wp-preview-') );
+
 	$parse = wix_morphological_analysis($_POST['sentence']);
 	$wordsArray = wix_compound_noun_extract($parse);
 	$words_countArray = array_word_count($wordsArray);
 	wix_tf($words_countArray);
-	wix_idf();
+	wix_idf_creating_document($post_id);
 
 
 	//tf-idf値の降順に並び替え
@@ -134,7 +136,6 @@ function wix_entry_recommendation() {
 	$json = array(
 		"returnValue" => $returnValue,
 		// "similarity" => $similarityObj,
-		// "idf" => $words_idfArray,
 	);
 	echo json_encode( $json );
 

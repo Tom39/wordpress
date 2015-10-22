@@ -168,96 +168,127 @@ jQuery(function($) {
 				$(this)
 					.find('.wixfile_entry_decide')
 					.click(function(event) {
+
+						var former_keyword, former_target;
 						var update_keyword, update_target;
-
-						//DB内のWIXファイル更新用要素と、元の要素を複製を作成
-						var count = ($('.update_element').length) / 2;
-						if ( $(this).parent().next('input:text').size() == 0 ) {
-							var org_keyword = $(this)
-												.parent()
-												.prev()
-												.find('.wixfile_keyword span')
-												.text();
-
-							var org_target = $(this)
-												.parent()
-												.prev()
-												.find('.wixfile_target span a')
-												.attr('href');
-
-							$(this)
-								.parent()
-								.after( '<input type="text" id=org_update_element' 
-											+ count 
-											+ ' class="org_update_element" name="org_update_keywords[' 
-											+ count 
-											+ ']" value="' 
-											+ org_keyword 
-											+ '" style="display:none">')
-								.after( '<input type="text" id=org_update_element' 
-											+ count 
-											+ ' class="org_update_element" name="org_update_targets[' 
-											+ count 
-											+ ']" value="' 
-											+ org_target 
-											+ '" style="display:none">');
-
-						} else {
-							//既に更新用要素が生成されてたら一旦削除して新規で要素作成
-							count = $(this)
-								.parent()
-								.next('input:text')
-								.attr('id')
-								.substr( 'update_element'.length );
-
-							$(this)
-								.parent()
-								.nextAll('input:text')
-								.remove('.update_element');
-						}
+						var org_keyword, org_target;
 
 						$.each($(this).nextAll(), function(index, element) {
-							//編集したテキストの中身に変更
+							//編集したテキストの中身に<div></div>変更用
 							if ( index == 0 ) {
-								var new_keyword = $(element).children().val();
 								update_keyword = $(element).children().val();
-
-								$(this)
-									.parent()
-									.prev()
-									.find('.wixfile_keyword span')
-									.text(new_keyword);
+								former_keyword = $(this).parent().prev().find('.wixfile_keyword span').text();
 							} else if ( index == 1 ) {
-								var new_target = $(element).children().val();
 								update_target = $(element).children().val();
-
-								$(this)
-									.parent()
-									.prev()
-									.find('.wixfile_target span a')
-									.text(new_target.substr(0, 27) + '...')
-									.attr('href', new_target);
+								former_target = $(this).parent().prev().find('.wixfile_target span a').attr('href');
 							}
 						});
 
-						$(this)
-							.parent()
-							.after( '<input type="text" id=update_element' 
-										+ count 
-										+ ' class="update_element" name="update_keywords[' 
-										+ count 
-										+ ']" value="' 
-										+ update_keyword 
-										+ '" style="display:none">')
-							.after( '<input type="text" id=update_element' 
-										+ count 
-										+ ' class="update_element" name="update_targets[' 
-										+ count 
-										+ ']" value="' 
-										+ update_target 
-										+ '" style="display:none">');
+						//キーワードかターゲットに変更があったら更新用要素追加
+						if ( (update_keyword != former_keyword) || (update_target != former_target) ) { 
 
+							var count = ($('.update_element').length) / 2;
+							if ( $(this).parent().next('input:text').size() == 0 ) {
+								org_keyword = $(this)
+													.parent()
+													.prev()
+													.find('.wixfile_keyword span')
+													.text();
 
+								org_target = $(this)
+													.parent()
+													.prev()
+													.find('.wixfile_target span a')
+													.attr('href');
+
+								//オリジナルエントリ要素を追加
+								$(this)
+									.parent()
+									.after( '<input type="text" id=org_update_element' 
+												+ count 
+												+ ' class="org_update_element" name="org_update_keywords[' 
+												+ count 
+												+ ']" value="' 
+												+ org_keyword 
+												+ '" style="display:none">')
+									.after( '<input type="text" id=org_update_element' 
+												+ count 
+												+ ' class="org_update_element" name="org_update_targets[' 
+												+ count 
+												+ ']" value="' 
+												+ org_target 
+												+ '" style="display:none">');
+
+							} else {
+								org_keyword = $(this)
+													.parent()
+													.siblings('.org_update_element')
+													.eq(1)
+													.val();
+
+								org_target = $(this)
+													.parent()
+													.siblings('.org_update_element')
+													.eq(0)
+													.val();
+
+								//既に更新用要素が生成されてたら一旦削除して新規で要素作成
+								count = $(this)
+									.parent()
+									.next('input:text')
+									.attr('id')
+									.substr( 'update_element'.length );
+							}
+
+							//結果的に、元々のエントリから変化なかった時は、更新用要素を削除
+							if ( (update_keyword == org_keyword) && (update_target == org_target) ) {
+								//更新用要素を削除
+								$.each($(this).parent().nextAll(), function(index, el) {
+									if ( $(this).get()[0].localName == 'input' )
+										$(this).remove();
+									else 
+										return false;
+								});
+
+							} else {
+								//更新用要素を削除・追加
+								$(this)
+									.parent()
+									.nextAll('input:text')
+									.remove('.update_element');
+								$(this)
+									.parent()
+									.after( '<input type="text" id="update_element' 
+												+ count 
+												+ '" class="update_element" name="update_keywords[' 
+												+ count 
+												+ ']" value="' 
+												+ update_keyword 
+												+ '" style="display:none">')
+									.after( '<input type="text" id="update_element' 
+												+ count 
+												+ '" class="update_element" name="update_targets[' 
+												+ count 
+												+ ']" value="' 
+												+ update_target 
+												+ '" style="display:none">');
+							}
+							//表示部分を書き換え
+							$(this)
+								.parent()
+								.prev()
+								.find('.wixfile_keyword span')
+								.text(update_keyword);
+
+							$(this)
+								.parent()
+								.prev()
+								.find('.wixfile_target span a')
+								.text(update_target.substr(0, 27) + '...')
+								.attr('href', update_target);
+						}
+
+						//表示
 						$(this)
 							.parent()
 							.hide()
@@ -292,6 +323,12 @@ jQuery(function($) {
 
 	});
 
+	//WIXファイル編集フォームでのEnter禁止
+	$('.wixfile_keyword_edit, .wixfile_target_edit').keypress(function(e){
+		if( (e.which == 13) || (e.keyCode == 13) )
+			return false;
+	});
+
 	$('.wixfile_entry_delete').click(function(event) {
 		var content = '';
 		$.each($(this).nextAll(), function(index, el) {
@@ -316,10 +353,26 @@ jQuery(function($) {
 						delete_target = $(this).find('a').attr('href');
 				});
 
+				//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
+				if ( $(event.target).parents('tr').next().next('.update_element').length != 0 ) {
+					var roop = 0
+					while ( roop < 4 ) {
+						$(event.target)
+							.parents('tr')
+							.next()
+							.next()
+							.remove();
+						roop++;
+					}
+				}
+			
+
 				$(event.target)
 					.parents('tr')
 					.next()
-					.after( '<input type="text" class="delete_element" name="delete_keywords[' 
+					.after( '<input type="text" id="delete_element' 
+								+ count 
+								+ '" class="delete_element" name="delete_keywords[' 
 								+ count
 								+ ']" value="' 
 								+ delete_keyword 
@@ -327,7 +380,9 @@ jQuery(function($) {
 				$(event.target)
 					.parents('tr')
 					.next()
-					.after( '<input type="text" class="delete_element" name="delete_targets[' 
+					.after( '<input type="text" id="delete_element' 
+								+ count 
+								+ '" class="delete_element" name="delete_targets[' 
 								+ count
 								+ ']" value="' 
 								+ delete_target 
@@ -342,6 +397,7 @@ jQuery(function($) {
 				$(event.target)
 					.parents('tr')
 					.remove();
+				
 			},
 			NO: function () {
 				return false;

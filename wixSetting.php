@@ -258,8 +258,8 @@ function wix_admin_settings(){
 						global $wpdb;
 						$sql = 'SELECT keyword, target FROM wp_wixfilemeta wm, wp_wixfile_targets wt WHERE wm.id = wt.keyword_id';
 						$entrys = $wpdb->get_results($sql);
-						// $entryNum = count($entrys);
-						$entryNum = 80;
+						$entryNum = count($entrys);
+						// $entryNum = 80;
 						echo '<li class="selected"><a href="#wixfile_tab1">タブ1</a></li>';
 						if ( $entryNum > 20 ) {
 							$count = 2;
@@ -277,8 +277,8 @@ function wix_admin_settings(){
 
 						<div id="wixfile_contents">
 							<?php
-								// $entryNum = count($entrys);
-								$entryNum = 80;
+								$entryNum = count($entrys);
+								// $entryNum = 80;
 								if ( $entryNum < 20 ) {
 									echo '<div id="wixfile_tab1" class="wixfile_tabbox">';
 										echo '<table id="wixfile_table1" class="wixfile_table">';

@@ -50,9 +50,6 @@ function wix_admin_init() {
 
 //スクリプトの読み込み
 function wix_admin_settings_scripts() {
-	wp_enqueue_style( 'wix-settings-css', wix_settings_css, array() );
-	wp_enqueue_script( 'wix-settings-js', wix_settings_js, array('jquery') );
-
 	//jQuery UI
 	global $wp_scripts;
     $ui = $wp_scripts->query('jquery-ui-core');
@@ -77,20 +74,19 @@ function wix_admin_decide_scripts($hook_suffix) {
         wp_enqueue_style( 'popupwindow-css', popupwindow_css, array() );
         wp_enqueue_script( 'wix-decide-js', wix_decide_js );
         wp_enqueue_script( 'popupwindow-js', popupwindow_js );
-
-        //ManualDecideを行うかどうか(wixDecideボタンを出現させるか否か)
-        /* 今使ってない (2015/10/19) */
-        // $str = "<script type=\"text/javascript\"> var manual_decide = '%s' </script>";
-        // $manual_decideFlag = get_option('manual_decide');
-        // printf($str, $manual_decideFlag);
     }
 
 }
 
 function wix_admin_setting_scripts($hook_suffix) {
-    $post_pages = array('toplevel_page_wix-admin-settings');
+    $post_pages = array(
+                        'toplevel_page_wix-admin-settings', 
+                        'wix-admin-settings_page_wix-admin-similarity',
+                        );
 
     if ( in_array($hook_suffix, $post_pages) ) {
+        wp_enqueue_style( 'wix-settings-css', wix_settings_css, array() );
+        wp_enqueue_script( 'wix-settings-js', wix_settings_js, array('jquery') );
         wp_enqueue_style( 'popupwindow-css', popupwindow_css, array() );
         wp_enqueue_script( 'popupwindow-js', popupwindow_js );
     }
