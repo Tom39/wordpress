@@ -283,7 +283,7 @@ function wixfile_settings_core() {
 						if ( !empty($keyword) ) {
 							$target = $_POST['targets'][$index];
 							$keyword_flag = false;
-							$target_flag = false;
+							$entry_flag = false;
 
 							//二重挿入しないようにフラグ立てる
 							foreach ($target_checker as $key => $valueArray) {
@@ -291,14 +291,14 @@ function wixfile_settings_core() {
 									$keyword_flag = true;
 									foreach ($valueArray as $i => $value) {
 										if ( $value == $target ) {
-											$target_flag = true;
+											$entry_flag = true;
 											break;
 										}
 									}
 								}
 							}
 
-							if ( $target_flag == false ) {
+							if ( $entry_flag == false ) {
 								$sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta . ' WHERE keyword="' . $keyword . '"';
 								//まだwixfilemetaテーブルに存在しないキーワードの場合(つまりこれから挿入しなければならない)
 								if ( $wpdb->get_var($sql) == 0 ) {
@@ -319,17 +319,18 @@ function wixfile_settings_core() {
 														)
 													);
 /*---------------------------------------------------------------------------*/
-										if ( count($wixfilemeta_posts_array) == 0 ) {
-											$wixfilemeta_posts_array['insert'] = array($keyword => $latest_id);
-										} else {
-											if ( !array_key_exists('insert', $wixfilemeta_posts_array) ) {
-												$wixfilemeta_posts_array['insert'] = array($keyword => $latest_id);
-											} else {
-												$tmpArray = $wixfilemeta_posts_array['insert'];
-												$tmpArray[$keyword] = $latest_id;
-												$wixfilemeta_posts_array['insert'] = $tmpArray;
-											}
-										}
+										$wixfilemeta_posts_array += array($latest_id => $keyword);
+										// if ( count($wixfilemeta_posts_array) == 0 ) {
+										// 	$wixfilemeta_posts_array['insert'] = array($latest_id => $keyword);
+										// } else {
+										// 	if ( !array_key_exists('insert', $wixfilemeta_posts_array) ) {
+										// 		$wixfilemeta_posts_array['insert'] = array($latest_id => $keyword);
+										// 	} else {
+										// 		$tmpArray = $wixfilemeta_posts_array['insert'];
+										// 		$tmpArray[$latest_id] = $keyword;
+										// 		$wixfilemeta_posts_array['insert'] = $tmpArray;
+										// 	}
+										// }
 /*---------------------------------------------------------------------------*/
 
 									} else {
@@ -440,12 +441,18 @@ function wixfile_settings_core() {
 						$org_keyword = $_POST['org_update_keywords'][$index];
 						$org_target = $_POST['org_update_targets'][$index];
 
+						$keyword_flag = false;
 						$entry_flag = false;
+						$new_keyword_id = 0;
 
 						//二重挿入・更新しないようにフラグ立てる
 						foreach ($entry_checker as $key => $valueArray) {
 							if ( $key == $keyword ) {
-								foreach ($valueArray as $i => $value) {
+								$keyword_flag = true;
+								$targetArray = $valueArray['target'];
+								$new_keyword_id = $valueArray['id'];
+
+								foreach ($targetArray as $i => $value) {
 									if ( $value == $target ) {
 										$entry_flag = true;
 										break;
@@ -462,7 +469,9 @@ function wixfile_settings_core() {
 
 							//既に存在している場合は、何もしない。
 							if ( $wpdb->get_var($sql) == 0 ) {
-								
+								/** 
+									keyword固定と、target固定の2つにしても、多分同じ結果が得られる(2015/10/22) 
+								**/
 								if ( ($keyword != $org_keyword) && ($target != $org_target) ) {
 									//エントリに変更がある場合
 									//更新予定キーワードが既に存在するかチェック (大槻研, A) -> (大槻, B)
@@ -472,9 +481,11 @@ function wixfile_settings_core() {
 									//キーワードがない場合挿入。あるならid含め更新
 									if ( empty($keyword_checkerObj) ) {
 										//エントリを挿入用Arrayに挿入
-										$sql = 'SELECT MAX(id) FROM ' . $wixfilemeta;
-										$new_keyword_id = (int) $wpdb->get_var($sql) + 
-															count($insertArray) + count($updateArray) +  1;
+										if ( $keyword_flag == false ) {
+											$sql = 'SELECT MAX(id) FROM ' . $wixfilemeta;
+											$new_keyword_id = (int) $wpdb->get_var($sql) + 
+																count($insertArray) + count($updateArray) +  1;
+										}
 
 										$sql = 'SELECT id FROM ' . $wixfilemeta . ' WHERE keyword="' . $org_keyword . '"';
 										$org_keywordObj = $wpdb->get_results($sql);
@@ -487,11 +498,23 @@ function wixfile_settings_core() {
 														'new_keyword' => $keyword,
 														'new_target' => $target,
 														'org_target' => $org_target,
+														'keyword_flag' => $keyword_flag,
 														)
 													);
-										//'INSERT INTO wp_wixfilemeta(id, keyword) VALUES ($new_keyword_id, "$keyword")'
-										//'UPDATE wp_wixfile_targets SET keyword_id=$new_keyword_id, target="$target" WHERE keyword_id=$org_keyword_id AND target="$org_target"';
-
+/*---------------------------------------------------------------------------*/
+										$wixfilemeta_posts_array += array($new_keyword_id => $keyword);
+										// if ( count($wixfilemeta_posts_array) == 0 ) {
+										// 	$wixfilemeta_posts_array['insert'] = array($new_keyword_id => $keyword);
+										// } else {
+										// 	if ( !array_key_exists('insert', $wixfilemeta_posts_array) ) {
+										// 		$wixfilemeta_posts_array['insert'] = array($new_keyword_id => $keyword);
+										// 	} else {
+										// 		$tmpArray = $wixfilemeta_posts_array['insert'];
+										// 		$tmpArray[$new_keyword_id] = $keyword;
+										// 		$wixfilemeta_posts_array['insert'] = $tmpArray;
+										// 	}
+										// }
+/*---------------------------------------------------------------------------*/
 
 									} else {
 										//エントリを更新用Arrayに挿入
@@ -508,9 +531,7 @@ function wixfile_settings_core() {
 														'new_target' => $target,
 														'org_target' => $org_target,
 														)
-													);
-										//'UPDATE wp_wixfile_targets SET keyword_id=$new_keyword_id, target="$target" WHERE keyword_id=$org_keyword_id AND target="$org_target"';
-										
+													);						
 									}
 
 
@@ -527,9 +548,7 @@ function wixfile_settings_core() {
 													'new_target' => $target,
 													'org_target' => $org_target,
 													)
-												);
-									//'UPDATE wp_wixfile_targets SET keyword_id=$new_keyword_id, target="$target" WHERE keyword_id=$org_keyword_id AND target="$org_target"';
-									
+												);									
 
 								} else if ( ($keyword != $org_keyword) && ($target == $org_target) ) {
 									//ターゲットには変更がない場合
@@ -540,9 +559,11 @@ function wixfile_settings_core() {
 									//キーワードがない場合挿入。あるならid含め更新
 									if ( empty($keyword_checkerObj) ) {
 										//エントリを挿入用Arrayに挿入
-										$sql = 'SELECT MAX(id) FROM ' . $wixfilemeta;
-										$new_keyword_id = (int) $wpdb->get_var($sql) + 
-															count($insertArray) + count($updateArray) +  1;
+										if ( $keyword_flag == false ) {
+											$sql = 'SELECT MAX(id) FROM ' . $wixfilemeta;
+											$new_keyword_id = (int) $wpdb->get_var($sql) + 
+																count($insertArray) + count($updateArray) +  1;
+										}
 
 										$sql = 'SELECT id FROM ' . $wixfilemeta . ' WHERE keyword="' . $org_keyword . '"';
 										$org_keywordObj = $wpdb->get_results($sql);
@@ -555,11 +576,23 @@ function wixfile_settings_core() {
 														'new_keyword' => $keyword,
 														'new_target' => $target,
 														'org_target' => $org_target,
+														'keyword_flag' => $keyword_flag,
 														)
 													);
-										//'INSERT INTO wp_wixfilemeta(id, keyword) VALUES ($new_keyword_id, "$keyword")'
-										//'UPDATE wp_wixfile_targets SET keyword_id=$new_keyword_id, target="$target" WHERE keyword_id=$org_keyword_id AND target="$org_target"';
-
+/*---------------------------------------------------------------------------*/
+										$wixfilemeta_posts_array += array($new_keyword_id => $keyword);
+										// if ( count($wixfilemeta_posts_array) == 0 ) {
+										// 	$wixfilemeta_posts_array['insert'] = array($new_keyword_id => $keyword);
+										// } else {
+										// 	if ( !array_key_exists('insert', $wixfilemeta_posts_array) ) {
+										// 		$wixfilemeta_posts_array['insert'] = array($new_keyword_id => $keyword);
+										// 	} else {
+										// 		$tmpArray = $wixfilemeta_posts_array['insert'];
+										// 		$tmpArray[$new_keyword_id] = $keyword;
+										// 		$wixfilemeta_posts_array['insert'] = $tmpArray;
+										// 	}
+										// }
+/*---------------------------------------------------------------------------*/
 
 									} else {
 										//エントリを更新用Arrayに挿入
@@ -576,9 +609,7 @@ function wixfile_settings_core() {
 														'new_target' => $target,
 														'org_target' => $org_target,
 														)
-													);
-										//'UPDATE wp_wixfile_targets SET keyword_id=$new_keyword_id, target="$target" WHERE keyword_id=$org_keyword_id AND target="$org_target"';
-										
+													);										
 									}
 
 								}
@@ -586,14 +617,22 @@ function wixfile_settings_core() {
 
 							//二重挿入チェッカーに追加
 							if ( empty($entry_checker) ) {
-								$entry_checker[$keyword] = array($target);
+								$entry_checker[$keyword] = array(
+																'id' => $new_keyword_id,
+																'target' => array($target),
+																);
 							} else {
 								if ( array_key_exists($keyword, $entry_checker) ) {
 									$valueArray = $entry_checker[$keyword];
-									array_push($valueArray, $target);
+									$targetArray = $valueArray['target'];
+									array_push($targetArray, $target);
+									$valueArray['target'] = $targetArray;
 									$entry_checker[$keyword] = $valueArray;
 								} else {
-									$entry_checker[$keyword] = array($target);
+									$entry_checker[$keyword] = array(
+																'id' => $new_keyword_id,
+																'target' => array($target),
+																);
 								}
 							}
 
@@ -608,18 +647,20 @@ function wixfile_settings_core() {
 											'org_keyword_id' => $org_keyword_id,
 											'org_target' => $org_target,
 											)
-										);
-							//$sql = 'DELETE FROM ' . $wixfile_targets . ' WHERE keyword_id = ' . $org_keyword_id . ' AND target = "' . $org_target . '"';
-							
+										);							
 						}
 					}
 
 					/* もしtargetsテーブルのkeyword_idに出現しない、metaテーブルのidが残ってるなら、削除しないとって思ったけど、
 									エントリ挿入時にちゃんとチェックしてるから見逃していいのかも。一応削除 */
-					$sql = 'SELECT id FROM ' . $wixfilemeta . ' WHERE id NOT IN (SELECT DISTINCT keyword_id FROM ' . $wixfile_targets . ')';
+					$sql = 'SELECT id, keyword FROM ' . $wixfilemeta . ' WHERE id NOT IN (SELECT DISTINCT keyword_id FROM ' . $wixfile_targets . ')';
 					$delete_keywordObj = $wpdb->get_results($sql);
-					foreach ($delete_keywordObj as $index => $value) {
-						array_push($delete_metaArray, $value->id);
+					if ( !empty($delete_keywordObj) ) {
+						foreach ($delete_keywordObj as $index => $value) {
+							$id = $value->id;
+							$keyword = $value->keyword;
+							array_push($delete_metaArray, $value->id);
+						}
 					}
 
 					//DB操作
@@ -630,13 +671,18 @@ function wixfile_settings_core() {
 							$new_keyword = $valueArray['new_keyword'];
 							$new_target = $valueArray['new_target'];
 							$org_target = $valueArray['org_target'];
+							$keyword_flag = (boolean)$valueArray['keyword_flag'];
 
-							$sql = 'INSERT INTO ' . $wixfilemeta . '(id, keyword) VALUES ' . '(' . $new_keyword_id . ', "' . $new_keyword .'")';
-							$wpdb->query( $sql );
+							if ( $keyword_flag == false ) {
+								$sql = 'INSERT INTO ' . $wixfilemeta . '(id, keyword) VALUES ' . '(' . $new_keyword_id . ', "' . $new_keyword .'")';
+								var_dump($sql);
+								// $wpdb->query( $sql );
+							}
 
 							$sql = 'UPDATE ' . $wixfile_targets . ' SET keyword_id=' . $new_keyword_id . ', target="' .
 								 $new_target . '" WHERE keyword_id=' . $org_keyword_id . ' AND target="' . $org_target . '"';
-							$wpdb->query( $sql );
+							var_dump($sql);
+							// $wpdb->query( $sql );
 						}
 					}
 
@@ -649,7 +695,8 @@ function wixfile_settings_core() {
 
 							$sql = 'UPDATE ' . $wixfile_targets . ' SET keyword_id=' . $new_keyword_id . ', target="' .
 								 $new_target . '" WHERE keyword_id=' . $org_keyword_id . ' AND target="' . $org_target . '"';
-							$wpdb->query( $sql );
+							var_dump($sql);
+							// $wpdb->query( $sql );
 						}
 					}
 
@@ -659,57 +706,29 @@ function wixfile_settings_core() {
 							$org_target = $valueArray['org_target'];
 
 							$sql = 'DELETE FROM ' . $wixfile_targets . ' WHERE keyword_id = ' . $org_keyword_id . ' AND target = "' . $org_target . '"';
-							$wpdb->query( $sql );
+							var_dump($sql);
+							// $wpdb->query( $sql );
 						}
 					} 
 
 					if ( !empty($delete_metaArray) ) {
 						foreach ($delete_metaArray as $index => $org_keyword_id) {
-							$sql = 'DELETE FROM ' . $wixfilemeta . ' WHERE keyword_id=' . $org_keyword_id;
-							$wpdb->query( $sql );
+							$sql = 'DELETE FROM ' . $wixfilemeta . ' WHERE id=' . $org_keyword_id;
+							var_dump($sql);
+							// $wpdb->query( $sql );
+							/**
+								この時、wixfilemeta_postsの行はカスケードDELETEされる
+							**/
 						}
 					}
-
-
-
-// 					foreach ($_POST['update_keywords'] as $index => $keyword) {
-// 						$target = $_POST['update_targets'][$index];
-// 						$org_keyword = $_POST['org_update_keywords'][$index];
-// 						$org_target = $_POST['org_update_targets'][$index];
-
-// 						$sql = 'SELECT id FROM ' . $wixfilemeta . ' wm, ' . 
-// 									$wixfile_targets . ' wt WHERE wm.id = wt.keyword_id AND wm.keyword="' . 
-// 									$org_keyword . '" AND wt.target="' . $org_target . '"';
-
-// 						$keyword_idObj = $wpdb->get_results($sql);
-// 						if ( !empty($keyword_idObj) ) {
-// 							$keyword_id = (int)$keyword_idObj[0]->id;
-// /*---------------------------------------------------------------------------*/
-// 							if ( count($wixfilemeta_posts_array) == 0 ) {
-// 								$wixfilemeta_posts_array['update'] = array($keyword => $keyword_id);
-// 							} else {
-// 								if ( !array_key_exists('update', $wixfilemeta_posts_array) ) {
-// 									$wixfilemeta_posts_array['update'] = array($keyword => $keyword_id);
-// 								} else {
-// 									$tmpArray = $wixfilemeta_posts_array['update'];
-// 									$tmpArray[$keyword] = $keyword_id;
-// 									$wixfilemeta_posts_array['update'] = $tmpArray;
-// 								}
-// 							}
-// /*---------------------------------------------------------------------------*/
-
-// 							$sql = 'UPDATE ' . $wixfilemeta . ', ' . $wixfile_targets . ' SET keyword="' . $keyword . '", target="' . $target . '" WHERE id = keyword_id AND keyword="' . $org_keyword . '" AND target="' . $org_target . '"';
-// 							$wpdb->query( $sql );
-// 						}
-// 
-//					 }
 				}
 
-				//エントリ削除用モジュール
+				//エントリ削除用モジュール 
 				if ( isset( $_POST['delete_keywords'] ) && $_POST['delete_keywords'] && isset( $_POST['delete_targets'] ) && $_POST['delete_targets'] ) {
 
 					foreach ($_POST['delete_keywords'] as $index => $keyword) {
 						$target = $_POST['delete_targets'][$index];
+
 						$sql = 'SELECT id FROM ' . $wixfilemeta . ' wm, ' . 
 									$wixfile_targets . ' wt WHERE wm.keyword="' . $keyword . 
 										'" AND wt.target="' . $target . 
@@ -719,37 +738,29 @@ function wixfile_settings_core() {
 							$keyword_id = (int)$keyword_idObj[0]->id;
 
 							$sql = 'DELETE FROM ' . $wixfile_targets . ' WHERE keyword_id = ' . $keyword_id . ' AND target = "' . $target . '"';
+							var_dump($sql);
 							// $wpdb->query( $sql );
-
-							//該当エントリのターゲット要素がwixfile_targetsテーブルに存在しないならキーワードを削除する
-							$sql = 'SELECT COUNT(*) FROM wp_wixfile_targets WHERE keyword_id = ' . $keyword_id;
-							if ( $wpdb->get_var($sql) == 0 ) {
-/*---------------------------------------------------------------------------*/
-							if ( count($wixfilemeta_posts_array) == 0 ) {
-								$wixfilemeta_posts_array['delete'] = array($keyword => $keyword_id);
-							} else {
-								if ( !array_key_exists('delete', $wixfilemeta_posts_array) ) {
-									$wixfilemeta_posts_array['delete'] = array($keyword => $keyword_id);
-								} else {
-									$tmpArray = $wixfilemeta_posts_array['delete'];
-									$tmpArray[$keyword] = $keyword_id;
-									$wixfilemeta_posts_array['delete'] = $tmpArray;
-								}
-							}
-/*---------------------------------------------------------------------------*/
-
-								$sql = 'DELETE FROM ' . $wixfilemeta . ' WHERE id = ' . $keyword_id . ' AND keyword = "' . $keyword . '"';
-								// $wpdb->query( $sql );
-								//この時、wixfilemeta_postsの行はカスケードDELETEされる
-							}
 						}
 
 					}
 
+					$sql = 'SELECT id, keyword FROM ' . $wixfilemeta . ' WHERE id NOT IN (SELECT DISTINCT keyword_id FROM ' . $wixfile_targets . ')';
+					$delete_keywordObj = $wpdb->get_results($sql);
+					if ( !empty($delete_keywordObj) ) {
+						foreach ($delete_keywordObj as $index => $value) {
+							$id = $value->id;
+							$keyword = $value->keyword;
+							$sql = 'DELETE FROM ' . $wixfilemeta . ' WHERE id=' . $id;
+							// $wpdb->query( $sql );
+							/**
+								この時、wixfilemeta_postsの行はカスケードDELETEされる
+							**/
+						}
+					}
+
 				}
-/*---------------------------------------------------------------------------*/
-				// wixfilemeta_posts_insert_update_delete( $wixfilemeta_posts_array );
-/*---------------------------------------------------------------------------*/
+
+				wixfilemeta_posts_insert_update_delete( $wixfilemeta_posts_array );
 				set_transient( 'wix_settings', 'WIXファイル 更新しました', 1 );
 			}
 		} else {
@@ -762,53 +773,63 @@ function wixfile_settings_core() {
 //WIXファイルに挿入・更新・削除が行われた時の、「WIXファイル内キーワードが出現するドキュメント」を表すテーブルをupdate
 function wixfilemeta_posts_insert_update_delete( $array ) {
 	var_dump( $array );
-
 	global $wpdb;
-	$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
+	$insert_wixfilemeta_postsArray = array();
 
-	//まだDBに１つもドキュメントがなかったら計算しない.(でも基本的に0にならないみたい)
-	$sql = 'SELECT COUNT(*) FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft"';
-	if ( $wpdb->get_var($sql) == 0 ) return;
+	if ( !empty($array) ) {
+		$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
 
-	// $sql = 'SELECT '
+		//まだDBに１つもドキュメントがなかったら計算しない.(でも基本的にemptyにならないみたい)
+		$sql = 'SELECT id, post_content FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" ORDER BY id ASC';
+		$doc_Obj = $wpdb->get_results($sql);
+		if ( !empty($doc_Obj) ) {
 
-	foreach ($array as $type => $subjectArray) {
-		$keyword_checker = array();
-		$keyword_flag = false;
+			foreach ($doc_Obj as $index => $value) {
+				$body = $value->post_content;
+				$doc_id = $value->id;
+				
+				foreach ($array as $keyword_id => $keyword) {
+					$keyword_checker = array();
+					
+					if ( !array_key_exists($keyword_id, $keyword_checker) ) {
 
-		foreach ($subjectArray as $index => $keyword) {
-			
-			//二重挿入チェッカー
-			foreach ($keyword_checker as $key => $null) {
-				if ( $key == $keyword ) {
-					$keyword_flag = true;
-					break;
+						if ( strpos($body, $keyword) !== false )
+							array_push( $insert_wixfilemeta_postsArray, 
+											array(
+													'keyword_id' => $keyword_id,
+													'doc_id' => $doc_id
+												)
+										 );
+
+						//二重チェッカーに追加
+						$keyword_checker[$keyword_id] = null;
+					}
+					
 				}
+
 			}
 
-			if ( $keyword_flag == false ) {
+			//DB挿入
+			if ( !empty($insert_wixfilemeta_postsArray) ) {
+				$insertTuple = '';
 
-				// $sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta_posts . ' WHERE keyword="' . $keyword . '"';
-				// //まだwixfilemeta_postsテーブルに存在しないキーワードの場合
-				// if ( $wpdb->get_var($sql) == 0 ) {
+				foreach ($insert_wixfilemeta_postsArray as $index => $valueArray) {
+					$keyword_id = $valueArray['keyword_id'];
+					$doc_id = $valueArray['doc_id'];
+					if ( $index == 0 ) {
+						$insertTuple = '(' . $keyword_id . ', ' . $doc_id .'), ';
+					} else {
+						$insertTuple = $insertTuple . '(' . $keyword_id . ', ' . $doc_id .'), ';
+					}
+				}
 
-
-				// } else {
-
-
-				// }
-
-				$sql = '';
-
-
-
-				//二重挿入チェッカーに追加
-				$keyword_checker[$keyword] = null;
-
+				$sql = 'INSERT INTO ' . $wixfilemeta_posts . '(keyword_id, doc_id) VALUES ' . $insertTuple;
+				$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
+				var_dump($sql);
+				// $wpdb->query( $sql );
 			}
 		}
 
-		unset($keyword_checker);
 	}
 
 
@@ -842,7 +863,6 @@ function wixfilemeta_posts_insert_update_delete( $array ) {
 
 	// } 
 }
-
 
 //ドキュメントの投稿ステータスが変わったら、WIXファイル内のどのキーワードが出現するかを算出
 add_action( 'transition_post_status', 'wix_keyword_appearance_in_doc', 10, 3 );

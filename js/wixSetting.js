@@ -280,12 +280,21 @@ jQuery(function($) {
 								.find('.wixfile_keyword span')
 								.text(update_keyword);
 
-							$(this)
-								.parent()
-								.prev()
-								.find('.wixfile_target span a')
-								.text(update_target.substr(0, 27) + '...')
-								.attr('href', update_target);
+							if ( update_target.length < 28 ) {
+								$(this)
+									.parent()
+									.prev()
+									.find('.wixfile_target span a')
+									.text(update_target)
+									.attr('href', update_target);
+							} else {
+								$(this)
+									.parent()
+									.prev()
+									.find('.wixfile_target span a')
+									.text(update_target.substr(0, 27) + '...')
+									.attr('href', update_target);
+							}
 						}
 
 						//表示
