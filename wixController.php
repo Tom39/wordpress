@@ -27,7 +27,7 @@ require_once( dirname( __FILE__ ) . '/newBody.php' );
 require_once( dirname( __FILE__ ) . '/wixSetting.php' );
 require_once( dirname( __FILE__ ) . '/wixDecide.php' );
 require_once( dirname( __FILE__ ) . '/wixSimilarity.php' );
-require_once( dirname( __FILE__ ) . '/wix_filecontents_autocreate.php' );
+require_once( dirname( __FILE__ ) . '/wixAutocreate.php' );
 
 
 

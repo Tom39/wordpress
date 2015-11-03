@@ -103,13 +103,24 @@ function wix_entry_recommendation_creating_document() {
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
 
+	$returnValue = '';
+
 	$post_id = (int) substr( $_POST['target'], strlen('wp-preview-') );
 
 	$parse = wix_morphological_analysis($_POST['sentence']);
 	$wordsArray = wix_compound_noun_extract($parse);
 	$words_countArray = array_word_count($wordsArray);
-	wix_tf($words_countArray);
-	wix_idf_creating_document($post_id);
+
+	// wix_tf($words_countArray);
+	// wix_idf_creating_document($post_id);
+
+
+	//tf, idfの計算
+	if ( empty($similarityObj) ) {
+		wix_tf($words_countArray);
+		wix_idf_creating_document($post_id);
+	}
+
 
 
 	//tf-idf値の降順に並び替え
@@ -128,14 +139,16 @@ function wix_entry_recommendation_creating_document() {
 
 
 	//wp_wixfileテーブルに入ってない単語が出現するページタイトルの提示
-/*これ違う気がする。テーブルに入ってない奴も推薦していいんじゃね？（2015/09/22）*/
+/**
+	これ違う気がする。テーブルに入ってない奴も推薦していいんじゃね？（2015/09/22）
+**/
 	$doc_title = $_POST['doc-title'];
 	$returnValue = wix_post_title(no_wixfile_entry($similarityObj));
 
 
 	$json = array(
 		"returnValue" => $returnValue,
-		// "similarity" => $similarityObj,
+		"similarity" => $similarityObj,
 	);
 	echo json_encode( $json );
 
@@ -151,7 +164,6 @@ function wix_new_entry_insert() {
 
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
-
 
 	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
 	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
@@ -221,8 +233,8 @@ function wix_new_entry_insert() {
 		$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
 		$result = $wpdb->query( $sql );					
 
-		if ( $result != 0 ) $test = 'SUCESS';
-		else $test = 'FAIL';
+		if ( $result != 0 ) $result = 'SUCCESS';
+		else $result = 'FAIL';
 	}
 
 	if ( !empty($insertTargetArray) ) {
@@ -242,12 +254,77 @@ function wix_new_entry_insert() {
 		$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
 		$result = $wpdb->query( $sql );					
 
-		if ( $result != 0 ) $test = 'SUCESS';
-		else $test = 'FAIL 2';
+		if ( $result != 0 ) $result = 'SUCCESS';
+		else $result = 'FAIL 2';
 	}
 
 	$json = array(
-		"test" => $test,
+		"result" => $result,
+		"keyword_id" => $latest_id,
+		"keyword" => $keyword,
+	);
+	echo json_encode( $json );
+
+	die();
+}
+
+//WIXファイルに挿入・更新・削除が行われた時の、「WIXファイル内キーワードが出現するドキュメント」を表すテーブルをupdate
+add_action( 'wp_ajax_wix_wixfilemeta_posts_insert', 'wix_wixfilemeta_posts_insert' );
+add_action( 'wp_ajax_nopriv_wix_wixfilemeta_posts_insert', 'wix_wixfilemeta_posts_insert' );
+function wix_wixfilemeta_posts_insert() {
+	global $wpdb;
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
+	$insert_wixfilemeta_postsArray = array();
+
+	//まだDBに１つもドキュメントがなかったら計算しない.(でも基本的にemptyにならないみたい)
+	$sql = 'SELECT id, post_content FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" ORDER BY id ASC';
+	$doc_Obj = $wpdb->get_results($sql);
+	if ( !empty($doc_Obj) ) {
+		$keyword_id = $_POST['keyword_id'];
+		$keyword = $_POST['keyword'];
+
+		foreach ($doc_Obj as $index => $value) {
+			$body = $value->post_content;
+			$doc_id = $value->id;
+
+			if ( strpos($body, $keyword) !== false )
+				array_push( $insert_wixfilemeta_postsArray, 
+								array(
+										'keyword_id' => $keyword_id,
+										'doc_id' => $doc_id
+									)
+							 );
+		}
+
+		//DB挿入
+		if ( !empty($insert_wixfilemeta_postsArray) ) {
+			$insertTuple = '';
+
+			foreach ($insert_wixfilemeta_postsArray as $index => $valueArray) {
+				$keyword_id = $valueArray['keyword_id'];
+				$doc_id = $valueArray['doc_id'];
+				if ( $index == 0 ) {
+					$insertTuple = '(' . $keyword_id . ', ' . $doc_id .'), ';
+				} else {
+					$insertTuple = $insertTuple . '(' . $keyword_id . ', ' . $doc_id .'), ';
+				}
+			}
+
+			$sql = 'INSERT INTO ' . $wixfilemeta_posts . '(keyword_id, doc_id) VALUES ' . $insertTuple;
+			$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
+			$result = $wpdb->query( $sql );
+
+			if ( $result != 0 ) $result = 'SUCCESS';
+			else $result = 'FAIL';
+		}
+	}
+
+	$json = array(
+		"result" => $result,
 	);
 	echo json_encode( $json );
 
@@ -607,6 +684,9 @@ function keyword_location($body) {
 	return $returnValue;
 }
 
+/**
+		[タスク] この時、Decide情報をテーブルに格納する
+**/
 //各ページのDecideファイル作成
 add_action( 'wp_ajax_wix_create_decidefile', 'wix_create_decidefile' );
 add_action( 'wp_ajax_nopriv_wix_create_decidefile', 'wix_create_decidefile' );
@@ -622,7 +702,6 @@ function wix_create_decidefile() {
 	if ( ! current_user_can( 'edit_post', $post->ID ) ) {
 		wp_die( __( 'You are not allowed to edit this post.' ) );
 	}
-	// $test = urldecode($post->post_name);
 
 	$object = $_POST['decideLink'];
 
@@ -646,7 +725,7 @@ function wix_create_decidefile() {
 	}
 
 	$json = array(
-		"response" => 'aaa'
+		"response" => 'create decidefile'
 	);
 	echo json_encode($json);
 

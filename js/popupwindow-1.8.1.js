@@ -251,16 +251,15 @@
             var height = this.originalHeight = win.container.height();
             var left = ( ( dw / 2 ) - ( parseInt( width ) / 2 ) );
 /**************************************************************************************************************
-****************************************************************************************************************/      
-            // var top = ( ( dh / 2 ) - ( parseInt( height ) / 2 ) + sc -50 );
-            var top = ( ( dh / 2 ) - ( parseInt( height ) / 2 ) + sc +5 );
-            top = this.originalTop = ( top < 0 ) ? 0 : top + 'px';
-            // left = this.originalLeft = ( left < 0 ) ? 0 : left + 'px';
-            left = 0 + 'px';
-
-            // top = this.originalTop =  ( left < 0 ) ? 0 : 40 + 'px';
-            // var topValue = $('#wix').height() - $('#wpadminbar').height();
-            
+****************************************************************************************************************/ 
+            if ( (location.pathname).indexOf('post.php') != -1 ) {
+                var top = ( ( dh / 2 ) - ( parseInt( height ) / 2 ) + sc +5 );
+                top = this.originalTop = ( top < 0 ) ? 0 : top + 'px';
+                left = 0 + 'px';
+            } else if ( (location.pathname).indexOf('admin.php') != -1 ) {
+                var top = ( ( dh / 2 ) - ( parseInt( height ) / 2 ) + sc -50 );
+                left = this.originalLeft = ( left < 0 ) ? 0 : left + 'px';
+            }
 /**************************************************************************************************************
 ****************************************************************************************************************/    
             win.container.css( { 'width': width + 'px', 'left': left, 'top': top } );

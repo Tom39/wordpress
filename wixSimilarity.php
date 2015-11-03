@@ -85,8 +85,60 @@ function array_word_count($array) {
 	return $returnValue;
 }
 
+function wix_tfidf( $words_countArray ) {
+	global $similarityObj;
+
+	//tf, idfの計算
+	if ( empty($similarityObj) ) {
+		wix_tf($words_countArray);
+		wix_idf();
+	}
+
+	//tf-idf計算
+	foreach ($similarityObj as $key => $value) {
+		$tf_idf = $value['tf'] * $value['idf'];
+		$value['tf_idf'] = $tf_idf;
+		$similarityObj[$key] = $value;
+	}
+}
+
+function wix_bm25( $words_countArray, $doc_id ) {
+	global $wpdb, $similarityObj;
+	
+	//tf, idfの計算
+	if ( empty($similarityObj) ) {
+		wix_tf($words_countArray);
+		wix_idf();
+	}
+
+	//ドキュメント長など
+	$sql = 'SELECT doc_length FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
+	$doc_lengthObj = $wpdb->get_results($sql);
+	$doc_length = $doc_lengthObj[0]->doc_length;
+
+	$sql = 'SELECT COUNT(ID) AS doc_num, SUM(doc_length) AS all_doc_length FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft"';
+	$docObj = $wpdb->get_results($sql);
+	$doc_num = $docObj[0]->doc_num;
+	$avg_doc_length = ($docObj[0]->all_doc_length) / $doc_num;
+
+	//bm25用のパラメータ
+	$k1 = 2;
+	$b = 0.75;
+
+	//bm25値計算
+	foreach ($similarityObj as $key => $value) {
+		$bm25 = ($value['tf'] * $value['idf'] * ($k1 + 1)) 
+					/ ($value['tf'] + $k1 * (1 - $b + $b * ($doc_length / $avg_doc_length)));
+
+
+		$value['bm25'] = $bm25;
+		$similarityObj[$key] = $value;
+	}
+}
+
 function wix_tf($array) {
 	global $words_countArray_num, $similarityObj;
+
 	$all_words_len = count($array);
 
 	foreach ($array as $word => $count) {
@@ -97,6 +149,7 @@ function wix_tf($array) {
 
 function wix_idf() {
 	global $wpdb, $post, $similarityObj;
+
 	$document_num = (int) $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->posts WHERE post_status!=\"inherit\" and post_status!=\"trash\" and post_status!=\"auto-save\" and post_status!=\"auto-draft\"");
 	$table_name = $wpdb->prefix . 'wix_keyword_similarity';
 
@@ -125,8 +178,10 @@ function wix_idf() {
 	}
 }
 
+//ドキュメント作成中におけるキーワード推薦時のidf計算
 function wix_idf_creating_document( $id ) {
 	global $wpdb, $similarityObj;
+
 	$document_num = (int) $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->posts WHERE post_status!=\"inherit\" and post_status!=\"trash\" and post_status!=\"auto-save\" and post_status!=\"auto-draft\"");
 	$table_name = $wpdb->prefix . 'wix_keyword_similarity';
 
@@ -157,6 +212,7 @@ function wix_idf_creating_document( $id ) {
 
 function no_wixfile_entry($array) {
 	global $wpdb;
+
 	$distinctKeywordsArray = array();
 	$returnValue = array();
 
@@ -178,6 +234,7 @@ function no_wixfile_entry($array) {
 
 function wix_post_title($array) {
 	global $wpdb, $doc_title;
+
 	$returnValue = array();
 
 	$results = $wpdb->get_results("SELECT ID, post_title, post_content FROM $wpdb->posts WHERE post_status = \"publish\" OR post_status = \"draft\"");

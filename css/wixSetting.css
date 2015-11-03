@@ -23,51 +23,14 @@ a {
 /* 大枠部分 */
 #contents {
     clear: both;
-    overflow: auto;
+    /*overflow: hidden;*/
     background: #f7f7f7;
     width: 96.2%;
+    height: 80vh;
     padding: 20px;
 }
 .tabbox {
     display: none;
-}
-#wix_settings {
-    width: 30%;
-    height: 100%;
-    float: left;
-    font-size: 10pt;
-}
-#wixfile {
-    width: 70%;
-    height: 100%;
-    float: left;
-}
-#wixfile_operation_contents {
-    clear: both;
-    width: 60%;
-    height: 100%;
-    float: left;
-    overflow: auto;
-    background: #f7f7f7;
-}
-#wixfile_contents {
-    clear: both;
-    width: 100%;
-    overflow: auto;
-    background: #f7f7f7;
-}
-.wixfile_tabbox {
-    display: none;
-    width: 100%;
-    font-size: 15px;
-    float: left;
-}
-.wixfile_iframe {
-    float: left;
-    width: 40%;
-    height: 100%;
-    margin-top: 4%;
-    font-size: 10pt;
 }
 
 /* ウィンドウタブ部分 */
@@ -106,10 +69,165 @@ ul#tab li.active a:hover {
     color: #fff;
 }
 
+/* モーダルウィンドウ部分 */
+.contentsBody .edit_popTable {
+    width: 100%;
+}
+.contentsBody .edit_popTable tbody {
+    background-color: #FFFFEE;
+}
+.contentsBody .edit_popTable .edit_popTableTr {
+    background-color: #99FFFF;
+}
+.contentsBody .edit_popTable .edit_entryTr {
+    width: 100%;
+}
+.contentsBody .edit_popTable .edit_entryTr td {
+    width: 100%;
+}
+.contentsBody .edit_popTable .edit_entryTr .edit_keywordTd {
+    width: 30%;
+}
+.contentsBody .edit_popTable .edit_entryTr .edit_TargetTd {
+    width: 70%;
+}
+.contentsBody .edit_popTable .edit_entryTr input {
+    width: 100%;
+}
+
+.contentsBody .delete_popTable {
+    border-collapse: collapse;
+}
+.contentsBody .delete_popTable tbody {
+    background-color: #FFFFEE;
+}
+.contentsBody .delete_popTable .delete_popTr {
+    background-color: #99FFFF;
+    border-bottom:1px;
+}
+.contentsBody .delete_popTable tr {
+    border-bottom:1px dashed #ccc;
+}
+.contentsBody .delete_popTable .delete_keywordTd {
+    border-right: 1px solid #ccc;
+}
+
+#popButtonDiv {
+    width:100%;
+    height:8%;
+}
+#popButtonDiv button{
+    width:20%;
+    height:60%;
+    padding: 5px auto;
+    margin: 15px 30px;
+}
+
+
+/*----------------------------------------------------------------------------------------------------------
+　　Tab 1
+  ----------------------------------------------------------------------------------------------------------*/
+/* 大枠部分 */
+#wix_settings {
+    width: 30%;
+    height: 100%;
+    float: left;
+    font-size: 10pt;
+}
+#wix_settings_form {
+    width: 95%;
+}
+#wixfile {
+    width: 70%;
+    height: 100%;
+    float: left;
+}
+#wixfile_operation_contents {
+    clear: both;
+    width: 60%;
+    height: 100%;
+    float: left;
+    overflow: auto;
+    background: #f7f7f7;
+}
+#wixfile_contents {
+    clear: both;
+    width: 100%;
+    overflow: auto;
+    background: #f7f7f7;
+}
+.wixfile_tabbox {
+    display: none;
+    width: 100%;
+    font-size: 15px;
+    float: left;
+}
+#wixfile_iframe {
+    float: left;
+    width: 40%;
+    height: 100%;
+    margin-top: 4%;
+    font-size: 10pt;
+}
+
+/* 初期設定項目部分 */
+#init_settings {
+    height: 30vh;
+    overflow: auto;
+}
+
 /* オプション部分 */
+#option_settings {
+    width: 100%;
+    height: 46vh;
+    overflow: auto;
+}
+.contents_option {
+    width: 100%;
+    margin-bottom: 10%;
+}
+.contents_option strong {
+    font-size: 13pt;
+}
+.contents_option fieldset{
+    margin-top: 3%;
+}
+.contents_option input{
+    display: none;
+}
+.contents_option label {
+    display: block;
+    float: left;
+    cursor: pointer;
+    width: 20%;
+    margin: 0;
+    padding: 10px;
+    background: #bdc3c7;
+    color: #869198;
+    font-size: 13px;
+    text-align: center;
+    line-height: 1;
+    transition: .2s;
+}
+.contents_option label:first-of-type {
+    border-radius: 3px 0 0 3px;
+}
+.contents_option label:last-of-type {
+    border-radius: 0 3px 3px 0;
+}
+.contents_option input[type="radio"]:checked + .switch-on {
+    background-color: #CCCCFF;
+    color: #fff;
+}
+.contents_option input[type="radio"]:checked + .switch-off {
+    background-color: #e67168;
+    color: #fff;
+}
+
 #wix_settings_button, #wix_init_settings_button {
     float: right;
     margin-right: 25px;
+    margin-top: 2%;
 }
 
 /* WIXファイル タブ部分*/
@@ -157,42 +275,49 @@ ul#wixfile_tab li.active a:hover {
     height: 100%;
     overflow: hidden;
 }
-/*.wixfile_table tbody {
-    overflow: hidden;
-}*/
+.wixfile_table tbody{
+    width: 100%;
+}
 .wixfile_table tr {
 
 }
 .wixfile_table td, th {
     height: 100%;
 }
-.wixfile_table input[type="text"] , .wixfile_table input[type="text"] {
+.wixfile_table input[type="text"] {
     height: 100%;
     width: 95%;
 }
 .wixfile_even, .wixfile_odd {
     width: 100%;
 }
-.wixfile_entry_selection {
+.wixfile_entry_select {
     width: 7%;
 }
 .wixfile_entry_edit, .wixfile_entry_delete {
     width: 8%;
+    font-size: 10pt;
 }
 .wixfile_keyword, .wixfile_target, .wixfile_keyword_edit, .wixfile_target_edit {
     width: 30%;
 }
 
-/* 各種操作部分 */
+/* 各種まとめて操作部分 */
 #wixfile_entry_operation {
     clear: both;
+    font-size: 10pt;
+    vertical-align: bottom;
 }
-
+#wixfile_each_operation {
+    margin-left: 2vh;
+    font-size: 9pt;
+}
 
 /* インラインフレーム部分 */
 #wixfile_iframe_inline_div {
     width: 100%;
-    height: 63vh;
+    /*height: 63vh;*/
+    height: 53vh;
 }
 #wixfile_entry_iframe {
     border : 1px solid black;
@@ -208,19 +333,243 @@ ul#wixfile_tab li.active a:hover {
     -moz-transform-origin: 0 0;
 }
 
-.pWindow {
-    left: 40% !important;
-    top: 38% !important;
+/* エントリ挿入部分 */
+#newEntry {
+    float: right;
+    margin-top: 2%;
+    width: 40%;
 }
-
-#wixfile_settings_button {
+#newEntry legend {
+    font-size: 15px;
+    font-weight: bold;
+}
+#newEntry input[type="text"] {
+    height: 100%;
+    width: 95%;
+}
+#add_wixfile_entry {
     float: right;
 }
 
 
-/*#wixfile_entry_operation {
+#wixfile_settings_button {
+    float: left;
+}
+
+
+/*----------------------------------------------------------------------------------------------------------
+　　Tab 2
+  ----------------------------------------------------------------------------------------------------------*/
+/* 大枠部分 */
+#tab2 {
     clear: both;
-}*/
+    overflow: auto;
+}
+#createdDoc {
+    width: 22%;
+    /*height: 74vh;*/
+    float: left;
+}
+.doc_tabbox {
+    display: none;
+    width: 100%;
+/*    overflow: scroll;*/
+}
+#second_wixfile {
+    width: 40%;
+    height: 100%;
+    margin-left: 2%;
+    float: left;
+}
+#second_wixfile_operation_contents {
+    width: 100%;
+    height: 100%;
+    background: #f7f7f7;
+}
+#second_wixfile_contents {
+    clear: both;
+    width: 100%;
+    background: #f7f7f7;
+}
+.second_wixfile_tabbox {
+    display: none;
+    width: 100%;
+    font-size: 15px;
+    float: left;
+}
+#doc_list_iframe {
+    float: left;
+    width: 33%;
+    height: 100%;
+    margin-left: 2%;
+}
+
+
+/* ドキュメントタブ部分*/
+ul#doc_tab {
+    zoom: 1;
+    background: #c9c3c4;
+    border-bottom: 3px solid #c81528;
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+    float: left;
+    width: 100%;
+}
+ul#doc_tab:after { content:"."; display: block; height:0px; clear:both; line-height:0; visibility:hidden; }
+ul#doc_tab li {
+    float: left;
+    text-align: center;
+    margin-bottom: 0px;
+}
+ul#doc_tab li:last-child {
+    background: none;
+}
+ul#doc_tab li a {
+    display: block;
+    width: 103px;
+    padding: 4px 0;
+    text-decoration: none;
+    color: #222;
+}
+ul#doc_tab li a:hover {
+    background: #c95560;
+    color: #fff;
+}
+ul#doc_tab li.active,
+ul#doc_tab li.active a,
+ul#doc_tab li.active a:hover {
+    background: #c81528;
+    color: #fff;
+}
+
+/* ドキュメントリスト部分 */
+#doc_list {
+    clear: both;
+    width: 100%;
+    height: 76vh;
+    overflow: auto;
+}
+.doc_table {
+    width: 100%;
+    table-layout:fixed;
+}
+.doc_table .doc_table_heading {
+    text-align: left;
+    width: 100%;
+}
+
+/* WIXファイル タブ部分*/
+.second_wixfile_table {
+    width: 100%;
+}
+ul#second_wixfile_tab {
+    zoom: 1;
+    background: #c9c3c4;
+    border-bottom: 3px solid #c81528;
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+}
+ul#second_wixfile_tab:after { content:"."; display: block; height:0px; clear:both; line-height:0; visibility:hidden; }
+ul#second_wixfile_tab li {
+    float: left;
+    text-align: center;
+    margin-bottom: 0px;
+}
+ul#second_wixfile_tab li:last-child {
+    background: none;
+}
+ul#second_wixfile_tab li a {
+    display: block;
+    width: 100px;
+    padding: 4px 0;
+    text-decoration: none;
+    color: #222;
+}
+ul#second_wixfile_tab li a:hover {
+    background: #c95560;
+    color: #fff;
+}
+ul#second_wixfile_tab li.active,
+ul#second_wixfile_tab li.active a,
+ul#second_wixfile_tab li.active a:hover {
+    background: #c81528;
+    color: #fff;
+}
+
+
+/* WIXファイルテーブル部分*/
+.second_wixfile_table {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+.second_wixfile_table td, th {
+    height: 100%;
+}
+.second_wixfile_table input[type="text"] {
+    height: 100%;
+    width: 95%;
+}
+.second_wixfile_table .wixfile_even, .wixfile_odd {
+    width: 100%;
+}
+.second_wixfile_table .wixfile_entry_select {
+    width: 7%;
+}
+.second_wixfile_table .wixfile_entry_edit, .second_wixfile_table .wixfile_entry_delete {
+    width: 8%;
+    font-size: 10pt;
+}
+.second_wixfile_table .wixfile_keyword, .second_wixfile_table .wixfile_target,
+ .second_wixfile_table .wixfile_keyword_edit, .second_wixfile_table .wixfile_target_edit {
+    width: 30%;
+}
+
+
+/* 各種まとめて操作部分 */
+#second_wixfile_entry_operation {
+    clear: both;
+    font-size: 10pt;
+    vertical-align: bottom;
+}
+#second_wixfile_each_operation {
+    margin-left: 2vh;
+    font-size: 9pt;
+}
+
+#iframe_exam {
+    text-align: center;
+}
+
+
+/* インラインフレーム部分 */
+#doc_list_iframe_inline_div {
+    width: 100%;
+    height: 40vh;
+}
+#doc_iframe {
+    border : 1px solid green;
+    width: 100%;
+    height: 100%;
+    -webkit-transform: scale(0.99);
+    -webkit-transform-origin: 0 0;
+    -ms-transform: scale(0.99);
+    -ms-transform-origin: 0 0;
+    -o-transform: scale(0.99);
+    -o-transform-origin: 0 0;
+    -moz-transform: scale(0.99);
+    -moz-transform-origin: 0 0;
+}
+#doc_iframe_text {
+    width: 90%;
+}
+
+
+
+
+
 
 /*----------------------------------------------------------------------------------------------------------
 

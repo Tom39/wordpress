@@ -7,7 +7,8 @@
 //--------------------------------------------------------------------------
 register_activation_hook( __FILE__, 'wix_manual_decide_init' );
 function wix_manual_decide_init() {
-	update_option( 'manual_decideFlag', 'true' );
+	// update_option( 'manual_decideFlag', 'true' );
+	add_option( 'manual_decideFlag', 'true' );
 }
 
 //--------------------------------------------------------------------------
@@ -29,7 +30,8 @@ function wix_table_create() {
 		     tf float NOT NULL,
 		     idf float NOT NULL,
 		     tf_idf float NOT NULL,
-		     UNIQUE(doc_id,keyword(20)),
+		     bm25 float NOT NULL,
+		     PRIMARY KEY(doc_id,keyword(255)),
 		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
 		     ON UPDATE CASCADE ON DELETE CASCADE
 	        );";
@@ -43,7 +45,7 @@ function wix_table_create() {
 	         doc_id bigint(20) UNSIGNED,
 		     doc_id2 bigint(20) UNSIGNED,
 		     cos_similarity float NOT NULL,
-		     UNIQUE(doc_id,doc_id2),
+		     PRIMARY KEY(doc_id,doc_id2),
 		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
 		      ON UPDATE CASCADE ON DELETE CASCADE,
 		     FOREIGN KEY (doc_id2) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
@@ -60,7 +62,7 @@ function wix_table_create() {
 			keyword tinytext NOT NULL, 
 			target_num mediumint(9) NOT NULL, 
 			doc_num mediumint(9) NOT NULL, 
-			UNIQUE KEY id (id)
+			PRIMARY KEY id (id)
 			);";
 	dbDelta($sql);
 
@@ -71,7 +73,7 @@ function wix_table_create() {
 	$sql = "CREATE TABLE " . $table_name . " (
 			keyword_id bigint(20) NOT NULL, 
 			target tinytext NOT NULL, 
-			UNIQUE(keyword_id, target(255)), 
+			PRIMARY KEY(keyword_id, target(255)), 
 			FOREIGN KEY (keyword_id) REFERENCES wp_wixfilemeta(id) ON UPDATE CASCADE ON DELETE CASCADE
 			);";
 	dbDelta($sql);
@@ -83,13 +85,48 @@ function wix_table_create() {
 	$sql = "CREATE TABLE " . $table_name . " (
 			keyword_id bigint(20) NOT NULL, 
 			doc_id bigint(20) UNSIGNED NOT NULL, 
-			UNIQUE(keyword_id, doc_id), 
+			PRIMARY KEY(keyword_id, doc_id), 
 			FOREIGN KEY (keyword_id) REFERENCES wp_wixfilemeta(id) 
 				ON UPDATE CASCADE ON DELETE CASCADE, 
 			FOREIGN KEY (doc_id) REFERENCES wp_posts(ID) 
 				ON UPDATE CASCADE ON DELETE CASCADE
 			);";
 	dbDelta($sql);
+
+
+	$table_name = $wpdb->prefix . 'wix_decidefile_index';
+	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+	if ( $is_db_exists == $table_name ) return;
+	$sql = "CREATE TABLE " . $table_name . " (
+			dfile_id bigint(20) auto_increment, 
+			doc_id bigint(20) UNSIGNED NOT NULL, 
+			version bigint(20) NOT NULL, 
+			time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, 
+			PRIMARY KEY(dfile_id, doc_id, version), 
+			FOREIGN KEY(doc_id) REFERENCES wp_posts(ID) 
+				ON UPDATE CASCADE ON DELETE CASCADE
+			);";
+	dbDelta($sql);
+
+
+	$table_name = $wpdb->prefix . 'wix_decidefile_history';
+	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+	if ( $is_db_exists == $table_name ) return;
+	$sql = "CREATE TABLE " . $table_name . " (
+			dfile_id bigint(20) NOT NULL, 
+			start bigint(20) NOT NULL, 
+			end bigint(20) NOT NULL, 
+			nextStart bigint(20) NOT NULL, 
+			keyword_id bigint(20) NOT NULL, 
+			target tinytext NOT NULL, 
+			PRIMARY KEY(dfile_id, start), 
+			FOREIGN KEY(dfile_id) REFERENCES wp_wix_decidefile_index(dfile_id) 
+				ON UPDATE CASCADE ON DELETE CASCADE, 
+			FOREIGN KEY(keyword_id) REFERENCES wp_wixfilemeta(id) 
+				ON UPDATE CASCADE ON DELETE CASCADE
+			);";
+	dbDelta($sql);
+
 
 
 	$table_name = $wpdb->prefix . 'posts';
@@ -258,12 +295,7 @@ function wixfile_settings_core() {
 
 			$e = new WP_Error();
 			/*
-			* wixfilemeta_postsテーブルの更新用Array
-			* $wixfilemeta_posts_array: [
-											'insert': ["keyword"=>id],
-											'update': ["keyword"=>id],
-											'delete': ["keyword"=>id],
-										]	
+			* wixfilemeta_postsテーブルの新規キーワード分挿入用Array
 			*/
 			$wixfilemeta_posts_array = array();
 
@@ -272,16 +304,16 @@ function wixfile_settings_core() {
 				$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
 
 				//エントリ挿入用モジュール
-				if ( isset( $_POST['keywords'] ) && $_POST['keywords'] && isset( $_POST['targets'] ) && $_POST['targets'] ) {
+				if ( isset( $_POST['insert_keywords'] ) && $_POST['insert_keywords'] && isset( $_POST['insert_targets'] ) && $_POST['insert_targets'] ) {
 					
 					$target_checker = array();
 					$insertKeywordArray = array();
 					$insertTargetArray = array();
 					$latest_id = 0;
 
-					foreach ($_POST['keywords'] as $index => $keyword) {
+					foreach ($_POST['insert_keywords'] as $index => $keyword) {
 						if ( !empty($keyword) ) {
-							$target = $_POST['targets'][$index];
+							$target = $_POST['insert_targets'][$index];
 							$keyword_flag = false;
 							$entry_flag = false;
 
@@ -318,20 +350,8 @@ function wixfile_settings_core() {
 														'keyword' => $keyword
 														)
 													);
-/*---------------------------------------------------------------------------*/
 										$wixfilemeta_posts_array += array($latest_id => $keyword);
-										// if ( count($wixfilemeta_posts_array) == 0 ) {
-										// 	$wixfilemeta_posts_array['insert'] = array($latest_id => $keyword);
-										// } else {
-										// 	if ( !array_key_exists('insert', $wixfilemeta_posts_array) ) {
-										// 		$wixfilemeta_posts_array['insert'] = array($latest_id => $keyword);
-										// 	} else {
-										// 		$tmpArray = $wixfilemeta_posts_array['insert'];
-										// 		$tmpArray[$latest_id] = $keyword;
-										// 		$wixfilemeta_posts_array['insert'] = $tmpArray;
-										// 	}
-										// }
-/*---------------------------------------------------------------------------*/
+
 
 									} else {
 										foreach ($insertKeywordArray as $key => $value) {
@@ -392,7 +412,8 @@ function wixfile_settings_core() {
 
 						$sql = 'INSERT INTO ' . $wixfilemeta . '(id, keyword) VALUES ' . $insertKeyword;
 						$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
-						$result = $wpdb->query( $sql );					
+						// $result = $wpdb->query( $sql );	
+						var_dump($sql);
 
 						if ( $result != 0 ) set_transient( 'wix_settings', 'WIX FILE 更新しました', 1 );
 						else set_transient( 'wix_settings', 'WIX FILE 更新に失敗しました', 1 );
@@ -416,7 +437,8 @@ function wixfile_settings_core() {
 
 						$sql = 'INSERT INTO ' . $wixfile_targets . '(keyword_id, target) VALUES ' . $insertTarget;
 						$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
-						$result = $wpdb->query( $sql );					
+						// $result = $wpdb->query( $sql );					
+						var_dump($sql);
 
 						if ( $result != 0 ) set_transient( 'wix_settings', 'WIX FILE 更新しました', 1 );
 						else set_transient( 'wix_settings', 'WIX FILE 更新に失敗しました', 1 );
@@ -501,20 +523,8 @@ function wixfile_settings_core() {
 														'keyword_flag' => $keyword_flag,
 														)
 													);
-/*---------------------------------------------------------------------------*/
 										$wixfilemeta_posts_array += array($new_keyword_id => $keyword);
-										// if ( count($wixfilemeta_posts_array) == 0 ) {
-										// 	$wixfilemeta_posts_array['insert'] = array($new_keyword_id => $keyword);
-										// } else {
-										// 	if ( !array_key_exists('insert', $wixfilemeta_posts_array) ) {
-										// 		$wixfilemeta_posts_array['insert'] = array($new_keyword_id => $keyword);
-										// 	} else {
-										// 		$tmpArray = $wixfilemeta_posts_array['insert'];
-										// 		$tmpArray[$new_keyword_id] = $keyword;
-										// 		$wixfilemeta_posts_array['insert'] = $tmpArray;
-										// 	}
-										// }
-/*---------------------------------------------------------------------------*/
+
 
 									} else {
 										//エントリを更新用Arrayに挿入
@@ -579,20 +589,7 @@ function wixfile_settings_core() {
 														'keyword_flag' => $keyword_flag,
 														)
 													);
-/*---------------------------------------------------------------------------*/
 										$wixfilemeta_posts_array += array($new_keyword_id => $keyword);
-										// if ( count($wixfilemeta_posts_array) == 0 ) {
-										// 	$wixfilemeta_posts_array['insert'] = array($new_keyword_id => $keyword);
-										// } else {
-										// 	if ( !array_key_exists('insert', $wixfilemeta_posts_array) ) {
-										// 		$wixfilemeta_posts_array['insert'] = array($new_keyword_id => $keyword);
-										// 	} else {
-										// 		$tmpArray = $wixfilemeta_posts_array['insert'];
-										// 		$tmpArray[$new_keyword_id] = $keyword;
-										// 		$wixfilemeta_posts_array['insert'] = $tmpArray;
-										// 	}
-										// }
-/*---------------------------------------------------------------------------*/
 
 									} else {
 										//エントリを更新用Arrayに挿入
@@ -751,6 +748,7 @@ function wixfile_settings_core() {
 							$id = $value->id;
 							$keyword = $value->keyword;
 							$sql = 'DELETE FROM ' . $wixfilemeta . ' WHERE id=' . $id;
+							var_dump($sql);
 							// $wpdb->query( $sql );
 							/**
 								この時、wixfilemeta_postsの行はカスケードDELETEされる
@@ -760,7 +758,7 @@ function wixfile_settings_core() {
 
 				}
 
-				wixfilemeta_posts_insert_update_delete( $wixfilemeta_posts_array );
+				wixfilemeta_posts_insert( $wixfilemeta_posts_array );
 				set_transient( 'wix_settings', 'WIXファイル 更新しました', 1 );
 			}
 		} else {
@@ -771,7 +769,7 @@ function wixfile_settings_core() {
 }
 
 //WIXファイルに挿入・更新・削除が行われた時の、「WIXファイル内キーワードが出現するドキュメント」を表すテーブルをupdate
-function wixfilemeta_posts_insert_update_delete( $array ) {
+function wixfilemeta_posts_insert( $array ) {
 	var_dump( $array );
 	global $wpdb;
 	$insert_wixfilemeta_postsArray = array();
@@ -831,39 +829,11 @@ function wixfilemeta_posts_insert_update_delete( $array ) {
 		}
 
 	}
-
-
-
-
-
-
-
-
-
-	// if ( array_key_exists('insert', $array) ) {
-	// 	$keyword_checker = array();
-	// 	$inserted_keywordArray = $array['insert'];
-	// 	foreach ($inserted_keywordArray as $index => $keyword) {
-			
-	// 	}
-
-	// 	unset($keyword_checker); unset($inserted_keywordArray);
-
-	// } else if ( array_key_exists('update', $array) ) {
-	// 	$keyword_checker = array();
-	// 	$updated_keywordArray = $array['update'];
-
-	// 	unset($keyword_checker); unset($updated_keywordArray);
-
-	// } else if ( array_key_exists('delete', $array) ) {
-	// 	$keyword_checker = array();
-	// 	$deleted_keywordArray = $array['delete'];
-
-	// 	unset($keyword_checker); unset($deleted_keywordArray);
-
-	// } 
 }
 
+/**
+	↓２つの関数を別のファイルに移動したい。ここにあるのはキモチワルイ
+**/
 //ドキュメントの投稿ステータスが変わったら、WIXファイル内のどのキーワードが出現するかを算出
 add_action( 'transition_post_status', 'wix_keyword_appearance_in_doc', 10, 3 );
 function wix_keyword_appearance_in_doc( $new_status, $old_status, $post ) {

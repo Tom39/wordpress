@@ -32,6 +32,7 @@ jQuery(function($) {
   		$('#detail_show').show();
   	});
 
+  	//ページ作成画面における、WIXファイルへのエントリ追加
   	$('#new_entry_insert').click(function(){
   		var keyword = $('#newEntry input:text').eq(0).val();
   		var target = $('#newEntry input:text').eq(1).val();
@@ -49,10 +50,32 @@ jQuery(function($) {
 				data: entry_data,
 
 				success: function(json) {
-					if ( json['test'] == 'SUCCESS') {
+					if ( json['result'] == 'SUCCESS') {
 						$('#newEntry input:text').eq(0).val('');
   						$('#newEntry input:text').eq(1).val('');
   						$('#insert_success').show();
+
+  						//成功したら、このキーワードが出現するドキュメント群をwixfilemeta_postsに格納
+  						var data = {
+  							'action': 'wix_wixfilemeta_posts_insert',
+  							'keyword_id': json['keyword_id'],
+  							'keyword': json['keyword'],
+  						};
+  						$.ajax({
+							async: true,
+							dataType: "json",
+							type: "POST",
+							url: ajaxurl,
+							data: data,
+
+							success: function(json) {
+								console.log(json);
+							},
+
+							error: function(xhr, textStatus, errorThrown) {
+								console.log(textStatus);
+							}
+						});
 
 					} else {
 						alert('既に存在する情報です');
@@ -92,7 +115,7 @@ jQuery(function($) {
 			data: entry_data,
 
 			success: function(json) {
-// console.log(json['similarity']);
+console.log(json['similarity']);
 // console.log(json['returnValue']);
 				if ( json['returnValue'].length != 0 ) {
 					var contents = $("<div />", {
