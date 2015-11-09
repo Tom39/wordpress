@@ -140,7 +140,7 @@ jQuery(function($) {
 								former_target = $(this).parent().prev().find('.wixfile_target span a').attr('href');
 							}
 						});
-/***************************************************************************************************************/
+
 						//キーワードかターゲットに変更があったら更新用要素追加
 						var count = 0;
 						var flag = false;
@@ -287,134 +287,6 @@ jQuery(function($) {
 									.attr('href', update_target);
 							}
 						}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-						// if ( (update_keyword != former_keyword) || (update_target != former_target) ) { 
-
-						// 	var count = ($('.update_element').length) / 2;
-						// 	if ( $(this).parent().next('input:text').size() == 0 ) {
-						// 		org_keyword = $(this)
-						// 							.parent()
-						// 							.prev()
-						// 							.find('.wixfile_keyword span')
-						// 							.text();
-
-						// 		org_target = $(this)
-						// 							.parent()
-						// 							.prev()
-						// 							.find('.wixfile_target span a')
-						// 							.attr('href');
-
-						// 		//オリジナルエントリ要素を追加
-						// 		$(this)
-						// 			.parent()
-						// 			.after( '<input type="text" id=org_update_element' 
-						// 						+ count 
-						// 						+ ' class="org_update_element" name="org_update_keywords[' 
-						// 						+ count 
-						// 						+ ']" value="' 
-						// 						+ org_keyword 
-						// 						+ '" style="display:none">')
-						// 			.after( '<input type="text" id=org_update_element' 
-						// 						+ count 
-						// 						+ ' class="org_update_element" name="org_update_targets[' 
-						// 						+ count 
-						// 						+ ']" value="' 
-						// 						+ org_target 
-						// 						+ '" style="display:none">');
-
-						// 	} else {
-						// 		org_keyword = $(this)
-						// 							.parent()
-						// 							.siblings('.org_update_element')
-						// 							.eq(1)
-						// 							.val();
-
-						// 		org_target = $(this)
-						// 							.parent()
-						// 							.siblings('.org_update_element')
-						// 							.eq(0)
-						// 							.val();
-
-						// 		count = $(this)
-						// 					.parent()
-						// 					.next('input:text')
-						// 					.attr('id')
-						// 					.substr( 'update_element'.length );
-						// 	}
-
-						// 	//結果的に、元々のエントリから変化なかった時は、更新用要素を削除
-						// 	if ( (update_keyword == org_keyword) && (update_target == org_target) ) {
-						// 		//更新用要素を削除
-						// 		$.each($(this).parent().nextAll(), function(index, el) {
-						// 			if ( $(this).get()[0].localName == 'input' )
-						// 				$(this).remove();
-						// 			else 
-						// 				return false;
-						// 		});
-
-						// 	} else {
-						// 		$.each($(this).parent().nextAll('input:text'), function(index, el) {
-						// 			if ( $(this).attr('class') == 'update_element' || $(this).attr('class') == 'insert_element') $(this).remove();
-						// 			else return false;
-						// 		});
-						// 		$(this)
-						// 			.parent()
-						// 			.after( '<input type="text" id="update_element' 
-						// 						+ count 
-						// 						+ '" class="update_element" name="update_keywords[' 
-						// 						+ count 
-						// 						+ ']" value="' 
-						// 						+ update_keyword 
-						// 						+ '" style="display:none">')
-						// 			.after( '<input type="text" id="update_element' 
-						// 						+ count 
-						// 						+ '" class="update_element" name="update_targets[' 
-						// 						+ count 
-						// 						+ ']" value="' 
-						// 						+ update_target 
-						// 						+ '" style="display:none">');
-						// 	}
-						// 	//表示部分を書き換え
-						// 	$(this)
-						// 		.parent()
-						// 		.prev()
-						// 		.find('.wixfile_keyword span')
-						// 		.text(update_keyword);
-
-						// 	if ( update_target.length < 28 ) {
-						// 		$(this)
-						// 			.parent()
-						// 			.prev()
-						// 			.find('.wixfile_target span a')
-						// 			.text(update_target)
-						// 			.attr('href', update_target);
-						// 	} else {
-						// 		$(this)
-						// 			.parent()
-						// 			.prev()
-						// 			.find('.wixfile_target span a')
-						// 			.text(update_target.substr(0, 27) + '...')
-						// 			.attr('href', update_target);
-						// 	}
-						// }
-/***************************************************************************************************************/
 						//表示
 						$(this)
 							.parent()
@@ -1344,7 +1216,7 @@ jQuery(function($) {
 
 
 	//エントリ追加
-	$('#add_wixfile_entry').click(function(event) {
+	$('#add_wixfile_entry, #second_add_wixfile_entry').click(function(event) {
 		//エントリ情報取得
 		var keyword = '';
 		var target = '';
@@ -1356,8 +1228,18 @@ jQuery(function($) {
 
 		if ( keyword != '' && target != '' ) {
 			//対象wixfile_tabbox
-			var subjectTable = $('.wixfile_tabbox:last tbody');
-			var tmp_subjectTable = subjectTable;
+			var subjectTable, tmp_subjectTable;
+			$.each($('.tabbox'), function(i, el) {
+				if ( $(this).css('display') == 'block' ) {
+					if ( $(this).attr('id') == 'tab1' ) 
+						subjectTable = $(this).find('.wixfile_tabbox:last tbody');
+					else 
+						subjectTable = $(this).find('.second_wixfile_tabbox:last tbody');
+
+					return false;
+				}
+			});
+			tmp_subjectTable = subjectTable;
 			console.log(subjectTable);
 
 			if ( subjectTable.find('tr').size() == 0 ) {
@@ -1702,10 +1584,28 @@ jQuery(function($) {
 				if ( index == 1 ) $(this).val('');
 			});
 			//"挿入成功"を出力する
-			$('#entry_insert_result').text('データ追加成功！');
+			$.each($('.tabbox'), function(i, el) {
+				if ( $(this).css('display') == 'block' ) {
+					if ( $(this).attr('id') == 'tab1' ) 
+						$('#entry_insert_result').text('データ追加成功！');
+					else 
+						$('#second_entry_insert_result').text('データ追加成功！');
+
+					return false;
+				}
+			});
 
 		} else {
-			$('#entry_insert_result').text('両方入力してください');
+			$.each($('.tabbox'), function(i, el) {
+				if ( $(this).css('display') == 'block' ) {
+					if ( $(this).attr('id') == 'tab1' ) 
+						$('#entry_insert_result').text('両方入力してください');
+					else 
+						$('#second_entry_insert_result').text('両方入力してください');
+
+					return false;
+				}
+			});
 		}
 
 
@@ -1714,21 +1614,32 @@ jQuery(function($) {
 		});
 	});
 
-
-
+	//リンクがクリックされたら
 	$('.doc_page, .wixfile_target').click(function(event) {
-		var url = '';
+		if ( $('.second_wixfile_tabbox').is(':visible') == true ) {
+			var url = '';
+			if ( $(this).attr('class') == 'doc_page' )
+				url = $(this).attr('href');
+			else
+				url = $(this).find('a').attr('href');
 
-		if ( $(this).attr('class') == 'doc_page' )
-			url = $(this).attr('href');
-		else
-			url = $(this).find('a').attr('href');
-		
-		$('#doc_iframe_text').val(url);
+			//tab2のインラインフレーム直下のtextboxにURL挿入
+			$('#doc_iframe_text').val(url);
+			$('#second_newTarget_form').val(url);
+		}
 	});
 
+	//tab2のインラインフレーム部分
 	$('#doc_iframe_text').focus(function(event) {
 		 $(this).select();
+	});
+	$('#doc_iframe_text').keypress(function(e){
+		if( (e.which == 13) || (e.keyCode == 13) ) {
+			var url = $('#doc_iframe_text').val();
+			$('#doc_iframe')[0].contentDocument.location.replace(url);
+
+			return false;
+		}
 	});
 
 

@@ -347,13 +347,17 @@ ul#wixfile_tab li.active a:hover {
     height: 100%;
     width: 95%;
 }
+#entry_insert_result {
+    width: 100%;
+    height: 3vh;
+}
 #add_wixfile_entry {
     float: right;
 }
 
 
 #wixfile_settings_button {
-    float: left;
+    float: right;
 }
 
 
@@ -402,6 +406,11 @@ ul#wixfile_tab li.active a:hover {
     width: 33%;
     height: 100%;
     margin-left: 2%;
+}
+#second_newEntry {
+    float: right;
+    margin-top: 5%;
+    width: 33%;
 }
 
 
@@ -547,7 +556,7 @@ ul#second_wixfile_tab li.active a:hover {
 /* インラインフレーム部分 */
 #doc_list_iframe_inline_div {
     width: 100%;
-    height: 40vh;
+    height: 50vh;
 }
 #doc_iframe {
     border : 1px solid green;
@@ -567,7 +576,22 @@ ul#second_wixfile_tab li.active a:hover {
 }
 
 
-
+/* エントリ挿入部分 */
+#second_newEntry legend {
+    font-size: 15px;
+    font-weight: bold;
+}
+#second_newEntry input[type="text"] {
+    height: 100%;
+    width: 95%;
+}
+#second_entry_insert_result {
+    width: 100%;
+    height: 3vh;
+}
+#second_add_wixfile_entry {
+    float: right;
+}
 
 
 

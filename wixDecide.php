@@ -98,7 +98,7 @@ function wix_manual_decide_check() {
 add_action( 'wp_ajax_wix_entry_recommendation_creating_document', 'wix_entry_recommendation_creating_document' );
 add_action( 'wp_ajax_nopriv_wix_entry_recommendation_creating_document', 'wix_entry_recommendation_creating_document' );
 function wix_entry_recommendation_creating_document() {
-	global $doc_title, $similarityObj;
+	global $doc_title, $term_featureObj;
 
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
@@ -116,7 +116,7 @@ function wix_entry_recommendation_creating_document() {
 
 
 	//tf, idfの計算
-	if ( empty($similarityObj) ) {
+	if ( empty($term_featureObj) ) {
 		wix_tf($words_countArray);
 		wix_idf_creating_document($post_id);
 	}
@@ -125,14 +125,14 @@ function wix_entry_recommendation_creating_document() {
 
 	//tf-idf値の降順に並び替え
 	$tf_idfArray = array();
-	foreach ($similarityObj as $key => $value) {
+	foreach ($term_featureObj as $key => $value) {
 		$tf_idf = $value['tf'] * $value['idf'];
 		$value['tf_idf'] = $tf_idf;
-		$similarityObj[$key] = $value;
+		$term_featureObj[$key] = $value;
 
 		$tf_idfArray[] = $tf_idf;
 	}
-	array_multisort($tf_idfArray, SORT_DESC, SORT_NUMERIC, $similarityObj);
+	array_multisort($tf_idfArray, SORT_DESC, SORT_NUMERIC, $term_featureObj);
 
 
 
@@ -143,12 +143,12 @@ function wix_entry_recommendation_creating_document() {
 	これ違う気がする。テーブルに入ってない奴も推薦していいんじゃね？（2015/09/22）
 **/
 	$doc_title = $_POST['doc-title'];
-	$returnValue = wix_post_title(no_wixfile_entry($similarityObj));
+	$returnValue = wix_post_title(no_wixfile_entry($term_featureObj));
 
 
 	$json = array(
 		"returnValue" => $returnValue,
-		"similarity" => $similarityObj,
+		"similarity" => $term_featureObj,
 	);
 	echo json_encode( $json );
 

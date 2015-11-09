@@ -20,6 +20,15 @@ function wix_admin_menu() {
 
 	add_submenu_page(
 		'wix-admin-settings',
+		__('WIX Detail Settings', 'wix-detail-settings'),
+		__('WIX Detail Settings', 'wix-detail-settings'),
+		'administrator',
+		'wix-detail-settings',
+		'wix_detail_settings'
+	);
+
+	add_submenu_page(
+		'wix-admin-settings',
 		__('WIX Similarity', 'wix-similarity'),
 		__('WIX Similarity', 'wix-similarity'),
 		'administrator',
@@ -258,8 +267,8 @@ function wix_admin_settings(){
 						global $wpdb;
 						$sql = 'SELECT keyword, target FROM wp_wixfilemeta wm, wp_wixfile_targets wt WHERE wm.id = wt.keyword_id';
 						$entrys = $wpdb->get_results($sql);
-						// $entryNum = count($entrys);
-						$entryNum = 80;
+						$entryNum = count($entrys);
+						// $entryNum = 80;
 						echo '<li class="selected"><a href="#wixfile_tab1">タブ1</a></li>';
 						if ( $entryNum > 20 ) {
 							$count = 2;
@@ -277,8 +286,8 @@ function wix_admin_settings(){
 
 						<div id="wixfile_contents">
 							<?php
-								// $entryNum = count($entrys);
-								$entryNum = 80;
+								$entryNum = count($entrys);
+								// $entryNum = 80;
 								if ( $entryNum < 20 ) {
 									echo '<div id="wixfile_tab1" class="wixfile_tabbox">';
 										echo '<table id="wixfile_table1" class="wixfile_table">';
@@ -517,7 +526,7 @@ function wix_admin_settings(){
 					?>
 				</div> <!-- #doc_list -->
 			</div> <!-- #createdDoc -->
-
+<!-- ---------------------------------------------------------- tab2 の WIXファイル部分 ------------------------------ -->
 			<div id="second_wixfile" class="wixfile">
 				<ul id="second_wixfile_tab" class="wixfile_tab">
 					<?php
@@ -717,6 +726,18 @@ function wix_admin_settings(){
 				</div>
 			</div> <!-- #doc_list_iframe -->
 
+			<div id="second_newEntry" class="newEntry">
+				<fieldset name="newEntry_form" form="newEntry_form">
+					<legend>New Entry</legend>
+					<input type="text" id="second_newKeyword_form" class="newKeyword_form" placeholder="リンクを貼りたい単語">
+					<input type="text" id="second_newTarget_form" class="newTarget_form" placeholder="リンク先URL">
+				</fieldset>
+				<div id="second_entry_insert_result"></div>
+				<input type="button" id="second_add_wixfile_entry" 
+						value="データ追加" 
+						class="button button-primary button-large" >
+			</div>
+
 
 		</div> <!-- #tab2 -->
 	</div> <!-- #contents -->
@@ -724,6 +745,33 @@ function wix_admin_settings(){
 </div> <!-- .wrap -->
 <?php
 }
+
+
+
+
+
+
+
+
+function wix_detail_settings() {
+?>
+<?php echo '<h3>' . __( 'Created WIXFile List', 'created_wixfile_list' ) . '</h3>'; ?>
+
+
+<?php
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 <!-- 作成済みWIXファイル群 -->
@@ -782,7 +830,7 @@ function decide_management() {
 }
 
 
-
+/* 今使ってない(2015/11/05) */
 function wix_admin_wixfile_settings() {
 ?>
 <div class="wrap">

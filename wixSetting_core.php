@@ -27,10 +27,10 @@ function wix_table_create() {
 	$sql = "CREATE TABLE " . $table_name . " (
 	         doc_id bigint(20) UNSIGNED,
 		     keyword tinytext NOT NULL,
-		     tf float NOT NULL,
-		     idf float NOT NULL,
-		     tf_idf float NOT NULL,
-		     bm25 float NOT NULL,
+		     tf float NOT NULL DEFAULT 0,
+		     idf float NOT NULL DEFAULT 0,
+		     tf_idf float NOT NULL DEFAULT 0,
+		     bm25 float NOT NULL DEFAULT 0,
 		     PRIMARY KEY(doc_id,keyword(255)),
 		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
 		     ON UPDATE CASCADE ON DELETE CASCADE
@@ -44,7 +44,10 @@ function wix_table_create() {
 	$sql = "CREATE TABLE " . $table_name . " (
 	         doc_id bigint(20) UNSIGNED,
 		     doc_id2 bigint(20) UNSIGNED,
-		     cos_similarity float NOT NULL,
+		     cos_similarity_tfidf float NOT NULL DEFAULT 0,
+		     cos_similarity_bm25 float NOT NULL DEFAULT 0,
+		     jaccard float NOT NULL DEFAULT 0,
+		     minhash float NOT NULL DEFAULT 0,
 		     PRIMARY KEY(doc_id,doc_id2),
 		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
 		      ON UPDATE CASCADE ON DELETE CASCADE,
@@ -90,6 +93,19 @@ function wix_table_create() {
 				ON UPDATE CASCADE ON DELETE CASCADE, 
 			FOREIGN KEY (doc_id) REFERENCES wp_posts(ID) 
 				ON UPDATE CASCADE ON DELETE CASCADE
+			);";
+	dbDelta($sql);
+
+
+	$table_name = $wpdb->prefix . 'wix_minhash';
+	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+	if ( $is_db_exists == $table_name ) return;
+	$sql = "CREATE TABLE " . $table_name . " (
+			doc_id bigint(20) UNSIGNED NOT NULL, 
+			minhash TEXT NOT NULL, 
+			PRIMARY KEY(doc_id), 
+			FOREIGN KEY (doc_id) REFERENCES wp_posts(ID)
+			 ON UPDATE CASCADE ON DELETE CASCADE
 			);";
 	dbDelta($sql);
 
@@ -977,9 +993,12 @@ function wix_similarity_entry_recommend() {
 			 ' WHERE doc_id = ' . $doc_id . ' AND tf_idf != 0 order by tf_idf desc';
 	$candidate_keywords = $wpdb->get_results($sql);
 
+/**
+	↓のsqlの cos_similarityはもうない。今はcos_similarity_tfidfとcos_similarity_bm25
+*/
 	//クリックされたドキュメントとの関連度を持つドキュメント群
-	$sql = 'SELECT * FROM ' . $wpdb->prefix . 'wix_document_similarity' .
-	 ' WHERE cos_similarity != 0 AND (doc_id=' . $doc_id . ' OR doc_id2=' . $doc_id . ') order by cos_similarity desc';
+	// $sql = 'SELECT * FROM ' . $wpdb->prefix . 'wix_document_similarity' .
+	//  ' WHERE cos_similarity != 0 AND (doc_id=' . $doc_id . ' OR doc_id2=' . $doc_id . ') order by cos_similarity desc';
 	$similar_documents = $wpdb->get_results($sql);
 
 

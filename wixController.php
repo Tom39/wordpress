@@ -99,6 +99,20 @@ function wix_eternal_link_scripts() {
     wp_enqueue_script( 'wix-eternal-link-js', wix_eternal_link_js, array( 'jquery' ) );
 }
 
+//dumpのファイル書き込み
+function dump( $filename, $obj ) {
+    $filepath = '/Library/WebServer/Documents/wordpress/wp-content/plugins/WIX/' . $filename;
+
+    ob_start();
+
+    echo "<pre>";
+    print_r($obj);
+    echo "</pre>";
+
+    $out = ob_get_contents();
+    ob_end_clean();
+    file_put_contents($filepath, $out . PHP_EOL, FILE_APPEND);
+}
 
 
 // add_action( 'wp_head', 'wix_decide_popup_css' );
