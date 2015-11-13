@@ -23,6 +23,7 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 		wix_similarity_score_deletes($post->ID, 'wix_keyword_similarity');
 		wix_similarity_score_deletes($post->ID, 'wix_document_similarity');
 		wix_similarity_score_deletes($post->ID, 'wix_minhash');
+		wix_similarity_score_deletes($post->ID, 'wix_entry_ranking');
 
 	} else if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
 		/*
@@ -30,9 +31,12 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 		* $wordsArray: [(複合)名詞]
 		* $words_countArray: [単語 => 単語数]
 		*/
-		$parse = wix_morphological_analysis($post->post_content);
-		$wordsArray = wix_compound_noun_extract($parse);
-		$words_countArray = array_word_count($wordsArray);
+		// $parse = wix_morphological_analysis($post->post_content);
+		// $wordsArray = wix_compound_noun_extract($parse);
+		// $words_countArray = array_word_count($wordsArray);
+		$parse = wix_morphological_analysis_mecab($post->post_content);
+		wix_compound_noun_extract_mecab($parse);
+
 
 		//まだDBに１つもドキュメントがなかったら計算しないでDBに挿入するだけ.	
 		$sql = 'SELECT COUNT(*) FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft"';
@@ -70,6 +74,8 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 			//DBに挿入・更新
 			// wix_keyword_similarity_score_inserts_updates($doc_id);
 			// wix_document_similarity_score_inserts_updates($doc_id);
+
+
 		}
 	}
 
@@ -296,7 +302,7 @@ function wix_document_similarity_score_inserts_updates($doc_id) {
 function wix_similarity_score_deletes($doc_id, $table) {
 	global $wpdb;
 
-	if ( $table == 'wix_keyword_similarity' || $table == 'wix_minhash' ) {
+	if ( $table == 'wix_keyword_similarity' || $table == 'wix_minhash' || $table == 'wix_entry_ranking' ) {
 		$sql = 'DELETE FROM ' . $wpdb->prefix . $table . ' WHERE doc_id = ' . $doc_id;
 	} else if ( $table == 'wix_document_similarity' ) {
 		$sql = 'DELETE FROM ' . $wpdb->prefix . $table . ' WHERE doc_id = ' . $doc_id . ' OR doc_id2 = ' . $doc_id;
@@ -306,7 +312,7 @@ function wix_similarity_score_deletes($doc_id, $table) {
 
 
 //IDF値の更新
-// add_action( 'transition_post_status', 'wix_status_update_idf_update', 20, 3 );
+// add_action( 'transition_post_status', 'wix_status_update_idf_update', 19, 3 );
 function wix_status_update_idf_update( $new_status, $old_status, $post ) {
 	global $wpdb;
 	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
@@ -343,15 +349,17 @@ function wix_status_update_idf_update( $new_status, $old_status, $post ) {
 
 
 		wix_word_features_update();
+		wix_textrank_update();
 		wix_cosSimilarity_update();
 	}
 }
+
 //単語ベクトル(TF-IDF, BM25)の更新
 function wix_word_features_update() {
 	global $wpdb;
 	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
 
-	$sql = 'SELECT doc_id, keyword, tf, idf FROM ' . $wix_keyword_similarity;
+	$sql = 'SELECT doc_id, keyword, tf, idf, doc_length FROM ' . $wix_keyword_similarity . ', ' . $wpdb->posts . ' WHERE doc_id=ID';
 	$keyword_similarityObj = $wpdb->get_results($sql);
 
 	//平均ドキュメント長(bm25用)
@@ -368,6 +376,7 @@ function wix_word_features_update() {
 		$doc_id = $value->doc_id;
 		$keyword = $value->keyword;
 		$tf_idf = $value->tf * $value->idf;
+		$doc_length = $value->doc_length;
 		$bm25 = ($value->tf * $value->idf * ($k1 + 1)) / ($value->tf + $k1 * ((1 - $b + $b * ($doc_length / $avg_doc_length))));
 
 		$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET tf_idf=' . $tf_idf . ', bm25=' . $bm25 . ' WHERE doc_id=' . $doc_id . ' AND keyword="' . $keyword . '"';
@@ -417,6 +426,41 @@ function wix_bm25_update() {
 		$bm25 = ($value->tf * $value->idf * ($k1 + 1)) / ($value->tf + $k1 * ((1 - $b + $b * ($doc_length / $avg_doc_length))));
 
 		$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET bm25=' . $bm25 . ' WHERE doc_id=' . $doc_id . ' AND keyword="' . $keyword . '"';
+		$wpdb->query( $sql );
+	}
+}
+
+//TextRank値の更新
+function wix_textrank_update() {
+	global $wpdb, $term_featureObj;
+	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
+
+	$sql = 'SELECT doc_id, keyword FROM ' . $wix_keyword_similarity . ' ORDER BY doc_id ASC';
+	$docObj = $wpdb->get_results($sql);
+
+	$tmpId = '';
+	$tmpArray = array();
+	foreach ($docObj as $index => $value) {
+		$keyword = $value->keyword;
+
+		if ( $tmpId == '' ) $tmpId = $value->doc_id;
+		if ( $tmpId == $value->doc_id ) {
+			array_push($tmpArray, $keyword);
+		} else {
+			wix_textrank($tmpArray);
+			foreach ($term_featureObj as $keyword => $method_scoreArray) {
+				$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET textrank=' . $method_scoreArray['textrank'] . ' WHERE doc_id=' . $tmpId . ' AND keyword="' . $keyword . '"';
+				$wpdb->query( $sql );
+			}
+
+			$term_featureObj = array();
+			$tmpId = $value->doc_id;
+			array_push($tmpArray, $keyword);
+		}
+	}
+	wix_textrank($wordsArray);
+	foreach ($term_featureObj as $keyword => $method_scoreArray) {
+		$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET textrank=' . $method_scoreArray['textrank'] . ' WHERE doc_id=' . $tmpId . ' AND keyword="' . $keyword . '"';
 		$wpdb->query( $sql );
 	}
 }

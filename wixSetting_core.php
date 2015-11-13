@@ -31,6 +31,7 @@ function wix_table_create() {
 		     idf float NOT NULL DEFAULT 0,
 		     tf_idf float NOT NULL DEFAULT 0,
 		     bm25 float NOT NULL DEFAULT 0,
+		     textrank float NOT NULL DEFAULT 0,
 		     PRIMARY KEY(doc_id,keyword(255)),
 		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
 		     ON UPDATE CASCADE ON DELETE CASCADE
@@ -140,6 +141,23 @@ function wix_table_create() {
 				ON UPDATE CASCADE ON DELETE CASCADE, 
 			FOREIGN KEY(keyword_id) REFERENCES wp_wixfilemeta(id) 
 				ON UPDATE CASCADE ON DELETE CASCADE
+			);";
+	dbDelta($sql);
+
+
+	$table_name = $wpdb->prefix . 'wix_entry_ranking';
+	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+	if ( $is_db_exists == $table_name ) return;
+	$sql = "CREATE TABLE " . $table_name . " (
+			doc_id bigint(20) UNSIGNED NOT NULL, 
+			keyword_id bigint(20) NOT NULL, 
+			target tinytext NOT NULL, 
+			rank int(20) NOT NULL DEFAULT 0, 
+			PRIMARY KEY(doc_id, keyword_id, target(100)), 
+			FOREIGN KEY (doc_id) REFERENCES wp_posts(ID)
+			 ON UPDATE CASCADE ON DELETE CASCADE, 
+			FOREIGN KEY (keyword_id) REFERENCES wp_wixfilemeta(id)
+			 ON UPDATE CASCADE ON DELETE CASCADE
 			);";
 	dbDelta($sql);
 
@@ -921,6 +939,191 @@ function wix_correspond_keywords( $body ) {
 }
 
 
+//推薦エントリを提示
+add_action( 'wp_ajax_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );
+add_action( 'wp_ajax_nopriv_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );
+function wix_similarity_entry_recommend() {
+	global $wpdb;
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$doc_id = $_POST['doc_id'];
+
+	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
+	$wix_document_similarity = $wpdb->prefix . 'wix_document_similarity';
+
+	$returnValue = array();
+	/*
+		$returnValue: [
+						'feature_words' => [ranked keyword],
+						'page_freq_words' => ,
+						'page_freq_words_in_site' => ,
+						'site_freq_words' => ,
+						'candidate_targets' => [candidate_targets_info],
+						]
+	*/
+
+
+	//候補キーワード群
+	$sql = 'SELECT * FROM ' . $wix_keyword_similarity . ' WHERE doc_id=' . $doc_id;
+	$candidate_keywords = $wpdb->get_results($sql);
+
+	//候補ターゲット群
+	$sql = 'SELECT * FROM ' . $wix_document_similarity .
+			' WHERE doc_id=' . $doc_id . ' OR doc_id2=' . $doc_id; 
+	$similar_documents = $wpdb->get_results($sql);
+
+	if ( !empty($candidate_keywords) && !empty($similar_documents) ) {
+		$tf_sortArray = array(); 
+		$idf_sortArray = array(); 
+		$tfidf_sortArray = array(); 
+		$bm25_sortArray = array();
+		$textrank_sortArray = array();
+
+		foreach ($candidate_keywords as $index => $value) {
+			$tf_sortArray[$value->keyword] = $value->tf;
+			$idf_sortArray[$value->keyword] = $value->idf;
+			$tfidf_sortArray[$value->keyword] = $value->tf_idf;
+			$bm25_sortArray[$value->keyword] = $value->bm25;
+			$textrank_sortArray[$value->keyword] = $value->textrank;
+		}
+		//ページ内頻出順
+		arsort($tf_sortArray, SORT_NUMERIC);
+		$returnValue['page_freq_words'] = $tf_sortArray;
+
+		//サイト内頻出順
+		asort($idf_sortArray, SORT_NUMERIC);
+		$returnValue['page_freq_words_in_site'] = $idf_sortArray;
+
+		//特徴語
+		$featureArray = feature_words_sort( $tfidf_sortArray, $bm25_sortArray, $textrank_sortArray );
+		$returnValue['feature_words'] = $featureArray;
+
+		//サイト内頻出語(上位10件)
+		$sql = 'SELECT keyword, idf FROM ' . $wix_keyword_similarity . 
+				' GROUP BY keyword ORDER BY idf ASC, bm25 DESC LIMIT 10';
+		$site_freq_words = $wpdb->get_results($sql);
+		$returnValue['site_freq_words'] = $site_freq_words;
+
+		//ランキング済みターゲット
+		$selectQuery = '';
+		$similar_documentsArray = candidate_targets_sort( $similar_documents, $doc_id );
+		foreach ($similar_documentsArray as $doc_id2 => $score) {
+			if ( empty($selectQuery) )
+				$selectQuery = 'ID=' . $doc_id2 . ' ';
+			else
+				$selectQuery = $selectQuery . 'OR ID=' . $doc_id2 . ' ';
+		}
+		$sql = 'SELECT ID, post_title, guid FROM ' . $wpdb->posts . ' WHERE ' . $selectQuery;
+		$candidate_targets = $wpdb->get_results($sql);
+
+		$candidate_targetsArray = array();
+		foreach ($similar_documentsArray as $doc_id2 => $score) {
+			foreach ($candidate_targets as $index => $value) {
+				if ( $value->ID ==  $doc_id2 ) {
+					array_push( $candidate_targetsArray, $value );
+					break;
+				}
+			}	
+		}
+
+		$returnValue['candidate_targets'] = $candidate_targetsArray;
+	}
+
+
+	$json = array(
+		"entrys" => $returnValue,
+		// "test" => $candidate_targetsArray,
+	);
+
+	echo json_encode( $json );
+
+	
+    die();
+}
+
+/**
+		↓重みよりも、閾値をどうやって一意に定めるか。
+*/
+function feature_words_sort( $array1, $array2, $array3 ) {
+	$sumArray = array();
+	//重み
+	$w1=0.3; $w2=0.3; $w3=0.4;
+
+	foreach ($array1 as $keyword => $value) {
+		$sumArray[$keyword] = $w1*$value + $w2*$array2[$keyword] + $w3*$array3[$keyword];
+	}
+
+	arsort($sumArray, SORT_NUMERIC);
+	// dump('dump.txt', $sumArray);
+
+	return $sumArray;
+}
+/**
+	↓類似ドキュメントの閾値をどうするか？
+*/
+function candidate_targets_sort( $similar_documents, $doc_id ) {
+	$similar_documentsArray = array();
+	//重み
+	$w1=0.3; $w2=0.3; $w3=0; $w4=0.4;
+
+	foreach ($similar_documents as $index => $value) {
+		if ( (int)$value->doc_id == $doc_id )
+			$doc_id2 = $value->doc_id2;
+		else
+			$doc_id2 = $value->doc_id;
+
+		$score = $w1 * $value->cos_similarity_tfidf
+				 + $w2 * $value->cos_similarity_bm25
+				  + $w3 * $value->jaccard
+				   + $w4 *  $value->minhash;
+
+		$similar_documentsArray[$doc_id2] = $score;
+	}
+
+	arsort($similar_documentsArray);
+
+	return $similar_documentsArray;
+}
+
+add_action( 'wp_ajax_wix_exisitng_entry_presentation', 'wix_exisitng_entry_presentation' );
+add_action( 'wp_ajax_nopriv_wix_exisitng_entry_presentation', 'wix_exisitng_entry_presentation' );
+function wix_exisitng_entry_presentation() {
+	global $wpdb;
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$keyword = $_POST['keyword'];
+
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
+	
+	$sql = 'SELECT keyword, target FROM ' . $wixfilemeta . ', ' . $wixfile_targets . ' WHERE id=keyword_id AND keyword="' . $keyword . '"';
+	$returnValue = $wpdb->get_results($sql);
+
+	$json = array(
+		"entrys" => $returnValue,
+	);
+
+	echo json_encode( $json );
+
+	
+    die();
+}
+
+
+
+
+
+
+
+
+
+
+
+
 function created_wixfile_info() {
 	$URL = 'http://trezia.db.ics.keio.ac.jp/WIXAuthorEditor_0.0.1/GetCreatedWIXFileNames';
 	
@@ -978,68 +1181,68 @@ function created_wixfile_info() {
 }
 
 //WIXFileのエントリ候補をwix_document_similarityテーブルから推薦
-add_action( 'wp_ajax_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );
-add_action( 'wp_ajax_nopriv_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );
-function wix_similarity_entry_recommend() {
-	global $wpdb;
+// add_action( 'wp_ajax_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );
+// add_action( 'wp_ajax_nopriv_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );
+// function wix_similarity_entry_recommend() {
+// 	global $wpdb;
 
-	header("Access-Control-Allow-Origin: *");
-	header('Content-type: application/javascript; charset=utf-8');
+// 	header("Access-Control-Allow-Origin: *");
+// 	header('Content-type: application/javascript; charset=utf-8');
 
-	$doc_id = $_POST['doc_id'];
+// 	$doc_id = $_POST['doc_id'];
 
-	//候補キーワード群
-	$sql = 'SELECT * FROM ' . $wpdb->prefix . 'wix_keyword_similarity' .
-			 ' WHERE doc_id = ' . $doc_id . ' AND tf_idf != 0 order by tf_idf desc';
-	$candidate_keywords = $wpdb->get_results($sql);
+// 	//候補キーワード群
+// 	$sql = 'SELECT * FROM ' . $wpdb->prefix . 'wix_keyword_similarity' .
+// 			 ' WHERE doc_id = ' . $doc_id . ' AND tf_idf != 0 order by tf_idf desc';
+// 	$candidate_keywords = $wpdb->get_results($sql);
 
-/**
-	↓のsqlの cos_similarityはもうない。今はcos_similarity_tfidfとcos_similarity_bm25
-*/
-	//クリックされたドキュメントとの関連度を持つドキュメント群
-	// $sql = 'SELECT * FROM ' . $wpdb->prefix . 'wix_document_similarity' .
-	//  ' WHERE cos_similarity != 0 AND (doc_id=' . $doc_id . ' OR doc_id2=' . $doc_id . ') order by cos_similarity desc';
-	$similar_documents = $wpdb->get_results($sql);
-
-
-	if ( !empty($candidate_keywords) && !empty($similar_documents) ) {
-		//候補ターゲット群をDBから持ってくる
-		$selectQuery = '';
-		foreach ($similar_documents as $key => $value) {
-			if ( (int)$value->doc_id == $doc_id )
-				$candidate_doc_id = $value->doc_id2;
-			else
-				$candidate_doc_id = $value->doc_id;
+// /**
+// 	↓のsqlの cos_similarityはもうない。今はcos_similarity_tfidfとcos_similarity_bm25
+// */
+// 	//クリックされたドキュメントとの関連度を持つドキュメント群
+// 	// $sql = 'SELECT * FROM ' . $wpdb->prefix . 'wix_document_similarity' .
+// 	//  ' WHERE cos_similarity != 0 AND (doc_id=' . $doc_id . ' OR doc_id2=' . $doc_id . ') order by cos_similarity desc';
+// 	$similar_documents = $wpdb->get_results($sql);
 
 
-			if ( empty($selectQuery) )
-				$selectQuery = 'ID=' . $candidate_doc_id . ' ';
-			else
-				$selectQuery = $selectQuery . 'OR ID=' . $candidate_doc_id . ' ';
-		}
-		$sql = 'SELECT ID, post_title, guid FROM ' . $wpdb->posts . ' WHERE ' . $selectQuery;
-		$candidate_targets = $wpdb->get_results($sql);
-
-		$returnValue = array();
-		foreach ($candidate_keywords as $key => $value) {
-			$returnValue[$value->keyword] = $candidate_targets;
-		}
+// 	if ( !empty($candidate_keywords) && !empty($similar_documents) ) {
+// 		//候補ターゲット群をDBから持ってくる
+// 		$selectQuery = '';
+// 		foreach ($similar_documents as $key => $value) {
+// 			if ( (int)$value->doc_id == $doc_id )
+// 				$candidate_doc_id = $value->doc_id2;
+// 			else
+// 				$candidate_doc_id = $value->doc_id;
 
 
-	} else {
-		$returnValue = array();
-	}
+// 			if ( empty($selectQuery) )
+// 				$selectQuery = 'ID=' . $candidate_doc_id . ' ';
+// 			else
+// 				$selectQuery = $selectQuery . 'OR ID=' . $candidate_doc_id . ' ';
+// 		}
+// 		$sql = 'SELECT ID, post_title, guid FROM ' . $wpdb->posts . ' WHERE ' . $selectQuery;
+// 		$candidate_targets = $wpdb->get_results($sql);
 
-	$json = array(
-		"entrys" => $returnValue,
-		// "entrys" => $similar_documents,
-	);
+// 		$returnValue = array();
+// 		foreach ($candidate_keywords as $key => $value) {
+// 			$returnValue[$value->keyword] = $candidate_targets;
+// 		}
 
-	echo json_encode( $json );
+
+// 	} else {
+// 		$returnValue = array();
+// 	}
+
+// 	$json = array(
+// 		"entrys" => $returnValue,
+// 		// "entrys" => $similar_documents,
+// 	);
+
+// 	echo json_encode( $json );
 
 	
-    die();
-}
+//     die();
+// }
 
 
 

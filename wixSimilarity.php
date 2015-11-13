@@ -8,7 +8,8 @@ $term_featureObj = array();
 							'tf' => tf socre,
 							'idf' => idf score,
 							'tf_idf' => tf_idf score,
-							'bm25' => bm25 score
+							'bm25' => bm25 score,
+							'textrank' => textrank score
 						]
 					]
 */
@@ -16,8 +17,10 @@ $doc_simObj = array();
 /*
 	$doc_simObj = [doc_id:
 					[
-						'cosSimilarity' => ['doc_id' => cos similarity score],
+						'cos_similarity_tfidf' => ['doc_id' => cos similarity score],
+						'cos_similarity_bm25' => ['doc_id' => cos similarity score],
 						'jaccard' => ['doc_id' => jaccard score],
+						'minhash' => ['doc_id' => minhash score],
 					]
 				]
 */
@@ -30,9 +33,27 @@ function wix_morphological_analysis($content) {
 									 "&results=ma&sentence=" . urlencode(strip_tags($content));
 	$returnValue = simplexml_load_file($url);
 
-
+	dump('dump.txt', $returnValue);
 
 	return $returnValue;
+}
+
+//Mecab(php-Mecab)を使った形態素解析
+function wix_morphological_analysis_mecab($content) {
+	//半角スペースが読み込まれないので、一旦全角スペースに変換している
+	$content = mb_convert_kana( $content, 'S');
+
+	$mecab = new MeCab_Tagger();
+	$nodes = $mecab->parseToNode($content);
+
+	// foreach ($nodes as $n) {
+	// 	dump('dump.txt', $n->getSurface());
+	// 	dump('dump.txt', $n->getPosId());
+	// 	// dump('dump.txt', $n->getStat());
+	// 	dump('dump.txt', $n->getFeature());
+	// }
+
+	return $nodes;
 }
 
 //形態素解析結果から複合名詞の作成
@@ -63,6 +84,14 @@ function wix_compound_noun_extract($parse){
 	}
 
 	return $returnValue;
+}
+
+//Mecabを使って、形態素解析結果から複合名詞の作成
+function wix_compound_noun_extract_mecab($parse){
+	foreach ($parse as $node => $value) {
+		dump('dump.txt', $node);
+	}
+
 }
 
 //作成ドキュメントにおける各キーワードの出現回数カウンタ
@@ -120,6 +149,7 @@ function wix_tfidf( $words_countArray ) {
 	}
 }
 
+//BM25の計算
 function wix_bm25( $words_countArray, $doc_id ) {
 	global $wpdb, $term_featureObj;
 	
@@ -328,14 +358,14 @@ function wix_textrank($wordsArray) {
 	// dump('dump.txt', $res);
 }
 
-
+//Cosine Similarityの計算
 function wix_cosSimilarity($doc_id) {
 	global $wpdb, $doc_simObj;
 
 	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
 
 	//計算対象ドキュメント群の単語特徴量など
-	$sql = 'SELECT ID, keyword, tf_idf, bm25 
+	$sql = 'SELECT ID, keyword, tf_idf AS tfidf, bm25 
 			FROM ' . $wpdb->posts . ', ' . $wix_keyword_similarity . 
 			' WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft" 
 				AND ID = doc_id AND ID != ' . $doc_id . 
@@ -346,7 +376,7 @@ function wix_cosSimilarity($doc_id) {
 
 	if ( !empty($docInfoObj) ) {
 		//doc_idの単語特徴量Objectを配列に整形
-		$sql = 'SELECT keyword, tf_idf, bm25 
+		$sql = 'SELECT keyword, tf_idf AS tfidf, bm25 
 				FROM ' . $wpdb->posts . ', ' . $wix_keyword_similarity . 
 				' WHERE ID = doc_id AND ID = ' . $doc_id;
 		$subjectDocInfoObj = $wpdb->get_results($sql);
@@ -356,17 +386,17 @@ function wix_cosSimilarity($doc_id) {
 
 		foreach ($subjectDocInfoObj as $index => $value) {
 			$subjectDocInfoArray[$value->keyword] = array(
-															'tf_idf' => $value->tf_idf,
+															'tfidf' => $value->tfidf,
 															'bm25' => $value->bm25,
 															);
 
 			if ( empty($bunbo2Array) ) {
-				$bunbo2Array['tf_idf'] = $value->tf_idf * $value->tf_idf;
+				$bunbo2Array['tfidf'] = $value->tfidf * $value->tfidf;
 				$bunbo2Array['bm25'] = $value->bm25 * $value->bm25;
 			} else {
 				foreach ($bunbo2Array as $key => $val) {
-					if ( $key == 'tf_idf' ) 
-						$bunbo2Array[$key] += $value->tf_idf * $value->tf_idf;
+					if ( $key == 'tfidf' ) 
+						$bunbo2Array[$key] += $value->tfidf * $value->tfidf;
 					else if ( $key == 'bm25' )
 						$bunbo2Array[$key] += $value->bm25 * $value->bm25;
 				}
@@ -378,21 +408,25 @@ function wix_cosSimilarity($doc_id) {
 		foreach ($docInfoObj as $key => $value) {
 			$doc_id2 = $value->ID;
 			$keyword = $value->keyword;
-			$tf_idf = $value->tf_idf;
+			$tfidf = $value->tfidf;
 			$bm25 = $value->bm25;
 			
 			if ( $tmpId == '' ) $tmpId = $doc_id2;
 
 			if ( $tmpId != $doc_id2 ) {
 				foreach ($bunbo1Array as $method => $value) {
-					if ( $value != 0 )
-						$cos_similarityArray[$method] = $bunsiArray[$method] / (sqrt($value) * sqrt($bunbo2Array[$method]));
-					else 
+					if ( $value != 0 ) {
+						if ( $bunsiArray[$method] == 0 ) 
+							$cos_similarityArray[$method] = 0;
+						else
+							$cos_similarityArray[$method] = $bunsiArray[$method] / (sqrt($value) * sqrt($bunbo2Array[$method]));
+					} else { 
 						$cos_similarityArray[$method] = 0;
+					}
 				}
 				
 				$doc_simObj[$tmpId] = array(
-											'cos_similarity_tfidf' => $cos_similarityArray['tf_idf'],
+											'cos_similarity_tfidf' => $cos_similarityArray['tfidf'],
 											'cos_similarity_bm25' => $cos_similarityArray['bm25'],
 										);
 
@@ -402,140 +436,48 @@ function wix_cosSimilarity($doc_id) {
 
 			if ( array_key_exists($keyword, $subjectDocInfoArray) ) {
 				if ( empty($bunsiArray) ){
-					$bunsiArray['tf_idf'] = $tf_idf * $subjectDocInfoArray[$keyword]['tf_idf'];
+					$bunsiArray['tfidf'] = $tfidf * $subjectDocInfoArray[$keyword]['tfidf'];
 					$bunsiArray['bm25'] = $bm25 * $subjectDocInfoArray[$keyword]['bm25'];
 				} else {
-					$bunsiArray['tf_idf'] += $tf_idf * $subjectDocInfoArray[$keyword]['tf_idf'];
+					$bunsiArray['tfidf'] += $tfidf * $subjectDocInfoArray[$keyword]['tfidf'];
 					$bunsiArray['bm25'] += $bm25 * $subjectDocInfoArray[$keyword]['bm25'];
 				}
 			} else {
 				if ( empty($bunsiArray) ){
-					$bunsiArray['tf_idf'] = 0;
+					$bunsiArray['tfidf'] = 0;
 					$bunsiArray['bm25'] = 0;
 				} else {
-					$bunsiArray['tf_idf'] += 0;
+					$bunsiArray['tfidf'] += 0;
 					$bunsiArray['bm25'] += 0;
 				}
 			}
 			if ( empty($bunbo1Array) ) {
-				$bunbo1Array['tf_idf'] = $tf_idf * $tf_idf;
+				$bunbo1Array['tfidf'] = $tfidf * $tfidf;
 				$bunbo1Array['bm25'] = $bm25 * $bm25;
 			} else {
-				$bunbo1Array['tf_idf'] += $tf_idf * $tf_idf;
+				$bunbo1Array['tfidf'] += $tfidf * $tfidf;
 				$bunbo1Array['bm25'] += $bm25 * $bm25;
 			}
 		}
 		//最後のドキュメント分
 		foreach ($bunbo1Array as $method => $value) {
 			if ( $value != 0 )
-				$cos_similarityArray[$method] = $bunsiArray[$method] / (sqrt($value) * sqrt($bunbo2Array[$method]));
+				if ( $bunsiArray[$method] == 0 ) 
+					$cos_similarityArray[$method] = 0;
+				else
+					$cos_similarityArray[$method] = $bunsiArray[$method] / (sqrt($value) * sqrt($bunbo2Array[$method]));
 			else 
 				$cos_similarityArray[$method] = 0;
 		}
 		
 		$doc_simObj[$tmpId] = array(
-									'cos_similarity_tfidf' => $cos_similarityArray['tf_idf'],
+									'cos_similarity_tfidf' => $cos_similarityArray['tfidf'],
 									'cos_similarity_bm25' => $cos_similarityArray['bm25'],
 								);
 	}
-
-
-
-
-
-
-// 	if ( !empty($docInfoObj) ) {
-// 		//doc_idの単語特徴量Objectを配列に整形
-// 		$sql = 'SELECT keyword, tf_idf, bm25 
-// 				FROM ' . $wpdb->posts . ', ' . $wix_keyword_similarity . 
-// 				' WHERE ID = doc_id AND ID = ' . $doc_id;
-// 		$subjectDocInfoObj = $wpdb->get_results($sql);
-
-// 		$subjectDocInfoArray = array();
-// /****************************************************************/
-// 		// $doc_idArray = array();
-// /****************************************************************/
-// 		$bunbo2 = 0;
-
-// 		foreach ($subjectDocInfoObj as $index => $value) {
-// 			$subjectDocInfoArray[$value->keyword] = array(
-// 															'tf_idf' => $value->tf_idf,
-// 															'bm25' => $value->bm25,
-// 															);
-// /**
-// 			↓コサイン類似度をtf_idfのみで計算している。本当は場合分けが必要 
-// **/
-// 			$bunbo2 = $bunbo2 + ($value->tf_idf * $value->tf_idf);
-
-// /****************************************************************/
-// 			// if ( empty($doc_idArray) ) {
-// 			// 	$doc_idArray['tf_idf'] = $value->tf_idf * $value->tf_idf;
-// 			// 	$doc_idArray['bm25'] = $value->bm25 * $value->bm25;
-// 			// } else {
-// 			// 	foreach ($doc_idArray as $key => $val) {
-// 			// 		if ( $key == 'tf_idf' ) 
-// 			// 			$doc_idArray[$key] += $value->tf_idf * $value->tf_idf;
-// 			// 		else if ( $key == 'bm25' )
-// 			// 			$doc_idArray[$key] += $value->bm25 * $value->bm25;
-// 			// 	}
-// 			// }
-// /****************************************************************/
-// 		}
-
-// 		$tmpId = '';
-// 		$bunsi = 0; $bunbo1 = 0;
-// 		foreach ($docInfoObj as $key => $value) {
-// 			$doc_id2 = $value->ID;
-// 			$keyword = $value->keyword;
-// 			$tf_idf = $value->tf_idf;
-// 			$bm25 = $value->bm25;
-			
-// 			if ( $tmpId == '' ) $tmpId = $doc_id2;
-
-// 			if ( $tmpId != $doc_id2 ) {
-// 				if ( $bunsi != 0 ) 
-// 					$cos_similarity = $bunsi / (sqrt($bunbo1) * sqrt($bunbo2));
-// 				else 
-// 					$cos_similarity = 0;
-
-// 				if ( array_key_exists($tmpId, $doc_simObj) ) {
-// 					$tmpArray = $doc_simObj[$tmpId];
-// 					$tmpArray['cosSimilarity'] = $cos_similarity;
-// 					$doc_simObj[$tmpId] = $tmpArray;
-// 				} else {
-// 					$doc_simObj[$tmpId] = array('cosSimilarity' => $cos_similarity);
-// 				}
-
-// 				$tmpId = $doc_id2; $bunsi = 0; $bunbo1 = 0;
-// 			}
-
-// /**
-// 					↓コサイン類似度をtf_idfのみで計算している。本当は場合分けが必要
-// **/
-// 			if ( array_key_exists($keyword, $subjectDocInfoArray) ) {
-// 				$bunsi = $bunsi + $tf_idf * $subjectDocInfoArray[$keyword]['tf_idf'];
-// 			}
-// 				$bunbo1 = $bunbo1 + $tf_idf * $tf_idf;
-// 		}
-// 		//最後のドキュメント分
-// 		if ( $bunsi != 0 ) 
-// 			$cos_similarity = $bunsi / (sqrt($bunbo1) * sqrt($bunbo2));
-// 		else 
-// 			$cos_similarity = 0;
-
-// 		if ( array_key_exists($tmpId, $doc_simObj) ) {
-// 			$tmpArray = $doc_simObj[$tmpId];
-// 			$tmpArray['cosSimilarity'] = $cos_similarity;
-// 			$doc_simObj[$tmpId] = $tmpArray;
-// 		} else {
-// 			$doc_simObj[$tmpId] = array('cosSimilarity' => $cos_similarity);
-// 		}
-// 	}
-
 }
 
-
-
+//MinHashの計算
 function wix_minhash($doc_id) {
 	global $wpdb, $doc_simObj;
 	$k = 128;
@@ -632,6 +574,43 @@ function calc_minhash($targets, $seed) {
 	sort( $hash_values );
 	return $hash_values[0];
 }
+
+//WIXファイルエントリのランキング
+function wix_entry_ranking($doc_id) {
+	global $wpdb;
+
+	$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
+	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
+	$wix_document_similarity = $wpdb->prefix . 'wix_document_similarity';
+
+	// $sql = 'SELECT wp.keyword_id, target FROM ' . 
+	// 			$wixfilemeta_posts . ' wp, ' . $wixfile_targets . 
+	// 			' wt WHERE wp.keyword_id = wt.keyword_id AND doc_id = ' . $doc_id . 
+	// 			' ORDER BY wp.keyword_id, doc_id ASC';
+	// $docInfoObj = $wpdb->get_results($sql);
+
+	$sql = 'SELECT * FROM ' . $wix_document_similarity . ' WHERE doc_id=' . $doc_id . ' OR doc_id2=' . $doc_id;
+	$simObj = $wpdb->get_results($sql);
+
+	$simArray = array();
+	foreach ($simObj as $index => $value) {
+		$simArray[$value->doc_id2] = array(
+											'cos_similarity_tfidf' => $value->cos_similarity_tfidf,
+											'cos_similarity_bm25' => $value->cos_similarity_bm25,
+											'jaccard' => $value->jaccard,
+											'minhash' => $value->minhash,
+										);
+	}
+
+	foreach ($simArray as $doc_id2 => $valueArray) {
+		// normalize
+	}
+}
+
+
+
+
+
 
 
 

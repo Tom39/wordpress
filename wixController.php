@@ -13,14 +13,17 @@ define( 'PatternFile', dirname( __FILE__ ) . '/WixPattern.txt' );
 define( 'WixDecideFiles', dirname( __FILE__ ) . '/WIXDecideFiles/' );
 define( 'wiximage', dirname( __FILE__ ) . '/css/images/' );
 define( 'wix_settings_css', plugins_url('/css/wixSetting.css', __FILE__) );
+define( 'wix_detail_settings_css', plugins_url('/css/wixDetailSetting.css', __FILE__) );
 define( 'wix_decide_css', plugins_url('/css/wixDecide.css', __FILE__) );
 define( 'wix_eternal_link_css', plugins_url('/css/wixEternalLink.css', __FILE__) );
 define( 'popupwindow_css', plugins_url('/css/popupwindow.css', __FILE__) );
 define( 'wix_settings_js', plugins_url('/js/wixSetting.js', __FILE__) );
+define( 'wix_detail_settings_js', plugins_url('/js/wixDetailSetting.js', __FILE__) );
 define( 'wix_decide_js', plugins_url('/js/wixDecide.js', __FILE__) );
 define( 'wix_decide_iframe_js', plugins_url('/js/wixDecide_iframe.js', __FILE__) );
 define( 'wix_eternal_link_js', plugins_url('/js/wixEternalLink.js', __FILE__) );
 define( 'popupwindow_js', plugins_url('/js/popupwindow-1.8.1.js', __FILE__) );
+define( 'wix_favicon', plugins_url('/favicon.ico', __FILE__) );
 
 
 require_once( dirname( __FILE__ ) . '/newBody.php' );
@@ -38,11 +41,14 @@ add_action( 'admin_init', 'wix_admin_init' );
 
 function wix_admin_init() {
 	wp_register_style( 'wix-settings-css', wix_settings_css );
+    wp_register_style( 'wix-detail-settings-css', wix_detail_settings_css );
     wp_register_style( 'popupwindow-css', popupwindow_css );
     wp_register_style( 'wix-decide-css', wix_decide_css );
 	wp_register_script( 'wix-settings-js', wix_settings_js );
+    wp_register_script( 'wix-detail-settings-js', wix_detail_settings_js );
 	wp_register_script( 'wix-decide-js', wix_decide_js );
     wp_register_script( 'popupwindow-js', popupwindow_js );
+    wp_register_style( 'wix-favicon', wix_favicon );
 
 	add_action( 'admin_enqueue_scripts', 'wix_admin_decide_scripts' );
     add_action( 'admin_enqueue_scripts', 'wix_admin_setting_scripts' );
@@ -83,12 +89,22 @@ function wix_admin_setting_scripts($hook_suffix) {
                         'toplevel_page_wix-admin-settings', 
                         'wix-admin-settings_page_wix-admin-similarity',
                         );
+    $post_pages2 = array(
+                        'wix-admin-settings_page_wix-detail-settings',
+                        );
 
     if ( in_array($hook_suffix, $post_pages) ) {
         wp_enqueue_style( 'wix-settings-css', wix_settings_css, array() );
         wp_enqueue_script( 'wix-settings-js', wix_settings_js, array('jquery') );
         wp_enqueue_style( 'popupwindow-css', popupwindow_css, array() );
         wp_enqueue_script( 'popupwindow-js', popupwindow_js );
+        echo "<link rel=\"shortcut icon\" href=\"" . wix_favicon . "\">;";
+    } else if ( in_array($hook_suffix, $post_pages2) ) {
+        wp_enqueue_style( 'wix-detail-settings-css', wix_detail_settings_css, array() );
+        wp_enqueue_script( 'wix-detail-settings-js', wix_detail_settings_js, array('jquery') );
+        wp_enqueue_style( 'popupwindow-css', popupwindow_css, array() );
+        wp_enqueue_script( 'popupwindow-js', popupwindow_js );
+        echo "<link rel=\"shortcut icon\" href=\"" . wix_favicon . "\">;";
     }
 }
 

@@ -47,8 +47,9 @@ function wix_admin_settings(){
 ?>
 <div class="wrap">
 	<ul id="tab">
-		<li class="selected"><a href="#tab1">タブ1</a></li>
-		<li><a href="#tab2">タブ2</a></li>
+		<li class="selected"><a href="#tab1">設定一覧</a></li>
+		<li><a href="#tab2">WIXファイル操作</a></li>
+		<li><a href="#tab3">WIXファイル情報推薦</a></li>
 	</ul>
 	<div id="contents">
 		<div class="tabbox" id="tab1">
@@ -140,7 +141,7 @@ function wix_admin_settings(){
 				<?php } ?>
 	
 					<div id="option_settings">
-						<div class="contents_option" id="wixfile_option_settings">
+						<div id="wixfile_option_settings" class="contents_option">
 							<strong>WIXファイル</strong>
 							<fieldset name="wixfile_option" form="wixfile_option1">
 								<legend>[自動生成]</legend>
@@ -183,7 +184,7 @@ function wix_admin_settings(){
 								?>
 							</fieldset>
 						</div>
-						<div class="contents_option" id="decidefile_option_settings">
+						<div id="decidefile_option_settings" class="contents_option">
 							<strong>Decideファイル</strong>
 							<fieldset name="decidefile_option" form="decidefile_option1">
 								<legend>[Decideファイル適用]</legend>
@@ -526,7 +527,6 @@ function wix_admin_settings(){
 					?>
 				</div> <!-- #doc_list -->
 			</div> <!-- #createdDoc -->
-<!-- ---------------------------------------------------------- tab2 の WIXファイル部分 ------------------------------ -->
 			<div id="second_wixfile" class="wixfile">
 				<ul id="second_wixfile_tab" class="wixfile_tab">
 					<?php
@@ -740,6 +740,117 @@ function wix_admin_settings(){
 
 
 		</div> <!-- #tab2 -->
+<?php
+/**
+			↓タブ３
+**/
+?>
+		<div class="tabbox" id="tab3">
+			<div id="third_createdDoc">
+				<ul id="third_doc_tab">
+					<li class="selected"><a href="#third_doc_tab1">固定ページ</a></li>
+					<li><a href="#third_doc_tab2">投稿</a></li>
+				</ul>
+				<div id="third_doc_list">
+					<?php 
+						global $wpdb;
+						$sql = 'SELECT DISTINCT post_type FROM ' . $wpdb->posts . ' WHERE post_type!="revision"';
+						$post_typeObj = $wpdb->get_results($sql);
+						if ( count($post_typeObj) != 0 ) {
+							foreach ($post_typeObj as $index => $value) {
+								$type = $value->post_type;
+								$sql = 'SELECT ID, post_title, guid FROM ' . $wpdb->posts . 
+										' WHERE post_type="' . $type . '" AND post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" order by post_type, ID asc';
+								$documentsInfo = $wpdb->get_results($sql);
+
+								if ( count($documentsInfo) != 0 ) {
+									if ( $type == 'page' ) {
+										echo '<div id="third_doc_tab1" class="third_doc_tabbox">';
+											echo '<table id="doc_table1" class="doc_table">';
+									} else if ( $type == 'post' ) {
+										echo '<div id="third_doc_tab2" class="third_doc_tabbox">';
+											echo '<table id="doc_table2" class="doc_table">';
+									}
+												echo '<thead>';
+													echo '<tr class="doc_table_heading">';
+														echo '<th>タイトル</th>';
+													echo '</tr>';
+												echo '</thead>';
+												echo '<tbody>';
+												foreach ($documentsInfo as $index => $value) {
+													$post_title = $value->post_title;
+													$url = $value->guid;
+													$id = $value->ID;
+													echo '<tr><td><a id=' . $id . ' class="third_doc_page" target="third_doc_page" href="' . $url . '">' . $post_title . '</a></td></tr>';
+												}
+												echo '</tbody>';
+											echo '</table>';
+										echo '</div>'; //.third_doc_tabbox
+								}
+							}
+
+
+						}
+					?>
+				</div> <!-- #third_doc_list -->
+			</div> <!-- #third_createdDoc -->
+			
+			<div id="recommend_contents">
+				<ul id="recommend_entrys_tab">
+					<li class="selected"><a href="#recommend_entrys_tab1">特徴語</a></li>
+					<li><a href="#recommend_entrys_tab2">頻出順(ページ)</a></li>
+					<li><a href="#recommend_entrys_tab3">頻出順(サイト)</a></li>
+					<li><a href="#recommend_entrys_tab4">サイト内頻出語</a></li>
+				</ul>
+				<div id="recommend_entrys">
+					<table id="recommend_entrys_table">
+						<thead>
+							<tr>
+								<th id="thead_keywords">Keyword</th>
+								<th id="thead_targets">リンク先URL候補</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td id="recommend_keywords">
+									<div id="recommend_entrys_tab1" class="recommend_entrys_tabbox">
+
+									</div>
+									<div id="recommend_entrys_tab2" class="recommend_entrys_tabbox">
+
+									</div>
+									<div id="recommend_entrys_tab3" class="recommend_entrys_tabbox">
+
+									</div>
+									<div id="recommend_entrys_tab4" class="recommend_entrys_tabbox">
+
+									</div>
+								</td>
+								<td id="recommend_targets">
+									<div id="recommend_targets_div">
+
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div> <!-- #recommend_entrys -->
+				<input type="button" id="add_wixfile" 
+							value= "<?php echo esc_attr( __( 'Add WIXFile', 'wixfile_adding' ) ); ?>" 
+							class="button button-primary button-large" >
+			</div> <!-- #reccomend_contents -->
+
+			<div id="third_doc_list_iframe">
+				<div id="third_doc_list_iframe_inline_div">
+					<iframe id="third_doc_iframe" name="third_doc_page"></iframe>
+				</div>
+			</div> <!-- #third_doc_list_iframe -->
+
+			<div id="existing_wixfile_entrys">
+
+			</div> <!-- #existing_wixfile_entrys -->
+		</div> <!-- #tab3 -->
+
 	</div> <!-- #contents -->
 
 </div> <!-- .wrap -->
@@ -755,9 +866,104 @@ function wix_admin_settings(){
 
 function wix_detail_settings() {
 ?>
-<?php echo '<h3>' . __( 'Created WIXFile List', 'created_wixfile_list' ) . '</h3>'; ?>
+<div class="wrap">
+	<ul id="tab">
+		<li class="selected"><a href="#tab1">タブ1</a></li>
+		<li><a href="#tab2">タブ2</a></li>
+	</ul>
+	<div id="contents">
+		<div id="tab1" class="tabbox">
+			<div id="createdDoc">
+				<ul id="doc_tab">
+					<li class="selected"><a href="#doc_tab1">固定ページ</a></li>
+					<li><a href="#doc_tab2">投稿</a></li>
+				</ul>
+				<div id="doc_list">
+					<?php 
+						global $wpdb;
+						$sql = 'SELECT DISTINCT post_type FROM ' . $wpdb->posts . ' WHERE post_type!="revision"';
+						$post_typeObj = $wpdb->get_results($sql);
+						if ( count($post_typeObj) != 0 ) {
+							foreach ($post_typeObj as $index => $value) {
+								$type = $value->post_type;
+								$sql = 'SELECT ID, post_title, guid FROM ' . $wpdb->posts . 
+										' WHERE post_type="' . $type . '" AND post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" order by post_type, ID asc';
+								$documentsInfo = $wpdb->get_results($sql);
+
+								if ( count($documentsInfo) != 0 ) {
+									if ( $type == 'page' ) {
+										echo '<div id="doc_tab1" class="doc_tabbox">';
+											echo '<table id="doc_table1" class="doc_table">';
+									} else if ( $type == 'post' ) {
+										echo '<div id="doc_tab2" class="doc_tabbox">';
+											echo '<table id="doc_table2" class="doc_table">';
+									}
+												echo '<thead>';
+													echo '<tr class="doc_table_heading">';
+														echo '<th>タイトル</th>';
+													echo '</tr>';
+												echo '</thead>';
+												echo '<tbody>';
+												foreach ($documentsInfo as $index => $value) {
+													$post_title = $value->post_title;
+													$url = $value->guid;
+													$id = $value->ID;
+													echo '<tr><td><a id=' . $id . ' class="doc_page" target="doc_page" href="' . $url . '">' . $post_title . '</a></td></tr>';
+												}
+												echo '</tbody>';
+											echo '</table>';
+										echo '</div>'; //.doc_tabbox
+								}
+							}
+						}
+					?>
+				</div> <!-- #doc_list -->
+
+				<div id="decide_list">
+					<div id="similarity_info">
+						<table id="similarity_entrys">
+							<tr>
+								<th>Keyword</th>
+								<th>Document Title</th>
+							</tr>
+							<?php
+								// $sql = 'SELECT ID, post_title, guid FROM ' . $wpdb->posts . 
+								// 			' WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft" ORDER BY post_type, ID ASC LIMIT 1';
+								// $documentInfo = $wpdb->get_results($sql);
+								// if ( !empty($documentInfo) ) {
+								// 	$doc_id = $documentInfo[0]->ID;
 
 
+								// }
+
+
+							?>
+						</table>
+					</div>
+
+					
+
+
+
+
+
+
+
+
+				</div> <!-- #decide_list -->
+			</div> <!-- #createdDoc -->
+
+
+		</div> <!-- #tab1 -->
+
+
+
+
+
+
+
+	</div> <!-- #contents -->
+</div> <!-- .wrap -->
 <?php
 }
 

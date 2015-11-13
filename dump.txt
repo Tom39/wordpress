@@ -39,3 +39,363 @@
 
 
 
+<pre>------------------------------------------------------------------</pre>
+<pre></pre>
+<pre>0</pre>
+<pre>BOS/EOS,*,*,*,*,*,*,*,*</pre>
+<pre>慶應義塾</pre>
+<pre>45</pre>
+<pre>名詞,固有名詞,組織,*,*,*,慶應義塾,ケイオウギジュク,ケイオーギジュク</pre>
+<pre>大学</pre>
+<pre>38</pre>
+<pre>名詞,一般,*,*,*,*,大学,ダイガク,ダイガク</pre>
+<pre>　</pre>
+<pre>8</pre>
+<pre>記号,空白,*,*,*,*,　,　,　</pre>
+<pre>情報</pre>
+<pre>38</pre>
+<pre>名詞,一般,*,*,*,*,情報,ジョウホウ,ジョーホー</pre>
+<pre>工学科</pre>
+<pre>38</pre>
+<pre>名詞,一般,*,*,*,*,工学科,コウガッカ,コーガッカ</pre>
+<pre>の</pre>
+<pre>24</pre>
+<pre>助詞,連体化,*,*,*,*,の,ノ,ノ</pre>
+<pre>遠山</pre>
+<pre>38</pre>
+<pre>名詞,一般,*,*,*,*,遠山,トオヤマ,トーヤマ</pre>
+<pre>研究</pre>
+<pre>36</pre>
+<pre>名詞,サ変接続,*,*,*,*,研究,ケンキュウ,ケンキュー</pre>
+<pre>室</pre>
+<pre>51</pre>
+<pre>名詞,接尾,一般,*,*,*,室,シツ,シツ</pre>
+<pre>に</pre>
+<pre>13</pre>
+<pre>助詞,格助詞,一般,*,*,*,に,ニ,ニ</pre>
+<pre>所属</pre>
+<pre>36</pre>
+<pre>名詞,サ変接続,*,*,*,*,所属,ショゾク,ショゾク</pre>
+<pre>する</pre>
+<pre>31</pre>
+<pre>動詞,自立,*,*,サ変・スル,基本形,する,スル,スル</pre>
+<pre>佐草</pre>
+<pre>46</pre>
+<pre>名詞,固有名詞,地域,一般,*,*,佐草,サクサ,サクサ</pre>
+<pre>友也</pre>
+<pre>44</pre>
+<pre>名詞,固有名詞,人名,名,*,*,友也,トモヤ,トモヤ</pre>
+<pre>が</pre>
+<pre>13</pre>
+<pre>助詞,格助詞,一般,*,*,*,が,ガ,ガ</pre>
+<pre>発表</pre>
+<pre>36</pre>
+<pre>名詞,サ変接続,*,*,*,*,発表,ハッピョウ,ハッピョー</pre>
+<pre>し</pre>
+<pre>31</pre>
+<pre>動詞,自立,*,*,サ変・スル,連用形,する,シ,シ</pre>
+<pre>て</pre>
+<pre>18</pre>
+<pre>助詞,接続助詞,*,*,*,*,て,テ,テ</pre>
+<pre>い</pre>
+<pre>33</pre>
+<pre>動詞,非自立,*,*,一段,連用形,いる,イ,イ</pre>
+<pre>ます</pre>
+<pre>25</pre>
+<pre>助動詞,*,*,*,特殊・マス,基本形,ます,マス,マス</pre>
+<pre>。</pre>
+<pre>7</pre>
+<pre>記号,句点,*,*,*,*,。,。,。</pre>
+<pre></pre>
+<pre>0</pre>
+<pre>BOS/EOS,*,*,*,*,*,*,*,*</pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>MeCab_Node Object
+(
+)
+</pre>
+<pre>0</pre>
+<pre>3</pre>
+<pre>32</pre>
+<pre>39</pre>
+<pre>43</pre>
+<pre>52</pre>
+<pre>64</pre>
+<pre>68</pre>
+<pre>79</pre>
+<pre>85</pre>
+<pre>87</pre>
+<pre>98</pre>
+<pre>112</pre>
+<pre>119</pre>
+<pre>125</pre>
+<pre>133</pre>
+<pre>140</pre>
+<pre>153</pre>
+<pre>157</pre>
+<pre>165</pre>
+<pre>174</pre>
+<pre>185</pre>
+<pre>187</pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<pre>Array
+(
+    [発表] => 0.284125
+    [所属] => 0.284125
+    [遠山研究室] => 0.1686
+    [佐草友也] => 0.1686
+    [慶應義塾大学] => 0.13141
+    [情報工学科] => 0.13141
+)
+</pre>
+<pre>Array
+(
+    [発表] => 0.281887
+    [所属] => 0.281887
+    [遠山研究室] => 0.167273
+    [佐草友也] => 0.167273
+    [慶應義塾大学] => 0.130375
+    [情報工学科] => 0.130375
+)
+</pre>
+<pre>Array
+(
+    [発表] => 0.2827822
+    [所属] => 0.2827822
+    [遠山研究室] => 0.1678038
+    [佐草友也] => 0.1678038
+    [慶應義塾大学] => 0.130789
+    [情報工学科] => 0.130789
+)
+</pre>
+
+
+
+
+
+
+
+
+<pre>Array
+(
+    [0] => stdClass Object
+        (
+            [ID] => 19
+            [post_title] => 情報工学科 教員
+            [guid] => http://localhost/wordpress/?page_id=19
+        )
+
+    [1] => stdClass Object
+        (
+            [ID] => 23
+            [post_title] => KEIO TECHNO-MALL
+            [guid] => http://localhost/wordpress/?page_id=23
+        )
+
+    [2] => stdClass Object
+        (
+            [ID] => 368
+            [post_title] => 情報工学科 研究室紹介
+            [guid] => http://localhost/wordpress/?page_id=368
+        )
+
+    [3] => stdClass Object
+        (
+            [ID] => 415
+            [post_title] => デモ
+            [guid] => http://localhost/wordpress/?page_id=415
+        )
+
+    [4] => stdClass Object
+        (
+            [ID] => 482
+            [post_title] => 大槻研究室
+            [guid] => http://localhost/wordpress/?page_id=482
+        )
+
+    [5] => stdClass Object
+        (
+            [ID] => 484
+            [post_title] => 遠山研究室
+            [guid] => http://localhost/wordpress/?page_id=484
+        )
+
+    [6] => stdClass Object
+        (
+            [ID] => 501
+            [post_title] => 外部リンクテスト
+            [guid] => http://localhost/wordpress/?p=501
+        )
+
+)
+</pre>
+<pre>Array
+(
+    [0] => stdClass Object
+        (
+            [ID] => 19
+            [post_title] => 情報工学科 教員
+            [guid] => http://localhost/wordpress/?page_id=19
+        )
+
+    [1] => stdClass Object
+        (
+            [ID] => 23
+            [post_title] => KEIO TECHNO-MALL
+            [guid] => http://localhost/wordpress/?page_id=23
+        )
+
+    [2] => stdClass Object
+        (
+            [ID] => 368
+            [post_title] => 情報工学科 研究室紹介
+            [guid] => http://localhost/wordpress/?page_id=368
+        )
+
+    [3] => stdClass Object
+        (
+            [ID] => 415
+            [post_title] => デモ
+            [guid] => http://localhost/wordpress/?page_id=415
+        )
+
+    [4] => stdClass Object
+        (
+            [ID] => 482
+            [post_title] => 大槻研究室
+            [guid] => http://localhost/wordpress/?page_id=482
+        )
+
+    [5] => stdClass Object
+        (
+            [ID] => 501
+            [post_title] => 外部リンクテスト
+            [guid] => http://localhost/wordpress/?p=501
+        )
+
+    [6] => stdClass Object
+        (
+            [ID] => 687
+            [post_title] => tfidfテスト
+            [guid] => http://localhost/wordpress/?page_id=687
+        )
+
+)
+</pre>

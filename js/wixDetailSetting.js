@@ -49,7 +49,6 @@ jQuery(function($) {
 		$(this).addClass('active');
 		$('.doc_tabbox').hide();
 		$($(this).find('a').attr('href')).fadeIn();
-
 		return false;
 	});
 
@@ -72,40 +71,44 @@ jQuery(function($) {
 		return false;
 	});
 
-	$('.third_doc_tabbox:first').show();
-	$('#third_doc_tab li:first').addClass('active');
-	$('#third_doc_tab li').click(function() {
-		$('#third_doc_tab li').removeClass('active');
-		$(this).addClass('active');
-		$('.third_doc_tabbox').hide();
-		$($(this).find('a').attr('href')).fadeIn();
 
-		return false;
+	//パターンファイルのフォーム追加
+	$('#add_patternFile').click(function() {
+		var parentElementName = '#wix_settings_form #pattern_filename ';
+
+		//フォームを追加
+		var pattern_filename_len = $(parentElementName + 'li').length;
+		var insertElement = '<li><input type="text" name="pattern[' + pattern_filename_len + ']"> <input type="text" name="filename[' + pattern_filename_len + ']"></li>';
+		$(parentElementName).append(insertElement);
+
+		// 削除ボタンの一旦全消去し、配置し直す
+		$(parentElementName + 'input[type="button"]').remove();
+
+		var delete_btn = ' <input type="button" value="Delete" class="button button-primary button-large">';
+		$(parentElementName + 'li').each(function(index) {
+			$(parentElementName + 'li').eq(index).append(delete_btn);
+		});
+
+
 	});
 
-	$('.recommend_entrys_tabbox:first').show();
-	$('#recommend_entrys_tab li:first').addClass('active');
-	$('#recommend_entrys_tab li').click(function() {
-		$('#recommend_entrys_tab li').removeClass('active');
-		$(this).addClass('active');
-		$('.recommend_entrys_tabbox').hide();
-		$($(this).find('a').attr('href')).fadeIn();
-		return false;
-	});
+	// 削除ボタンを押した場合の処理
+	$(document).on('click', '#wix_settings_form #pattern_filename input[type="button"]', function(e) {
+		var parentElementName = '#wix_settings_form #pattern_filename ';
 
-/***********************************************************************************************************/
+		//フォームを削除
+		var idx = $(e.target).parent().index();
+		$('#wix_settings_form #pattern_filename li').eq(idx).remove();
 
-			//Tab 1 & 2
-	
-	/***********************************************************************************************************/
-	//WIXファイル編集フォームでのEnter禁止
-	$('.wixfile_keyword_edit, .wixfile_target_edit').keypress(function(e){
-		if( (e.which == 13) || (e.keyCode == 13) )
-			return false;
-	});
+		// フォームがひとつになるなら、削除ボタンは不要なので消去
+		if ($(parentElementName + 'li').length == 1) $(parentElementName + 'input[type="button"]').remove();
 
-	$('.wixfile_keyword_edit input:text, .wixfile_target_edit input:text').focus(function(event) {
-		 $(this).select();
+		// フォームの番号を振り直す
+		$(parentElementName + 'li').each(function(index) {
+			 $(this).children('input:text:eq(0)').attr('name', 'pattern[' + index + ']');
+			 $(this).children('input:text:eq(1)').attr('name', 'filename[' + index + ']');
+		});
+
 	});
 
 	//WIXFileコンテンツの"編集"イベント
@@ -183,6 +186,7 @@ jQuery(function($) {
 												+ '" style="display:none">');
 
 							} else {
+
 								$.each($(this).parent().nextAll(), function(index, el) {
 									if ( index == 2 ) org_target = $(this).val();
 									else if ( index == 3 ) org_keyword = $(this).val();
@@ -293,6 +297,16 @@ jQuery(function($) {
 			});
 	});
 
+	//WIXファイル編集フォームでのEnter禁止
+	$('.wixfile_keyword_edit, .wixfile_target_edit').keypress(function(e){
+		if( (e.which == 13) || (e.keyCode == 13) )
+			return false;
+	});
+
+	$('.wixfile_keyword_edit input:text, .wixfile_target_edit input:text').focus(function(event) {
+		 $(this).select();
+	});
+
 	//WIXFileコンテンツの"削除"イベント
 	$('.wixfile_entry_delete').click(function(event) {
 		var content = '';
@@ -317,57 +331,43 @@ jQuery(function($) {
 					if ( index == 1 )
 						delete_target = $(this).find('a').attr('href');
 				});
-				
-				//更新要素だったら、DB削除用要素を追加
-				if ( $(event.target).parents('tr').next().next().attr('name').indexOf('update') != -1 ) {
-					//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
-					if ( $(event.target).parents('tr').next().next('.update_element').length != 0 ) {
-						var roop = 0
-						while ( roop < 4 ) {
-							$(event.target)
-								.parents('tr')
-								.next()
-								.next()
-								.remove();
-							roop++;
-						}
-					}
-					$(event.target)
-						.parents('tr')
-						.next()
-						.after( '<input type="text" id="delete_element' 
-									+ count 
-									+ '" class="delete_element" name="delete_keywords[' 
-									+ count
-									+ ']" value="' 
-									+ delete_keyword 
-									+ '" style="display:none">' );
-					$(event.target)
-						.parents('tr')
-						.next()
-						.after( '<input type="text" id="delete_element' 
-									+ count 
-									+ '" class="delete_element" name="delete_targets[' 
-									+ count
-									+ ']" value="' 
-									+ delete_target 
-									+ '" style="display:none">' );
-				} else {
-					//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
-					if ( $(event.target).parents('tr').next().next('.update_element').length != 0 ) {
-						var roop = 0
-						while ( roop < 4 ) {
-							$(event.target)
-								.parents('tr')
-								.next()
-								.next()
-								.remove();
-							roop++;
-						}
+
+				//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
+				if ( $(event.target).parents('tr').next().next('.update_element').length != 0 ) {
+					var roop = 0
+					while ( roop < 4 ) {
+						$(event.target)
+							.parents('tr')
+							.next()
+							.next()
+							.remove();
+						roop++;
 					}
 				}
+			
 
-				//隠しエントリ & 表示エントリ削除
+				$(event.target)
+					.parents('tr')
+					.next()
+					.after( '<input type="text" id="delete_element' 
+								+ count 
+								+ '" class="delete_element" name="delete_keywords[' 
+								+ count
+								+ ']" value="' 
+								+ delete_keyword 
+								+ '" style="display:none">' );
+				$(event.target)
+					.parents('tr')
+					.next()
+					.after( '<input type="text" id="delete_element' 
+								+ count 
+								+ '" class="delete_element" name="delete_targets[' 
+								+ count
+								+ ']" value="' 
+								+ delete_target 
+								+ '" style="display:none">' );
+
+				//(隠し)エントリ削除
 		  		$(event.target)
 					.parents('tr')
 					.next()
@@ -505,7 +505,6 @@ jQuery(function($) {
 										var count = ($('.delete_element').length) / 2;
 										var delete_keyword, delete_target;
 
-										//削除するキーワードとターゲット名
 										$.each(entryTr.children(), function(index, el) {
 											if ( index == 3 ) 
 												delete_keyword = $(el).text();
@@ -513,56 +512,38 @@ jQuery(function($) {
 												delete_target = $(el).find('a').attr('href');
 										});
 
-										//更新・挿入用の要素が存在するかチェック
-										if ( entryTr.next('input').length != 0 ) {
-											if ( entryTr.next().next().attr('name').indexOf('update') != -1 ) {
-
-												//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
-												if ( entryTr.next().next('.update_element').length != 0 ) {
-													var roop = 0
-													while ( roop < 4 ) {
-														entryTr
-															.next()
-															.next()
-															.remove();
-														roop++;
-													}
-												}
-											
+										// //更新をして、やっぱ削除するって時は、更新用に作った要素を削除
+										if ( entryTr.next().next('.update_element').length != 0 ) {
+											var roop = 0
+											while ( roop < 4 ) {
 												entryTr
 													.next()
-													.after( '<input type="text" id="delete_element' 
-																+ count 
-																+ '" class="delete_element" name="delete_keywords[' 
-																+ count
-																+ ']" value="' 
-																+ delete_keyword 
-																+ '" style="display:none">' );
-												entryTr
 													.next()
-													.after( '<input type="text" id="delete_element' 
-																+ count 
-																+ '" class="delete_element" name="delete_targets[' 
-																+ count
-																+ ']" value="' 
-																+ delete_target 
-																+ '" style="display:none">' );
-											} else {
-												//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
-												if ( entryTr.next().next('.update_element').length != 0 ) {
-													var roop = 0
-													while ( roop < 4 ) {
-														entryTr
-															.next()
-															.next()
-															.remove();
-														roop++;
-													}
-												}
+													.remove();
+												roop++;
 											}
 										}
+									
+										entryTr
+											.next()
+											.after( '<input type="text" id="delete_element' 
+														+ count 
+														+ '" class="delete_element" name="delete_keywords[' 
+														+ count
+														+ ']" value="' 
+														+ delete_keyword 
+														+ '" style="display:none">' );
+										entryTr
+											.next()
+											.after( '<input type="text" id="delete_element' 
+														+ count 
+														+ '" class="delete_element" name="delete_targets[' 
+														+ count
+														+ ']" value="' 
+														+ delete_target 
+														+ '" style="display:none">' );
 
-										//隠しエントリ&エントリ削除
+										//(隠し)エントリ削除
 										entryTr
 											.next()
 											.remove();
@@ -670,64 +651,45 @@ jQuery(function($) {
 										var count = ($('.delete_element').length) / 2;
 										var delete_keyword, delete_target;
 
-										//削除するキーワードとターゲット名
 										$.each(entryTr.children(), function(index, el) {
 											if ( index == 3 ) 
 												delete_keyword = $(el).text();
 											if ( index == 4 )
 												delete_target = $(el).find('a').attr('href');
 										});
-									
-										//更新・挿入用の要素が存在するかチェック
-										if ( entryTr.next('input').length != 0 ) {
-											if ( entryTr.next().next().attr('name').indexOf('update') != -1 ) {
-												//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
-												if ( entryTr.next().next('.update_element').length != 0 ) {
-													var roop = 0
-													while ( roop < 4 ) {
-														entryTr
-															.next()
-															.next()
-															.remove();
-														roop++;
-													}
-												}
-											
+
+										// //更新をして、やっぱ削除するって時は、更新用に作った要素を削除
+										if ( entryTr.next().next('.update_element').length != 0 ) {
+											var roop = 0
+											while ( roop < 4 ) {
 												entryTr
 													.next()
-													.after( '<input type="text" id="delete_element' 
-																+ count 
-																+ '" class="delete_element" name="delete_keywords[' 
-																+ count
-																+ ']" value="' 
-																+ delete_keyword 
-																+ '" style="display:none">' );
-												entryTr
 													.next()
-													.after( '<input type="text" id="delete_element' 
-																+ count 
-																+ '" class="delete_element" name="delete_targets[' 
-																+ count
-																+ ']" value="' 
-																+ delete_target 
-																+ '" style="display:none">' );
-											} else {
-												//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
-												if ( entryTr.next().next('.update_element').length != 0 ) {
-													var roop = 0
-													while ( roop < 4 ) {
-														entryTr
-															.next()
-															.next()
-															.remove();
-														roop++;
-													}
-												}
+													.remove();
+												roop++;
 											}
 										}
+									
+										entryTr
+											.next()
+											.after( '<input type="text" id="delete_element' 
+														+ count 
+														+ '" class="delete_element" name="delete_keywords[' 
+														+ count
+														+ ']" value="' 
+														+ delete_keyword 
+														+ '" style="display:none">' );
+										entryTr
+											.next()
+											.after( '<input type="text" id="delete_element' 
+														+ count 
+														+ '" class="delete_element" name="delete_targets[' 
+														+ count
+														+ ']" value="' 
+														+ delete_target 
+														+ '" style="display:none">' );
 
-
-										//隠しエントリ&エントリ削除
+										//(隠し)エントリ削除
 										entryTr
 											.next()
 											.remove();
@@ -752,6 +714,7 @@ jQuery(function($) {
 
 	});
 
+/******************↓ここ直す*************************************************************************************************************/
 	//複数エントリ一括編集
 	$('.wixfile_entry_batch_edit').click(function(event) {
 		var content = '';
@@ -873,7 +836,6 @@ jQuery(function($) {
 							if ( $(this).css('display') == 'block' ) { //今見えてるWIXFileコンテンツ
 								var wixContents = $(this);
 
-								//モーダルテーブルの各エントリ
 								$.each($('.edit_entryTr'), function(index, el) {
 									update_keyword = $(this).find('.editKeyword').val();
 									update_target = $(this).find('.editTarget').val();
@@ -882,17 +844,12 @@ jQuery(function($) {
 									former_target = $(this).find('.former_editTarget').val();
 									entryId = $(this).find('.former_editTarget').attr('alt');
 
-									//今見えてるWIXFileコンテンツにおける編集該当エントリ
 									var subectElement = $(wixContents).find('#' + entryId);
 
 
 									//キーワードかターゲットに変更があったら更新用要素追加
 									if ( (update_keyword != former_keyword) || (update_target != former_target) ) {
-										var count;
-										$.each(subectElement.find('.update_element'), function(){ 
-											if ( $(this).attr('name').indexOf('update_keywords') != -1 ) 
-												count++;
-										});
+										var count = (subectElement.find('.update_element').length) / 2;
 
 										if ( subectElement.next().next('input:text').size() == 0 ) {
 											org_keyword = former_keyword;
@@ -917,27 +874,21 @@ jQuery(function($) {
 															+ '" style="display:none">');
 
 										} else {
-											$.each(subectElement.nextAll(), function(index, el) {
-												if ( index == 3 ) org_target = $(this).val();
-												else if ( index == 4 ) org_keyword = $(this).val();
-												else if ( index == 5) return false;									
-											});
+											org_keyword = subectElement
+																.siblings('.org_update_element')
+																.eq(1)
+																.val();
 
-											if ( subectElement.next().next().attr('name').indexOf('update') != -1 ) {
-												count = subectElement
-																	.next()
-																	.next()
-																	.attr('id')
-																	.substr( 'update_element'.length );
-												flag = false;
-											} else if ( subectElement.next().next().attr('name').indexOf('insert') != -1 ) {
-												count = subectElement
-																	.next()
-																	.next()
-																	.attr('id')
-																	.substr( 'insert_element'.length );
-												flag = true;
-											}
+											org_target = subectElement
+																.siblings('.org_update_element')
+																.eq(0)
+																.val();
+
+											count = subectElement
+														.next()
+														.next('input:text')
+														.attr('id')
+														.substr( 'update_element'.length );
 										}
 
 										//結果的に、元々のエントリから変化なかった時は、更新用要素を削除
@@ -953,51 +904,25 @@ jQuery(function($) {
 
 										} else {
 											//更新用要素を削除・追加
-											if ( flag == false ) {
-												$.each(subectElement.nextAll('input:text'), function(index, el) {
-													if ( $(this).attr('class') == 'update_element' ) $(this).remove();
-													else return false;
-												});
-												subectElement
-													.next()
-													.after( '<input type="text" id="update_element' 
-																+ count 
-																+ '" class="update_element" name="update_keywords[' 
-																+ count 
-																+ ']" value="' 
-																+ update_keyword 
-																+ '" style="display:none">')
-													.after( '<input type="text" id="update_element' 
-																+ count 
-																+ '" class="update_element" name="update_targets[' 
-																+ count 
-																+ ']" value="' 
-																+ update_target 
-																+ '" style="display:none">');
-											
-											} else {
-												$.each(subectElement.nextAll('input:text'), function(index, el) {
-													if ( $(this).attr('class') == 'update_element') $(this).remove();
-													else return false;
-												});
-
-												subectElement
-													.next()
-													.after( '<input type="text" id="insert_element' 
-																+ count 
-																+ '" class="update_element" name="insert_keywords[' 
-																+ count 
-																+ ']" value="' 
-																+ update_keyword 
-																+ '" style="display:none">')
-													.after( '<input type="text" id="insert_element' 
-																+ count 
-																+ '" class="update_element" name="insert_targets[' 
-																+ count 
-																+ ']" value="' 
-																+ update_target 
-																+ '" style="display:none">');
-											}
+											subectElement
+												.nextAll('input:text')
+												.remove('.update_element');
+											subectElement
+												.next()
+												.after( '<input type="text" id="update_element' 
+															+ count 
+															+ '" class="update_element" name="update_keywords[' 
+															+ count 
+															+ ']" value="' 
+															+ update_keyword 
+															+ '" style="display:none">')
+												.after( '<input type="text" id="update_element' 
+															+ count 
+															+ '" class="update_element" name="update_targets[' 
+															+ count 
+															+ ']" value="' 
+															+ update_target 
+															+ '" style="display:none">');
 										}
 										//表示部分を書き換え
 										subectElement
@@ -1703,10 +1628,6 @@ jQuery(function($) {
 			$('#second_newTarget_form').val(url);
 		}
 	});
-	$('.doc_page').click(function(event) {
-		$(this).parents('#doc_list').find('td').css('background-color', '');	
-		$(this).parent().css('background-color', 'yellow');
-	});
 
 	//tab2のインラインフレーム部分
 	$('#doc_iframe_text').focus(function(event) {
@@ -1721,328 +1642,105 @@ jQuery(function($) {
 		}
 	});
 
-/***********************************************************************************************************/
 
-			//Tab 3 
+
+	// $('.wixfile_entry_edit')
+	// 	.on({
+	// 		'click': function() {
+	// 			var id_number = $(this).attr('id').substr($(this).attr('class').length);
+	// 			$.each($(this).nextAll('td'), function(index, element) {
+	// 				if ( index == 0 ) return true; 
+
+	// 				var now_class = $(this).attr('class') + '_now';  
+	// 				var now_id = $(this).attr('class') + '_now' + id_number;
+
+	// 				if ( index == 1 ) {
+	// 					var text = ( $(this).text() != "" ) ? $(this).text() : $(this).val();//kokotigau
+	// 					$(element)
+	// 						.children()
+	// 						.replaceWith('<input type="text" id="' + now_id + '" class="' + now_class + '" value="' + text + '">');
+	// 				} else if ( index == 2 ) {
+	// 					var href = $(element).children().children().attr('href');
+	// 					$(element)
+	// 						.children()
+	// 						.replaceWith('<input type="text" id="' + now_id + '" class="' + now_class + '" value="' + href + '">');
+	// 				}
+
+
+	// 				$('.wixfile_keyword_now, .wixfile_target_now')
+	// 					.on({
+	// 						/* focus+click か mouseupか。とりあえずmouseupだけでいく*/
+
+	// 						// 'focus': function() {
+	// 						// 	$(this).select();
+	// 						// },
+	// 						// 'click': function() {
+	// 						// 	$(this).select();
+	// 						// 	return false;
+	// 						// },
+	// 						'mouseup': function() {
+	// 							$(this).select();
+	// 						}
+	// 					});
+	// 			});
+
+	// 			// $(this).off();
+	// 		},
+
+	// 	});
+
+
+	// $(document).on('click', '#wixfile_settings_form #wixfile_contents input[type="button"]', function(e) {
+	// 	var parentElementName = '#wixfile_settings_form #wixfile_contents ';
+	// 	var count = 0;
+
+	// 	//フォームを削除
+	// 	var idx = $(e.target).parent().index();
+	// 	$('#wixfile_settings_form #wixfile_contents tr').eq(idx).remove();
+
+	// 	// フォームがひとつになるなら、削除ボタンは不要なので消去
+	// 	if ($(parentElementName + 'tr').length == 2) $(parentElementName + 'input[type="button"]').remove();
+
+	// 	// フォームの番号を振り直す
+	// 	$(parentElementName + 'tr').each(function(index) {
+	// 		if ( index != 0 ) {
+	// 			$(this).children('th').eq(0).children('input:text').attr('name', 'keywords[' + count + ']');
+	// 			$(this).children('th').eq(1).children('input:text').attr('name', 'targets[' + count + ']');
+	// 			count++;
+	// 		}
+	// 	});
+
+	// });
+
+
 	
-	/***********************************************************************************************************/
+	//WIX Manual Decideの設定をAjaxで更新
+	//今使ってない(2015/10/14)
+  //   $('#manual_decide input[type=checkbox]').click(function(){
+  //   	var manual_decideFlag = $('.decide_management input[type=checkbox]').prop("checked");
 
-	//tab3のドキュメントリンクがクリックされたら
-	var targetArray = new Array();
-	$('.third_doc_page').click(function(event) {
-		var subjectDoc = $(this);
-		var doc_id = $(this).attr('id');
+  //   	var data = {
+		// 	'action': 'wix_manual_decide',
+		// 	'manual_decideFlag' : manual_decideFlag
+		// };
 
-		subjectDoc.parents('#third_doc_list').find('td').css('background-color', '');
-		subjectDoc.parent().css('background-color', 'yellow');
+		// $.ajax({
+		// 	async: true,
+		// 	dataType: "json",
+		// 	type: "POST",
+		// 	url: ajaxurl,
+		// 	data: data,
 
-		var data = {
-			'action': 'wix_similarity_entry_recommend',
-			'doc_id' : doc_id
-		};
-		$.ajax({
-			async: true,
-			dataType: "json",
-			type: "POST",
-			url: ajaxurl,
-			data: data,
+		// 	success: function(json) {
+		// 		console.log(json['data']);
+		// 	},
 
-			success: function(json) {
-				if ( json['entrys'].length != 0 ) {
-					//table群を一旦除去する
-					if ( $('.recommend_entrys_tabbox').children().length != 0 ) {
-						$('.recommend_entrys_tabbox').empty();
-						$('#recommend_targets_div').empty();
-					}
+		// 	error: function(xhr, textStatus, errorThrown){
+		// 		alert('wixSetting.js Error');
+		// 	}
+		// });
 
-					var count = 0;
-					var roop = 1;
-					$.each(json['entrys'], function(word_type, obj) {
-						var table = $("<TABLE />",{
-							id: word_type + '_table'
-						});
-						var tr = $("<TR />", {
-							id: word_type + '_tr'
-						}).appendTo(table);
-						var td = $("<TD />", {
-							id: word_type + '_td'
-						}).appendTo(tr);
-
-						if ( word_type == 'site_freq_words' ) {
-							$.each(obj, function(index, el) {
-								var tr2 = $("<TR />", {
-									class: word_type + '_inner_tr'
-								}).appendTo(td);
-								var td2 = $("<TD />", {
-									id: word_type + '_inner_td' + count,
-									class: word_type + '_inner_td',
-									text: el['keyword']
-								}).appendTo(tr2);
-
-								count++;
-							});
-						} else if ( word_type == 'candidate_targets' ) {
-							$.each(obj, function(index, el) {
-								var tr2 = $("<TR />", {
-									class: word_type + '_inner_tr'
-								}).appendTo(td);
-								var td2 = $("<TD />", {
-									id: word_type + '_inner_td' + index + '-1',
-									class: word_type + '_inner_td',
-								}).appendTo(tr2);
-								var a = $("<a />", {
-									id: el['ID'],
-									class: word_type + '_inner_a',
-									href: el['guid'],
-									text: el['post_title']
-								}).appendTo(td2);
-
-								var td3 = $("<TD />", {
-									id: word_type + '_inner_td' + index + '-2',
-									class: word_type + '_inner_td2',
-								}).appendTo(tr2);
-								var checkbox = $('<input type="checkbox" />', {
-								}).attr({
-									id: 'check_' + el['ID'],
-									class: word_type + '_inner_checkbox',
-								}).css({'vertical-align':'middle'}).appendTo(td3);
-							});
-							$('#recommend_targets_div').append(table);
-						} else {
-							$.each(obj, function(keyword, val) {
-								var tr2 = $("<TR />", {
-									class: word_type + '_inner_tr'
-								}).appendTo(td);
-								var td2 = $("<TD />", {
-									id: word_type + '_inner_td' + count,
-									class: word_type + '_inner_td',
-									text: keyword
-								}).appendTo(tr2);
-
-								count++;
-							});
-						}
-						
-						$('#recommend_entrys_tab' + roop).append(table);
-						roop++;
-					});
-
-					//対象ドキュメントが切り替わってもtargetArrayにあれば単語をBlueに
-					$('#recommend_keywords').ready(function(){
-						if ( doc_id in targetArray ) {
-							$.each(targetArray[doc_id], function(keyword, obj) {
-								$.each($('.recommend_entrys_tabbox').find('td'), function(index, el) {
-									if ( $(el).text() == keyword ) {
-										$(el).css('color', 'Blue');
-									}
-								});
-
-							});
-						}
-					});
-
-					//ターゲット候補のaタグがクリックされたらインラインフレームで表示
-					$('.candidate_targets_inner_a').on('click', function(event) {
-						event.preventDefault();
-						var url = $(this).attr('href');
-						$('#third_doc_iframe')[0].contentDocument.location.replace(url);
-					});
-
-					//"単語"に関するマウスイベント
-					$('.page_freq_words_inner_td, .page_freq_words_in_site_inner_td, .feature_words_inner_td, .site_freq_words_inner_td').on({
-						'mouseover': function() {
-							event.preventDefault();
-							$(this).css('opacity', '0.2').animate({'opacity': '1'}, 'slow');
-						},
-						'click': function() {
-							event.preventDefault();
-
-							$(this)
-								.parent()
-								.siblings('tr')
-								.find('td')
-								.css('background-color', '');
-							$(this)
-								.css('background-color', 'Aqua');
-
-							var keyword_td = $(this);
-							var keyword = $(this).text();
-							// var word_type = $(this).attr('class');
-
-							//一度チェックボックス全部外し、targetArrayにあるならチェックつける
-							$('.candidate_targets_inner_checkbox').prop('checked', false);
-							if ( doc_id in targetArray ) {
-								$.each(targetArray[doc_id], function(key, elm) {
-									if ( keyword == key ) {
-										$.each(elm, function(i, id) {
-											$('#check_'+id).prop('checked', true);
-										});
-									}
-								});
-							}
-
-							//チェックボックスのクリックイベント
-							$('.candidate_targets_inner_checkbox').off();
-							$('.candidate_targets_inner_checkbox').click(function(event) {
-								if ( $(this).prop('checked') ) {
-									var id = $(this).parent().prev().children().attr('id');
-
-									if ( doc_id in targetArray ) {
-										var tmpArray = targetArray[doc_id];
-										if ( keyword in tmpArray ) {
-											var tmp = tmpArray[keyword];
-											tmp.push(id);
-											tmpArray[keyword] = tmp;
-										} else {
-											tmpArray[keyword] = [id];
-										}
-										targetArray[doc_id] = tmpArray;
-
-									} else {
-										var tmpArray = new Object();
-										tmpArray[keyword] = [id];
-										targetArray[doc_id] = tmpArray;
-									}
-
-									//targetArrayにあるキーワードにはずっと色づけしとく
-									keyword_td.css('color', 'Blue');
-									$.each(keyword_td.parents('.recommend_entrys_tabbox').siblings('.recommend_entrys_tabbox').find('td'), function(index, el) {
-										if ( $(this).text() == keyword ) {
-											$(this).css('color', 'Blue');
-										}
-									});
-
-									subjectDoc.css('color', 'Red');
-
-								} else {
-									var checkbox = $(this);
-									$.each(targetArray[doc_id][keyword], function(index, id) {
-										if ( id == checkbox.parent().prev().children().attr('id') ) {
-											targetArray[doc_id][keyword].splice(index, 1);
-										}
-									});
-									if ( targetArray[doc_id][keyword].length == 0 ) {
-										delete targetArray[doc_id][keyword];
-										keyword_td.css('color', 'Black');
-										$.each(keyword_td.parents('.recommend_entrys_tabbox').siblings('.recommend_entrys_tabbox').find('td'), function(index, el) {
-											if ( $(this).text() == keyword ) {
-												$(this).css('color', 'Black');
-											}
-										});
-										subjectDoc.css('color', '');
-
-										if ( targetArray[doc_id].length == 0 ) {
-											delete targetArray[doc_id];
-										}
-									}
-								}
-
-								console.log(targetArray);
-							});
-
-							//クリックした単語がWIXファイルのキーワードにあったらそれを提示する
-							var data = {
-								'action': 'wix_exisitng_entry_presentation',
-								'keyword' : keyword
-							};
-							$.ajax({
-								async: true,
-								dataType: "json",
-								type: "POST",
-								url: ajaxurl,
-								data: data,
-
-								success: function(json) {
-									$('#existing_wixfile_entrys').empty();
-
-									var table = $("<TABLE />",{
-										id: 'exisitng_entry_table'
-									}).css({
-										'width': '100%',
-									});
-
-									if ( json['entrys'].length != 0 ) {
-										var th = $("<TH />", {
-											class: 'exisitng_entry_th',
-											text: keyword + ' の既存リンク先URL情報'
-										}).css({
-											'width': '100%',
-										}).appendTo(table);
-										$.each(json['entrys'], function(index, el) {
-											var tr = $("<TR />", {
-												id: 'exisitng_entry_tr' + index,
-												class: 'exisitng_entry_tr'
-											}).css({
-												'width': '100%',
-												'text-align': 'center',
-											}).appendTo(table);
-
-											var td = $("<TD />", {
-												id: 'exisitng_entry_td' + index,
-												class: 'exisitng_entry_td',
-											}).css({
-												'width': '100%',
-											}).appendTo(tr);
-
-											var a = $("<A />", {
-												id: 'exisitng_entry_a' + index,
-												class: 'exisitng_entry_a',
-												href: el['target'],
-												text: el['target']
-											}).css({
-												'width': '100%',
-											}).appendTo(td);
-										});
-
-									} else {
-										var th = $("<TH />", {
-											class: 'exisitng_entry_th',
-											text: keyword + ' の既存リンク先URL情報は存在しません。'
-										}).css({
-											'width': '100%',
-										}).appendTo(table);
-									}
-									$('#existing_wixfile_entrys').append(table);
-
-									$('.exisitng_entry_a').on('click', function(event) {
-										event.preventDefault();
-										var url = $(this).attr('href');
-										$('#third_doc_iframe')[0].contentDocument.location.replace(url);
-									});
-								},
-
-								error: function(xhr, textStatus, errorThrown){
-									alert('wixSetting.js Error');
-								}
-							});
-						},
-					});
-					
-
-					//タブが切り替わったら"Aqua"を消す
-					$('#recommend_entrys_tab').children().click(function(event) {
-						$('.page_freq_words_inner_td, .page_freq_words_in_site_inner_td, .feature_words_inner_td, .site_freq_words_inner_td')
-								.css('background-color', '');
-					});
-
-				} else {
-					alert('推薦できる候補がありませんでした。');
-				}
-
-
-
-			},
-
-			error: function(xhr, textStatus, errorThrown){
-				alert('wixSetting.js Error');
-			}
-		});
-	});
-	
-
-
-
-
+  //   });
 /***************************************************************************************************************************************************/
     //WIXFileのエントリ候補をwix_document_similarityテーブルから推薦
     $('.wix_similarity_entry').click(function(e) {
