@@ -724,6 +724,9 @@ function wix_create_decidefile() {
 		file_put_contents( $dirname.$post_ID.'.txt', $line, FILE_APPEND | LOCK_EX );
 	}
 
+	//DBへの挿入
+	wix_create_decidefile_inDB($post_ID, $object);
+
 	$json = array(
 		"response" => 'create decidefile'
 	);
@@ -731,6 +734,60 @@ function wix_create_decidefile() {
 
 	die();
 }
+
+function wix_create_decidefile_inDB($doc_id, $object) {
+	global $wpdb;
+
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wix_decidefile_index = $wpdb->prefix . 'wix_decidefile_index';
+	$wix_decidefile_history = $wpdb->prefix . 'wix_decidefile_history';
+	$version = 0;
+	$dfile_id = 0;
+	$keywordArray = array();
+
+	//現在の最新バージョンの値を取ってきてから挿入
+	$sql = 'SELECT * FROM ' . $wix_decidefile_index . ' WHERE doc_id=' . $doc_id . ' ORDER BY version DESC LIMIT 1';
+	$latest_decideObj = $wpdb->get_results($sql);
+	if ( !empty($latest_decideObj) ) {
+		foreach ($latest_decideObj as $index => $value) {
+			$version = intval( $value->version ) + 1;
+		}
+	}
+	$sql = 'INSERT INTO ' . $wix_decidefile_index . '(doc_id, version) VALUES ' . '(' . $doc_id . ', ' . $version . ')';
+	$wpdb->query( $sql );
+
+	//キーワードとID一覧
+	$sql = 'SELECT * FROM ' . $wixfilemeta;
+	$keywordObj = $wpdb->get_results($sql);
+	foreach ($keywordObj as $index => $value) {
+		$keywordArray[$value->keyword] = $value->id;
+	}
+
+	//先程挿入したdfile_idの取得
+	$sql = 'SELECT dfile_id FROM ' . $wix_decidefile_index . ' ORDER BY dfile_id DESC LIMIT 1';
+	$latest_Obj = $wpdb->get_results($sql);
+	foreach ($latest_Obj as $index => $value) {
+		$dfile_id = $value->dfile_id;
+	}
+
+	//Decideファイル情報の挿入
+	$insertRecord = '';
+	foreach ($object as $index => $array) {
+		$start = $array['start'];
+		$end = $array['end'];
+		$nextStart = $array['nextStart'];
+		$keyword_id = $keywordArray[$array['keyword']];
+		$target = $array['target'];
+
+		if ( $index == 0 ) 
+			$insertRecord = '(' . $dfile_id . ', ' . $start . ', ' . $end . ', ' . $nextStart . ', ' . $keyword_id . ', ' . $target . ')';
+		else 
+			$insertRecord = $insertRecord . ', (' . $dfile_id . ', ' . $start . ', ' . $end . ', ' . $nextStart . ', ' . $keyword_id . ', ' . $target . ')';	
+	}
+	$sql = 'INSERT INTO ' . $wix_decidefile_history . '(dfile_id, start, end, nextStart, keyword_id, target) VALUES ' . $insertRecord;
+	$wpdb->query( $sql );
+}
+
 
 //Decideファイルの存在確認
 add_action( 'wp_ajax_wix_decidefile_check', 'wix_decidefile_check' );

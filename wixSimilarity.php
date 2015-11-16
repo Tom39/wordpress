@@ -33,15 +33,13 @@ function wix_morphological_analysis($content) {
 									 "&results=ma&sentence=" . urlencode(strip_tags($content));
 	$returnValue = simplexml_load_file($url);
 
-	dump('dump.txt', $returnValue);
-
 	return $returnValue;
 }
 
 //Mecab(php-Mecab)を使った形態素解析
 function wix_morphological_analysis_mecab($content) {
 	//半角スペースが読み込まれないので、一旦全角スペースに変換している
-	$content = mb_convert_kana( $content, 'S');
+	$content = strip_tags( mb_convert_kana( $content, 'S') );
 
 	$mecab = new MeCab_Tagger();
 	$nodes = $mecab->parseToNode($content);
@@ -88,10 +86,26 @@ function wix_compound_noun_extract($parse){
 
 //Mecabを使って、形態素解析結果から複合名詞の作成
 function wix_compound_noun_extract_mecab($parse){
-	foreach ($parse as $node => $value) {
-		dump('dump.txt', $node);
-	}
+	$tmpString = '';
+	$returnValue = array();
 
+	foreach ($parse as $node => $value) {
+		$str = $value->getSurface();
+		
+		if ( !empty($str) ) {
+			$array = explode(',', $value->getFeature());
+			if ( $array[0] == '名詞' ) {
+				$tmpString = $tmpString . $str;
+			} else {
+				array_push($returnValue, $tmpString);
+				$tmpString = '';
+			}
+		}
+	}
+	if ( !empty($tmpString) )
+		array_push($returnValue, $tmpString);
+
+	return $returnValue;
 }
 
 //作成ドキュメントにおける各キーワードの出現回数カウンタ

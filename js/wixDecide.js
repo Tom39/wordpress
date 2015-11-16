@@ -339,6 +339,31 @@ console.log(json['similarity']);
 									iframe.contentWindow.document.close();
 
 									$('iframe').ready(function(){
+										//all non-attachボタンの作成
+										var wixAllNoAttachButton = $("<button />", {
+											text: 'All Non Create Link',
+											class: 'wixAllNoAttachBtn',
+											href: 'javascript:;',
+											title: 'wixAllNoAttach',
+											id: 'pwWixAllNoAttach',
+											click: function(event) {
+												$.each($('#wixDecideIframe').contents().find('.wix-authorLink'), function(index, el) {
+													var start = $(this).attr('start');
+													var keyword, end;
+
+													if ( (start in decideLink) == true ) {
+														delete decideLink[start];
+													}
+													keyword = $(this).html();
+													end = parseInt(start) + keyword.length;
+
+													decideLink[start] = {'keyword':keyword,'target':'no_attach','end':end};
+													$(this).css('background', '#ccccff');
+												});
+											}
+										});
+										$('.pWindow').children().eq(0).before(wixAllNoAttachButton);
+
 										//Decide決定ボタンの作成
 										var wixDecideButton = $("<button />", {
 											text: 'Decide',
@@ -398,6 +423,9 @@ console.log(json['similarity']);
 														}
 													});
 
+													if ( $('#wixDecide_message').length != 0 )
+														 $('#wixDecide_message').remove();
+														
 													$('#lost-connection-notice')
 														.before('<div id="wixDecide_message" class="updated below-h2"><p>WIX Decide処理を行いました</p></div>');
 													$('#publish').show();
@@ -576,6 +604,8 @@ function createPreDecideFile(object){
 	end = parseInt(start) + keyword.length;
 
 	decideLink[start] = {'keyword':keyword,'target':target,'end':end};
+
+	console.log(decideLink);
 }
 
 //Decide時にポップアップをクリックしていないものも、デフォルトで回収

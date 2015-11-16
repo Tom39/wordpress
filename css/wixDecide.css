@@ -107,38 +107,114 @@ table.predecidetable a.wix-pre-authorLink:link {
 }
 
 table.predecidetable a.wix-pre-authorLink:link:visited {
-		font-weight:normal;
-		color:#551A8B;
-		text-decoration: line-through;
+	font-weight:normal;
+	color:#551A8B;
+	text-decoration: line-through;
 }
 
 table.predecidetable a.wix-pre-authorLink:link:hover {
-		border-bottom: 1px dashed #bbb;
+	border-bottom: 1px dashed #bbb;
 }
 
 /* =head =foot
 ----------------------------------------------- */
 table.predecidetable thead th, table.predecidetable tfoot th {
-		background:#333 url("./images/llsh.gif") repeat-x;
-		color:#fff
+	background:#333 url("./images/llsh.gif") repeat-x;
+	color:#fff
 }
 
 
 /* =body
 ----------------------------------------------- */
 table.predecidetable tbody th, table.predecidetable tbody td {
-		border-bottom: dotted 1px #333;
+	border-bottom: dotted 1px #333;
 }
 
 table.predecidetable tbody th {
-		white-space: nowrap;
+	white-space: nowrap;
 }
 
 table.predecidetable tbody th a {
-		color:#333;
+	color:#333;
 }
 
 table.predecidetable tbody tr:hover {
-		background:#fafafa
+	background:#fafafa
+}
+
+.wixAllNoAttachBtn {
+	position: absolute;
+	right: 160px;
+	top: 3px;
+	width: 150px;
+	height: 25px;
+	padding: 1px 3px 1px;
+	border: 0px;
+
+	font-size: 15px;
+	font-family: arial, sans-serif;
+
+	border: 1px solid #2ce360;
+	background-color: #49f0cd;
+	background-image: -webkit-linear-gradient(top, #49f0cd, #2ce360);
+	background-image: linear-gradient(to bottom, #49f0cd, #2ce360);
+	border-radius: 4px;
+	color: #fff;
+	-webkit-transition: none;
+	transition: none;
+	text-shadow: 0 1px 1px rgba(0, 0, 0, .3);
+	
+	cursor: pointer;
+}
+.wixAllNoAttachBtn:hover {
+	border:1px solid #1090c3;
+	background-color: #1aec56;
+	background-image: -webkit-linear-gradient(top, #1aec56, #1ac24a);
+	background-image: linear-gradient(to bottom, #1aec56, #1ac24a);
+}
+.wixAllNoAttachBtn:active {
+	background: #1ac24a;
+	box-shadow: inset 0 3px 5px rgba(0, 0, 0, .2);
+	color: #1679a1;
+	text-shadow: 0 1px 1px rgba(255, 255, 255, .5);
+}
+
+
+
+.wixDecideBtn {
+	position: absolute;
+	right: 60px;
+	top: 3px;
+	width: 80px;
+	height: 25px;
+	padding: 1px 3px 1px;
+	border: 0px;
+
+	font-size: 15px;
+	font-family: arial, sans-serif;
+
+	border: 1px solid #15aeec;
+	background-color: #49c0f0;
+	background-image: -webkit-linear-gradient(top, #49c0f0, #2cafe3);
+	background-image: linear-gradient(to bottom, #49c0f0, #2cafe3);
+	border-radius: 4px;
+	color: #fff;
+	-webkit-transition: none;
+	transition: none;
+	text-shadow: 0 1px 1px rgba(0, 0, 0, .3);
+	
+	cursor: pointer;
+}
+.wixDecideBtn:hover {
+	border:1px solid #1090c3;
+	background-color: #1ab0ec;
+	background-image: -webkit-linear-gradient(top, #1ab0ec, #1a92c2);
+	background-image: linear-gradient(to bottom, #1ab0ec, #1a92c2);
+}
+.wixDecideBtn:active {
+	background: #1a92c2;
+	box-shadow: inset 0 3px 5px rgba(0, 0, 0, .2);
+	color: #1679a1;
+	text-shadow: 0 1px 1px rgba(255, 255, 255, .5);
 }
 

@@ -93,6 +93,16 @@ jQuery(function($) {
 		return false;
 	});
 
+	//保存をしていない時、ページ離脱に関する警告を出すイベント
+	$(window).on('beforeunload', function() {
+		if ( $('.update_element').length != 0 || $('.delete_element').length != 0 ) {
+			return '保存が完了していません。このまま移動しますか？';
+		}
+	});
+	$('input[type=submit]').on('click', function(event) {
+		$(window).off('beforeunload');
+	});
+
 /***********************************************************************************************************/
 
 			//Tab 1 & 2
@@ -500,8 +510,8 @@ jQuery(function($) {
 								$.each($(this).find('table tr td input:checkbox'), function(j, elm) { //今見えてるエントリ群
 									if ( $(this).is(':checked') ) { //チェックが付いている要素
 										var entryTr = $(this).parents('tr');
-										
-										//DB内のWIXファイル削除用要素を作成
+
+										//DB内のWIXファイル削除用要素を作成	
 										var count = ($('.delete_element').length) / 2;
 										var delete_keyword, delete_target;
 
@@ -514,7 +524,7 @@ jQuery(function($) {
 										});
 
 										//更新・挿入用の要素が存在するかチェック
-										if ( entryTr.next('input').length != 0 ) {
+										if ( entryTr.next().next('input').length != 0 ) {
 											if ( entryTr.next().next().attr('name').indexOf('update') != -1 ) {
 
 												//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
@@ -548,6 +558,7 @@ jQuery(function($) {
 																+ delete_target 
 																+ '" style="display:none">' );
 											} else {
+												console.log('挿入用要素を一括削除します');
 												//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
 												if ( entryTr.next().next('.update_element').length != 0 ) {
 													var roop = 0
@@ -572,7 +583,7 @@ jQuery(function($) {
 									}
 								});
 								
-								$('#wixfile_entry_allcheck').prop('checked', false);	
+								$('.wixfile_entry_allcheck').prop('checked', false);	
 							}
 						});
 					},
@@ -679,7 +690,7 @@ jQuery(function($) {
 										});
 									
 										//更新・挿入用の要素が存在するかチェック
-										if ( entryTr.next('input').length != 0 ) {
+										if ( entryTr.next().next('input').length != 0 ) {
 											if ( entryTr.next().next().attr('name').indexOf('update') != -1 ) {
 												//更新をして、やっぱ削除するって時は、更新用に作った要素を削除
 												if ( entryTr.next().next('.update_element').length != 0 ) {
@@ -737,7 +748,7 @@ jQuery(function($) {
 									}
 								});
 								
-								$('#wixfile_entry_allcheck').prop('checked', false);	
+								$('.wixfile_entry_allcheck').prop('checked', false);	
 							}
 						});
 					},
@@ -819,6 +830,9 @@ jQuery(function($) {
 								type: 'text',
 								class: 'editKeyword',
 								value: keyword,
+							}).css({
+								'font-size': '6pt',
+								// property2: 'value'
 							}).appendTo(td);
 							var input = $("<input />", {
 								type: 'text',
@@ -834,6 +848,9 @@ jQuery(function($) {
 								type: 'text',
 								class: 'editTarget',
 								value: target,
+							}).css({
+								'font-size': '6pt',
+								// property2: 'value2'
 							}).appendTo(td2);
 							var input = $("<input />", {
 								type: 'text',
@@ -858,9 +875,22 @@ jQuery(function($) {
 					close: true
 				});
 
+				$('.pWindow tbody').ready(function() {
+					if ( $('.pWindow').position().top < 35 ) {
+						console.log('きた。');
+						$('.pWindow').offset({top: 40});
+					}
+				});
+
 				var buttonDiv = $("<div />", {
 					id: 'popButtonDiv'
 				}).appendTo(content);
+				$('<button />', {
+					text: "中止",
+					click : function(event) {
+						pop.close();
+					}
+				}).appendTo(buttonDiv);
 				$('<button />', {
 					text: "データ更新",
 					click: function(event) {
@@ -1032,12 +1062,6 @@ jQuery(function($) {
 						pop.close();
 					}
 				}).appendTo(buttonDiv);
-				$('<button />', {
-					text: "中止",
-					click : function(event) {
-						pop.close();
-					}
-				}).appendTo(buttonDiv);
 			}
 		
 		} else if ( $('.second_wixfile_tabbox').is(':visible') == true ) {
@@ -1142,9 +1166,22 @@ jQuery(function($) {
 					close: true
 				});
 
+				$('.pWindow tbody').ready(function() {
+					if ( $('.pWindow').position().top < 35 ) {
+						console.log('きた。');
+						$('.pWindow').offset({top: 40});
+					}
+				});
+
 				var buttonDiv = $("<div />", {
 					id: 'popButtonDiv'
 				}).appendTo(content);
+				$('<button />', {
+					text: "中止",
+					click : function(event) {
+						pop.close();
+					}
+				}).appendTo(buttonDiv);
 				$('<button />', {
 					text: "データ更新",
 					click: function(event) {
@@ -1278,12 +1315,6 @@ jQuery(function($) {
 						pop.close();
 					}
 				}).appendTo(buttonDiv);
-				$('<button />', {
-					text: "中止",
-					click : function(event) {
-						pop.close();
-					}
-				}).appendTo(buttonDiv);
 			}
 		} 
 
@@ -1303,10 +1334,11 @@ jQuery(function($) {
 
 		if ( keyword != '' && target != '' ) {
 			//対象wixfile_tabbox
-			var subjectTable, tmp_subjectTable;
+			var subjectTable, tmp_subjectTable, tab;
 			$.each($('.tabbox'), function(i, el) {
 				if ( $(this).css('display') == 'block' ) {
-					if ( $(this).attr('id') == 'tab1' ) 
+					tab = $(this).attr('id');
+					if ( tab == 'tab1' ) 
 						subjectTable = $(this).find('.wixfile_tabbox:last tbody');
 					else 
 						subjectTable = $(this).find('.second_wixfile_tabbox:last tbody');
@@ -1315,17 +1347,27 @@ jQuery(function($) {
 				}
 			});
 			tmp_subjectTable = subjectTable;
-			console.log(subjectTable);
 
 			if ( subjectTable.find('tr').size() == 0 ) {
-				console.log('subjectTableを最後から2番目に切り替えます');
-				subjectTable = tmp_subjectTable.parents('.wixfile_tabbox').prev().find('table tbody');
+				if ( tab == 'tab1' ) {
+					// if ( subjectTable.parents('.wixfile_tabbox').prev().find('table tbody tr').size() < 40 ) {
+						console.log('subjectTableを最後から2番目に切り替えます');
+						subjectTable = tmp_subjectTable.parents('.wixfile_tabbox').prev().find('table tbody');
+					// }
+				} else {
+					// if ( subjectTable.parents('.second_wixfile_tabbox').prev().find('table tbody tr').size() < 40 ) {
+						console.log('subjectTableを最後から2番目に切り替えます');
+						subjectTable = tmp_subjectTable.parents('.second_wixfile_tabbox').prev().find('table tbody');
+					// }
+				}
 			}
+			console.log('subjectTableは');
+			console.log(subjectTable);
 
 			//現在の最後のエントリ要素取得
 			var existingEntry_lastElement = subjectTable.find('tr:last');
 			console.log( '最後尾のエントリは' );
-			console.log( existingEntry_lastElement );
+			console.log( existingEntry_lastElement.attr('id') );
 
 			//挿入エントリに使用するNewIDを作成
 			var newId = parseInt(existingEntry_lastElement
@@ -1513,20 +1555,42 @@ jQuery(function($) {
 					}
 
 				} else {
+					console.log('40です。');
 					//wixfile_tabbox部を複製
-					var existingWixfile_tabbox_last = $('.wixfile_tabbox:last');
-					var newTabboxId = parseInt(existingWixfile_tabbox_last
-											.attr('id')
-											.substr('wixfile_tab'.length) )
-											+ 1;
-					var newWixfile_tabbox = existingWixfile_tabbox_last
+					var existingWixfile_tabbox_last;
+					var newTabboxId;
+					var newWixfile_tabbox;
+
+					if ( tab == 'tab1' ) {
+						existingWixfile_tabbox_last = $('.wixfile_tabbox:last');
+						newTabboxId = parseInt(existingWixfile_tabbox_last
+													.attr('id')
+													.substr('wixfile_tab'.length) )
+													+ 1;
+						newWixfile_tabbox = existingWixfile_tabbox_last
 															.clone(true)
 															.attr({
 																'id': 'wixfile_tab' + newTabboxId,
 															});
-					newWixfile_tabbox
+						newWixfile_tabbox
 								.children('table')
-									.attr('id', 'wixfile_table' + + newTabboxId);
+									.attr('id', 'wixfile_table' + newTabboxId);
+
+					} else {
+						existingWixfile_tabbox_last = $('.second_wixfile_tabbox:last');
+						newTabboxId = parseInt(existingWixfile_tabbox_last
+													.attr('id')
+													.substr('second_wixfile_tab'.length) )
+													+ 1;
+						newWixfile_tabbox = existingWixfile_tabbox_last
+															.clone(true)
+															.attr({
+																'id': 'second_wixfile_tab' + newTabboxId,
+															});
+						newWixfile_tabbox
+								.children('table')
+									.attr('id', 'second_wixfile_table' + newTabboxId);
+					}
 
 					//wixfileタブ部を複製
 					var existingWixfile_tab_last;
@@ -1535,12 +1599,19 @@ jQuery(function($) {
 						if ( $(this).css('display') == 'block' ) {
 							existingWixfile_tab_last = $(this).find('.wixfile .wixfile_tab li:last');
 							newWixfile_tab = existingWixfile_tab_last.clone(true);
-							$('#wixfile_tab li').removeClass('selected active');
-
-							newWixfile_tab
+							if ( tab == 'tab1' ) {
+								$('#wixfile_tab li').removeClass('selected active');
+								newWixfile_tab
 									.find('a')
 										.attr('href', '#wixfile_tab' + newTabboxId)
 										.text('タブ' + newTabboxId);
+							} else {
+								$('#second_wixfile_tab li').removeClass('selected active');
+								newWixfile_tab
+									.find('a')
+										.attr('href', '#second_wixfile_tab' + newTabboxId)
+										.text('タブ' + newTabboxId);
+							}
 							newWixfile_tab.addClass('active');
 
 							//既存エントリを削除
@@ -1599,8 +1670,14 @@ jQuery(function($) {
 							existingWixfile_tab_last.after( newWixfile_tab );
 
 							//新tabbox表示
-							$('.wixfile_tabbox').hide();
-							$('#wixfile_tab' + newTabboxId).fadeIn();
+							if ( tab == 'tab1' ) {
+								$('.wixfile_tabbox').hide();
+								$('#wixfile_tab' + newTabboxId).fadeIn();
+							} else {
+								$('.second_wixfile_tabbox').hide();
+								$('#second_wixfile_tab' + newTabboxId).fadeIn();
+							}
+							
 
 
 							return false;
@@ -1619,38 +1696,75 @@ jQuery(function($) {
 				count = count / 2; //keywordとtarget両方換算してしまっている
 				console.log( 'countは' );
 				console.log(count);
+				console.log(tmp_subjectTable);
+				if ( tmp_subjectTable.find('input').length == 0 ) {
+					console.log('inputが0でした');
+					tmp_subjectTable
+									.append( newElement )
+									.append( newHiddenElement )
+									.append( '<input type="text" id="insert_element' 
+												+ count 
+												+ '" class="update_element" name="insert_targets[' 
+												+ count 
+												+ ']" value="' 
+												+ target 
+												+ '" style="display:none">')
+									.append( '<input type="text" id="insert_element' 
+												+ count 
+												+ '" class="update_element" name="insert_keywords[' 
+												+ count 
+												+ ']" value="' 
+												+ keyword 
+												+ '" style="display:none">')
+									.append( '<input type="text" id=org_update_element' 
+												+ count 
+												+ ' class="org_update_element" name="org_insert_targets[' 
+												+ count 
+												+ ']" value="' 
+												+ target 
+												+ '" style="display:none">')
+									.append( '<input type="text" id=org_update_element' 
+												+ count 
+												+ ' class="org_update_element" name="org_insert_keywords[' 
+												+ count 
+												+ ']" value="' 
+												+ keyword 
+												+ '" style="display:none">')
 
-				tmp_subjectTable.find('input:last')
-								.after( '<input type="text" id=org_update_element' 
-											+ count 
-											+ ' class="org_update_element" name="org_insert_keywords[' 
-											+ count 
-											+ ']" value="' 
-											+ keyword 
-											+ '" style="display:none">')
-								.after( '<input type="text" id=org_update_element' 
-											+ count 
-											+ ' class="org_update_element" name="org_insert_targets[' 
-											+ count 
-											+ ']" value="' 
-											+ target 
-											+ '" style="display:none">')
-								.after( '<input type="text" id="insert_element' 
-											+ count 
-											+ '" class="update_element" name="insert_keywords[' 
-											+ count 
-											+ ']" value="' 
-											+ keyword 
-											+ '" style="display:none">')
-								.after( '<input type="text" id="insert_element' 
-											+ count 
-											+ '" class="update_element" name="insert_targets[' 
-											+ count 
-											+ ']" value="' 
-											+ target 
-											+ '" style="display:none">')
-								.after( newHiddenElement )
-								.after( newElement );
+				} else {
+					console.log('inputが0より大きいです');
+					tmp_subjectTable.find('input:last')
+									.after( '<input type="text" id=org_update_element' 
+												+ count 
+												+ ' class="org_update_element" name="org_insert_keywords[' 
+												+ count 
+												+ ']" value="' 
+												+ keyword 
+												+ '" style="display:none">')
+									.after( '<input type="text" id=org_update_element' 
+												+ count 
+												+ ' class="org_update_element" name="org_insert_targets[' 
+												+ count 
+												+ ']" value="' 
+												+ target 
+												+ '" style="display:none">')
+									.after( '<input type="text" id="insert_element' 
+												+ count 
+												+ '" class="update_element" name="insert_keywords[' 
+												+ count 
+												+ ']" value="' 
+												+ keyword 
+												+ '" style="display:none">')
+									.after( '<input type="text" id="insert_element' 
+												+ count 
+												+ '" class="update_element" name="insert_targets[' 
+												+ count 
+												+ ']" value="' 
+												+ target 
+												+ '" style="display:none">')
+									.after( newHiddenElement )
+									.after( newElement );
+				}
 			}
 
 			//エントリ挿入フォームを空にする
@@ -1699,7 +1813,7 @@ jQuery(function($) {
 				url = $(this).find('a').attr('href');
 
 			//tab2のインラインフレーム直下のtextboxにURL挿入
-			$('#doc_iframe_text').val(url);
+			// $('#doc_iframe_text').val(url);
 			$('#second_newTarget_form').val(url);
 		}
 	});
@@ -1707,19 +1821,28 @@ jQuery(function($) {
 		$(this).parents('#doc_list').find('td').css('background-color', '');	
 		$(this).parent().css('background-color', 'yellow');
 	});
-
-	//tab2のインラインフレーム部分
-	$('#doc_iframe_text').focus(function(event) {
-		 $(this).select();
-	});
-	$('#doc_iframe_text').keypress(function(e){
+	$('#second_newTarget_form').keypress(function(e){
 		if( (e.which == 13) || (e.keyCode == 13) ) {
-			var url = $('#doc_iframe_text').val();
-			$('#doc_iframe')[0].contentDocument.location.replace(url);
-
+			var url = $('#second_newTarget_form').val();
+			if ( url != '' ) {
+				$('#doc_iframe')[0].contentDocument.location.replace(url);
+			}
 			return false;
 		}
 	});
+
+	//tab2のインラインフレーム部分
+	// $('#doc_iframe_text').focus(function(event) {
+	// 	 $(this).select();
+	// });
+	// $('#doc_iframe_text').keypress(function(e){
+	// 	if( (e.which == 13) || (e.keyCode == 13) ) {
+	// 		var url = $('#doc_iframe_text').val();
+	// 		$('#doc_iframe')[0].contentDocument.location.replace(url);
+
+	// 		return false;
+	// 	}
+	// });
 
 /***********************************************************************************************************/
 
@@ -1728,7 +1851,7 @@ jQuery(function($) {
 	/***********************************************************************************************************/
 
 	//tab3のドキュメントリンクがクリックされたら
-	var targetArray = new Array();
+	var targetArray = new Object();
 	$('.third_doc_page').click(function(event) {
 		var subjectDoc = $(this);
 		var doc_id = $(this).attr('id');
@@ -2039,9 +2162,206 @@ jQuery(function($) {
 		});
 	});
 	
+	$('#add_wixfile').on('click', function(event) {
+		event.preventDefault();
+
+		if ( Object.keys(targetArray).length > 0 ) {
+			var insertArray = new Object();
+			/*
+				insertArray: [word: [0: [index:target_doc_id]]]
+			*/
+			$.each(targetArray, function(doc_id, obj) {
+				$.each(obj, function(keyword, element) {
+
+					$.each(element, function(index, target_doc_id) {
+
+						if ( keyword in insertArray ) {
+
+							$.each(insertArray[keyword], function(zero, array) {
+								var flag = false;
+
+								$.each(array, function(i, id) {
+									if ( id == target_doc_id ) {
+										flag = true;
+										return false;
+									}	
+								});
+								if ( flag == false ) array.push(target_doc_id);
+
+								insertArray[keyword] = [array];
+
+							});
+
+						} else {
+
+							insertArray[keyword] = [[target_doc_id]];
+
+						}
+					});
+
+				});
+			});
+
+			//モーダル要素作成
+			var content = $("<div />", {
+				id: 'insert_popTableDiv'
+			});
+			var table = $("<TABLE />",{
+				class: 'insert_popTable'
+			}).appendTo(content);
+			var tr = $("<TR />", {
+				class: 'insert_popTr'
+			}).appendTo(table);
+			$("<TH />", {
+				text: '単語'
+			}).css({'white-space': 'nowrap'}).appendTo(tr);
+			$("<TH />", {
+				text: 'リンク先URL'
+			}).css({'white-space': 'nowrap'}).appendTo(tr);
+			$("<TH />", {
+				text: ''
+			}).css({'white-space': 'nowrap'}).appendTo(tr);
+
+			$.each(insertArray, function(word, array) {
+				var tr = $("<TR />",{
+					class: 'insert_entryTr'
+				}).appendTo(table);
+				var td = $("<TD />",{
+					class: 'insert_keywordTd',
+					text: word,
+				}).appendTo(tr);
+				var td2 = $("<TD />",{
+					class: 'insert_targetsTd'
+				}).appendTo(tr);
+				var td3= $("<TD />",{
+					class: 'insert_checkTd'
+				}).appendTo(tr);
+
+				$.each(array, function(zero, ar) {
+					$.each(ar, function(index, doc_id) {
+						var div = $("<div />", {
+							class: 'insert_targetDiv',
+						}).css({'white-space': 'nowrap'}).appendTo(td2);
+						var a = $("<a />", {
+							class: 'insert_targetA',
+							href: $('#'+doc_id).attr('href'),
+							target: '_blank',
+							text: $('#'+doc_id).text()
+						}).appendTo(div);
+
+						var div = $("<div />", {
+							class: 'insert_checkDiv',
+						}).css({'white-space': 'nowrap'}).appendTo(td3);
+						var checkbox = $('<input type="checkbox" />', {
+						}).attr({
+							class: 'insert_targetCheck',
+							checked: 'checked'
+						}).css({'vertical-align':'middle'}).appendTo(div);
+					});
+				});
+			});
+
+			//モーダル作成
+			var pop = new $pop(content, {
+				type: 'inline',
+				title: 'WIXファイルデータ編集',
+				width: 500,
+				modal: true,
+				windowmode: false,
+				close: true
+			});
+
+			$('.pWindow tbody').ready(function() {
+				if ( $('.pWindow').position().top < 35 ) {
+					$('.pWindow').offset({top: 40});
+				}
+			});
+
+			var buttonDiv = $("<div />", {
+				id: 'popButtonDiv'
+			}).appendTo(content);
+			$('<button />', {
+				text: "中止",
+				click : function(event) {
+					pop.close();
+				}
+			}).appendTo(buttonDiv);
+			$('<button />', {
+				text: "データ更新",
+				click: function(event) {
+					var hiddenDiv = $("<div />", {
+						id: 'hiddenDiv'
+					}).appendTo(content);
+					var form = $("<form />", {
+						id: 'insert_entryForm',
+						class: 'wixfile_settings_form',
+						method: 'post',
+					}).appendTo(hiddenDiv);
+					$("<input />", {
+						type: 'hidden',
+						id: 'nonce_wixfile_settings',
+						name: 'nonce_wixfile_settings',
+						value: '704831fc2b',
+					}).appendTo(form);
+					$("<input />", {
+						type: 'hidden',
+						name: '_wp_http_referer',
+						value: '/wordpress/wp-admin/admin.php?page=wix-admin-settings',
+					}).appendTo(form);
 
 
+					var count = 0;
+					$.each($('.insert_entryTr'), function(index, el) {
+						if ( $(this).find('.insert_targetCheck').is(':checked') == true ) {
+							var keyword = $(this).children('.insert_keywordTd').text();
 
+							$.each($(this).find('.insert_targetA'), function(index, el) {
+
+								var input = $("<input />", {
+									type: 'text',
+									class: 'insertKeyword',
+									name: 'insert_keywords['+count+']',
+									value: keyword,
+								}).css({
+									'display': 'none'
+								}).appendTo(form);
+
+								var input2 = $("<input />", {
+									type: 'text',
+									class: 'insertTarget',
+									name: 'insert_targets['+count+']',
+									value: $(this).attr('href'),
+								}).css({
+									'display': 'none'
+								}).appendTo(form);
+
+								count++;
+							});
+						}
+					});
+					$('<input />', {
+						type: 'submit',
+					}).attr({
+						name: 'wixfile_settings',
+						class: 'insert_entryButton',
+						value: "データ更新",
+					}).css({
+						'display': 'none'
+					}).appendTo(form);
+
+					$('.insert_entryButton').ready(function(){
+						$('.insert_entryButton').click();
+					});
+		
+				}
+			}).appendTo(buttonDiv);
+
+
+		} else {
+			alert('追加したい情報を選択してください');
+		}
+
+	});
 
 /***************************************************************************************************************************************************/
     //WIXFileのエントリ候補をwix_document_similarityテーブルから推薦

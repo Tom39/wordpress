@@ -11,7 +11,7 @@ html, body {
     margin: 0;
 }
 
-a {
+a, button {
     cursor: pointer;
 }
 
@@ -116,15 +116,56 @@ ul#tab li.active a:hover {
     border-right: 1px solid #ccc;
 }
 
+
+.contentsBody #insert_popTableDiv {
+    width: 100%;
+}
+.contentsBody #insert_popTableDiv .insert_popTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+.contentsBody #insert_popTableDiv .insert_popTable .insert_popTr {
+    width: 100%;
+    border-bottom:1px solid #000;
+}
+.contentsBody #insert_popTableDiv .insert_popTable .insert_entryTr {
+    width: 100%;
+    border-bottom:1px solid #ccc;
+}
+.contentsBody #insert_popTableDiv .insert_popTable .insert_entryTr .insert_keywordTd {
+    width: 30%;
+}
+.contentsBody #insert_popTableDiv .insert_popTable .insert_entryTr .insert_targetsTd {
+    width: 60%;
+}
+.contentsBody #insert_popTableDiv .insert_popTable .insert_entryTr .insert_checkTd {
+    width: 10%;
+}
+.contentsBody #insert_popTableDiv .insert_popTable .insert_entryTr .insert_targetsTd .insert_targetDiv {
+    width: 100%;
+}
+.contentsBody #insert_popTableDiv .insert_popTable .insert_entryTr .insert_targetsTd .insert_targetDiv .insert_targetA {
+    width: 100%;
+}
+
+
 #popButtonDiv {
     width:100%;
     height:8%;
 }
-#popButtonDiv button{
+#popButtonDiv button, #popButtonDiv input[type="submit"]{
     width:20%;
     height:60%;
     padding: 5px auto;
     margin: 15px 30px;
+
+
+    font-size: 10pt;
+    font-weight: bold;
+    background-color: #248;
+    color: #fff;
+    border-style: none;
+
 }
 
 
@@ -386,6 +427,7 @@ ul#wixfile_tab li.active a:hover {
 #second_wixfile {
     width: 40%;
     height: 100%;
+    /*height: 55vh;*/
     margin-left: 2%;
     float: left;
 }
@@ -402,18 +444,24 @@ ul#wixfile_tab li.active a:hover {
 .second_wixfile_tabbox {
     display: none;
     width: 100%;
-    font-size: 15px;
+    font-size: 13px;
     float: left;
+}
+#default_entry_decision {
+    width: 20%;
+    height: 10vh;
+    /*float: left;*/
+    border: 1px solid blue;
 }
 #doc_list_iframe {
     float: left;
-    width: 33%;
+    width: 33.5%;
     height: 100%;
     margin-left: 2%;
 }
 #second_newEntry {
     float: right;
-    margin-top: 5%;
+    margin-top: 3%;
     width: 33%;
 }
 
@@ -495,7 +543,7 @@ ul#second_wixfile_tab li:last-child {
 }
 ul#second_wixfile_tab li a {
     display: block;
-    width: 100px;
+    width: 55px;
     padding: 4px 0;
     text-decoration: none;
     color: #222;
@@ -560,7 +608,7 @@ ul#second_wixfile_tab li.active a:hover {
 /* インラインフレーム部分 */
 #doc_list_iframe_inline_div {
     width: 100%;
-    height: 50vh;
+    height: 54vh;
 }
 #doc_iframe {
     border : 1px solid green;
@@ -575,9 +623,9 @@ ul#second_wixfile_tab li.active a:hover {
     -moz-transform: scale(0.99);
     -moz-transform-origin: 0 0;
 }
-#doc_iframe_text {
+/*#doc_iframe_text {
     width: 90%;
-}
+}*/
 
 
 /* エントリ挿入部分 */
@@ -624,14 +672,12 @@ ul#second_wixfile_tab li.active a:hover {
     width: 100%;
 }
 #third_doc_list_iframe {
-    /*clear: both;*/
     float: left;
     width: 36%;
     height: 100%;
     margin-left: 2.5%;
 }
 #existing_wixfile_entrys {
-    /*clear: both;*/
     float: left;
     width: 36%;
     height: 20vh;
@@ -738,7 +784,7 @@ ul#recommend_entrys_tab li.active a:hover {
 #recommend_entrys {
     clear: both;
     width: 100%;
-    height: 74vh;
+    height: 71vh;
     overflow: auto;
 }
 /*.third_doc_tabbox .doc_table {
@@ -806,6 +852,7 @@ ul#recommend_entrys_tab li.active a:hover {
 }
 #add_wixfile {
     float: right;
+    margin-top: 3%;
 }
 
 /* インラインフレーム部分 */
@@ -826,9 +873,6 @@ ul#recommend_entrys_tab li.active a:hover {
     -moz-transform: scale(1);
     -moz-transform-origin: 0 0;
 }
-
-
-
 
 
 

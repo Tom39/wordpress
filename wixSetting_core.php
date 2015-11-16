@@ -119,7 +119,7 @@ function wix_table_create() {
 			doc_id bigint(20) UNSIGNED NOT NULL, 
 			version bigint(20) NOT NULL, 
 			time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, 
-			PRIMARY KEY(dfile_id, doc_id, version), 
+			PRIMARY KEY(dfile_id), 
 			FOREIGN KEY(doc_id) REFERENCES wp_posts(ID) 
 				ON UPDATE CASCADE ON DELETE CASCADE
 			);";
@@ -802,7 +802,7 @@ function wixfile_settings_core() {
 	}
 }
 
-//WIXファイルに挿入・更新・削除が行われた時の、「WIXファイル内キーワードが出現するドキュメント」を表すテーブルをupdate
+//WIXファイルに挿入が行われた時の、「WIXファイル内キーワードが出現するドキュメント」を表すテーブルをupdate
 function wixfilemeta_posts_insert( $array ) {
 	var_dump( $array );
 	global $wpdb;

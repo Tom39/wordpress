@@ -1,2 +1,2 @@
-start:0,end:6,nextStart:23,keyword:慶應義塾大学,target:http://www.keio.ac.jp/index-jp.html
-start:23,end:27,nextStart:0,keyword:佐草友也,target:http://localhost/wordpress/
+start:0,end:6,nextStart:23,keyword:慶應義塾大学,target:no_attach
+start:23,end:27,nextStart:0,keyword:佐草友也,target:no_attach

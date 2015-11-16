@@ -34,9 +34,10 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 		// $parse = wix_morphological_analysis($post->post_content);
 		// $wordsArray = wix_compound_noun_extract($parse);
 		// $words_countArray = array_word_count($wordsArray);
-		$parse = wix_morphological_analysis_mecab($post->post_content);
-		wix_compound_noun_extract_mecab($parse);
 
+		// $parse = wix_morphological_analysis_mecab($post->post_content);
+		// $wordsArray = wix_compound_noun_extract_mecab($parse);
+		// $words_countArray = array_word_count($wordsArray);
 
 		//まだDBに１つもドキュメントがなかったら計算しないでDBに挿入するだけ.	
 		$sql = 'SELECT COUNT(*) FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft"';

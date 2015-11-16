@@ -268,8 +268,8 @@ function wix_admin_settings(){
 						global $wpdb;
 						$sql = 'SELECT keyword, target FROM wp_wixfilemeta wm, wp_wixfile_targets wt WHERE wm.id = wt.keyword_id';
 						$entrys = $wpdb->get_results($sql);
-						$entryNum = count($entrys);
-						// $entryNum = 80;
+						// $entryNum = count($entrys);
+						$entryNum = 80;
 						echo '<li class="selected"><a href="#wixfile_tab1">タブ1</a></li>';
 						if ( $entryNum > 20 ) {
 							$count = 2;
@@ -287,8 +287,8 @@ function wix_admin_settings(){
 
 						<div id="wixfile_contents">
 							<?php
-								$entryNum = count($entrys);
-								// $entryNum = 80;
+								// $entryNum = count($entrys);
+								$entryNum = 80;
 								if ( $entryNum < 20 ) {
 									echo '<div id="wixfile_tab1" class="wixfile_tabbox">';
 										echo '<table id="wixfile_table1" class="wixfile_table">';
@@ -530,11 +530,11 @@ function wix_admin_settings(){
 			<div id="second_wixfile" class="wixfile">
 				<ul id="second_wixfile_tab" class="wixfile_tab">
 					<?php
-						echo '<li class="selected"><a href="#second_wixfile_tab1">タブ2のタブ1</a></li>';
+						echo '<li class="selected"><a href="#second_wixfile_tab1">タブ1</a></li>';
 						if ( $entryNum > 20 ) {
 							$count = 2;
 							while ( $entryNum > 20 ) {
-								echo '<li><a href="#second_wixfile_tab' . $count . '">タブ2のタブ' . $count . '</a></li>';
+								echo '<li><a href="#second_wixfile_tab' . $count . '">タブ' . $count . '</a></li>';
 								$count++;
 								$entryNum = $entryNum - 20;
 							}
@@ -548,8 +548,8 @@ function wix_admin_settings(){
 
 						<div id="second_wixfile_contents">
 							<?php
-								$entryNum = count($entrys);
-								// $entryNum = 80;
+								// $entryNum = count($entrys);
+								$entryNum = 80;
 								if ( $entryNum < 20 ) {
 									echo '<div id="second_wixfile_tab1" class="second_wixfile_tabbox">';
 										echo '<table id="second_wixfile_table1" class="second_wixfile_table">';
@@ -717,12 +717,19 @@ function wix_admin_settings(){
 					</form>
 				</div> <!-- #second_wixfile_operation_contents -->			
 			</div> <!-- #second_wixfile -->
+
+			<!-- <div id="default_entry_decision">
+
+			</div> --> 
+			<!-- #default_entry_decision -->
+
+
 			<div id="iframe_exam"><a target="doc_page" href="http://www.db.ics.keio.ac.jp">リンクをクリックすると↓に映ります。</a></div>
 			<div id="doc_list_iframe">
 				<div id="doc_list_iframe_inline_div">
 					<iframe id="doc_iframe" name="doc_page"></iframe>
-					URL:
-					<input type="text" id="doc_iframe_text">
+					<!-- URL:
+					<input type="text" id="doc_iframe_text"> -->
 				</div>
 			</div> <!-- #doc_list_iframe -->
 
@@ -730,7 +737,7 @@ function wix_admin_settings(){
 				<fieldset name="newEntry_form" form="newEntry_form">
 					<legend>New Entry</legend>
 					<input type="text" id="second_newKeyword_form" class="newKeyword_form" placeholder="リンクを貼りたい単語">
-					<input type="text" id="second_newTarget_form" class="newTarget_form" placeholder="リンク先URL">
+					<input type="text" id="second_newTarget_form" class="newTarget_form" placeholder="リンク先URL(入力してEnキー押すと↑に出力)">
 				</fieldset>
 				<div id="second_entry_insert_result"></div>
 				<input type="button" id="second_add_wixfile_entry" 
