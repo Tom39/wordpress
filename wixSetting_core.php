@@ -89,6 +89,8 @@ function wix_table_create() {
 	$sql = "CREATE TABLE " . $table_name . " (
 			keyword_id bigint(20) NOT NULL, 
 			doc_id bigint(20) UNSIGNED NOT NULL, 
+			context_info TEXT,
+			time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, 
 			PRIMARY KEY(keyword_id, doc_id), 
 			FOREIGN KEY (keyword_id) REFERENCES wp_wixfilemeta(id) 
 				ON UPDATE CASCADE ON DELETE CASCADE, 
@@ -167,6 +169,12 @@ function wix_table_create() {
 	if ( $is_db_exists == $table_name ) return;
 	$sql = "ALTER TABLE " . $table_name . " ADD COLUMN doc_length bigint DEFAULT 0 NOT NULL;";
 	dbDelta($sql);
+
+	$table_name = $wpdb->prefix . 'posts';
+	if ( $is_db_exists == $table_name ) return;
+	$sql = "ALTER TABLE " . $table_name . " ADD COLUMN words_obj text NOT NULL;";
+	dbDelta($sql);
+
 }
 
 //--------------------------------------------------------------------------
@@ -873,12 +881,12 @@ add_action( 'transition_post_status', 'wix_keyword_appearance_in_doc', 10, 3 );
 function wix_keyword_appearance_in_doc( $new_status, $old_status, $post ) {
 	global $wpdb;
 	$doc_id = $post->ID;
-	$table_name = $wpdb->prefix . 'wixfilemeta_posts';
+	$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
 
 	//ゴミ箱行きだったらDELTE.次にリビジョンに対するエントリを作らないように.
 	if ( $new_status == 'trash' ) {
 
-		$sql = 'DELETE FROM ' . $table_name . ' WHERE doc_id = ' . $doc_id;
+		$sql = 'DELETE FROM ' . $wixfilemeta_posts . ' WHERE doc_id = ' . $doc_id;
 		$wpdb->query( $sql );
 
 	} else if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
@@ -897,18 +905,18 @@ function wix_keyword_appearance_in_doc( $new_status, $old_status, $post ) {
 					$insertEntry = $insertEntry . '(' . $keyword_id . ', ' . $doc_id . '), ';
 			}
 			//既に該当doc_idのタプルが存在するなら削除してから
-			$sql = 'SELECT COUNT(*) FROM ' . $table_name . ' WHERE doc_id = ' . $doc_id;
+			$sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta_posts . ' WHERE doc_id = ' . $doc_id;
 			if ( $wpdb->get_var($sql) != 0 ) {
-				$sql = 'DELETE FROM ' . $table_name . ' WHERE doc_id = ' . $doc_id;
+				$sql = 'DELETE FROM ' . $wixfilemeta_posts . ' WHERE doc_id = ' . $doc_id;
 				$wpdb->query( $sql );
 			}
-			$sql = 'INSERT INTO ' . $table_name . '(keyword_id, doc_id) VALUES ' . $insertEntry;
+			$sql = 'INSERT INTO ' . $wixfilemeta_posts . '(keyword_id, doc_id) VALUES ' . $insertEntry;
 			$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
 			$wpdb->query( $sql );
 		} else {
-			$sql = 'SELECT COUNT(*) FROM ' . $table_name . ' WHERE doc_id = ' . $doc_id;
+			$sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta_posts . ' WHERE doc_id = ' . $doc_id;
 			if ( $wpdb->get_var($sql) != 0 ) {
-				$sql = 'DELETE FROM ' . $table_name . ' WHERE doc_id = ' . $doc_id;
+				$sql = 'DELETE FROM ' . $wixfilemeta_posts . ' WHERE doc_id = ' . $doc_id;
 				$wpdb->query( $sql );
 			}
 		}
@@ -1061,7 +1069,7 @@ function feature_words_sort( $array1, $array2, $array3 ) {
 	return $sumArray;
 }
 /**
-	↓類似ドキュメントの閾値をどうするか？
+	↓類似ドキュメントの重み、閾値をどうするか？
 */
 function candidate_targets_sort( $similar_documents, $doc_id ) {
 	$similar_documentsArray = array();
@@ -1087,6 +1095,7 @@ function candidate_targets_sort( $similar_documents, $doc_id ) {
 	return $similar_documentsArray;
 }
 
+//既存該当キーワードを提示
 add_action( 'wp_ajax_wix_exisitng_entry_presentation', 'wix_exisitng_entry_presentation' );
 add_action( 'wp_ajax_nopriv_wix_exisitng_entry_presentation', 'wix_exisitng_entry_presentation' );
 function wix_exisitng_entry_presentation() {
@@ -1113,8 +1122,729 @@ function wix_exisitng_entry_presentation() {
     die();
 }
 
+//WIX Detail Settingsにおける手動Decide処理用body
+add_action( 'wp_ajax_wix_setting_decideBody', 'wix_setting_decideBody' );
+add_action( 'wp_ajax_nopriv_wix_setting_decideBody', 'wix_setting_decideBody' );
+function wix_setting_decideBody() {
+	global $wpdb;
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$doc_id = $_POST['doc_id'];
+	$url = $_POST['url'];
+
+	//decide処理する箇所のbodyを作る
+	$sql = 'SELECT post_content FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
+	$docObj = $wpdb->get_results($sql);
+
+	$tmpBody = wpautop($docObj[0]->post_content);
+	$innerLinkArray = keyword_location( strip_tags($tmpBody) );
+	if ( count($innerLinkArray) != 0 ) {
+		$tmp = json_encode($innerLinkArray, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+		$decide_body = new_body( $tmpBody, $tmp, true );
+	} else {
+		$decide_body = new_body( $tmpBody, '', true );
+	}
 
 
+	$json = array(
+		"html" => $decide_body,
+		// "test" => $body,
+	);
+
+	echo json_encode( $json );
+
+	
+    die();
+}
+
+//最新の該当DecideFile情報を提示
+add_action( 'wp_ajax_wix_existing_decidefile_presentation', 'wix_existing_decidefile_presentation' );
+add_action( 'wp_ajax_nopriv_wix_existing_decidefile_presentation', 'wix_existing_decidefile_presentation' );
+function wix_existing_decidefile_presentation() {
+	global $wpdb;
+	$returnValue = array();
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$doc_id = $_POST['doc_id'];
+
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wix_decidefile_index = $wpdb->prefix . 'wix_decidefile_index';
+	$wix_decidefile_history = $wpdb->prefix . 'wix_decidefile_history';
+	
+	//まずDecideファイル情報があるかチェックかつ、最新版のdfile_idを取ってくる
+	$sql = 'SELECT * FROM ' . $wix_decidefile_index . ' WHERE doc_id=' . $doc_id . ' ORDER BY version DESC LIMIT 1';
+	$decideObj = $wpdb->get_results($sql);
+	if ( !empty($decideObj) ) {
+		$dfile_id = $decideObj[0]->dfile_id;
+
+		$sql = 'SELECT start, end, nextStart, keyword, wdh.target, (CASE WHEN p.guid=wdh.target then post_content ELSE wdh.target END) AS title FROM ' . $wpdb->posts . ' p, ' . $wix_decidefile_history . ' wdh, ' . $wixfilemeta . ' wm WHERE wdh.dfile_id=' . $dfile_id . ' AND wm.id=wdh.keyword_id AND p.ID=' . $doc_id;
+		$decideFileInfo = $wpdb->get_results($sql);
+
+		foreach ($decideFileInfo as $index => $value) {
+			$returnValue[$value->start] = [
+											'end' => $value->end, 
+											'keyword' => $value->keyword, 
+											'target' => $value->target,
+											'nextStart' => $value->nextStart,
+											'title' => $value->title
+											];
+		}
+	}
+
+	$json = array(
+		"latest_decideinfo" => $returnValue,
+	);
+
+	echo json_encode( $json );
+
+	
+    die();
+}
+
+
+//Defaultエントリ推薦などを提示
+add_action( 'wp_ajax_wix_disambiguation_recommend', 'wix_disambiguation_recommend' );
+add_action( 'wp_ajax_nopriv_wix_disambiguation_recommend', 'wix_disambiguation_recommend' );
+function wix_disambiguation_recommend() {
+	global $wpdb;
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$doc_id = $_POST['doc_id'];
+
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
+	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
+
+	/*
+		WIXファイルにおいて、対象ドキュメントに出現する各キーワードが持つターゲットを配列で管理
+		$entrysArray: [
+						keyword: [
+									'keyword_id' => ,
+									'target' => [targets]
+								]
+					]
+
+		ターゲット候補を複数持つエントリのうち、内部リンクを持つキーワードを最初のキーにしている。
+		その内部リンクのタイトルなどの情報を持ち合わせている。
+		$keyword_innerlinkArray: [
+									keyword: [
+												[
+													'keyword_id' => ,
+													'doc_id' => ,
+													'post_title' => ,
+													'url' => $
+												]
+											]
+								]
+	*/
+
+	$sql = 'SELECT wm.id, wm.keyword, wft.target FROM ' . 
+			$wpdb->posts . ' p, ' . 
+			$wixfilemeta . ' wm, ' . 
+			$wixfilemeta_posts . ' wfp, ' . 
+			$wixfile_targets . ' wft' . 
+			' WHERE wm.id=wft.keyword_id AND wm.id=wfp.keyword_id AND p.ID=wfp.doc_id AND p.ID=' . $doc_id;
+	$entrysObj = $wpdb->get_results($sql);
+
+	$entrysArray = array();
+	foreach ($entrysObj as $index => $value) {
+		if ( array_key_exists($value->keyword, $entrysArray) ) {
+			$tmpArray = $entrysArray[$value->keyword]['target'];
+			array_push( $tmpArray, $value->target );
+			$entrysArray[$value->keyword]['target'] = $tmpArray;
+		} else {
+			$entrysArray[$value->keyword] = array(
+													'keyword_id' => $value->id,
+													'target' => array($value->target)
+												);
+		}
+	}
+
+	$outerLinkArray = $entrysArray;
+	$keyword_innerlinkArray = array();
+	$doc_idArray = array(); //ドキュメント類似度を計算すべきドキュメントのIDを持つ
+	$siteURL = get_option('home');
+
+	foreach ($outerLinkArray as $keyword => $valueArray) {
+
+		//WIXファイル内のtargetがwp_postsのguid OR post_titleの一致したら、それは内部URLだと判断する
+		$sql = 'SELECT ID, post_title, guid FROM ' . $wpdb->posts . ' WHERE ';
+		foreach ($valueArray['target'] as $index => $target) {
+			$title = substr( $target, strlen($siteURL)+1 );
+			if ( $index == 0 ) 
+				$sql = $sql . 'guid="' . $target . '" OR post_title="' . $title . '"'; 
+			else
+				$sql = $sql . ' OR guid="' . $target . '" OR post_title="' . $title . '"'; 
+		}
+		$keyword_innerlinkObj = $wpdb->get_results($sql);
+
+		foreach ($keyword_innerlinkObj as $index => $value) {
+			if ( $doc_id != $value->ID ) {
+				if ( array_key_exists($keyword, $keyword_innerlinkArray) ) {
+					$tmpArray = $keyword_innerlinkArray[$keyword];
+					$tmp = [
+							'keyword_id' => $valueArray['keyword_id'],
+							'post_title' => $value->post_title,
+							'url' => $value->guid
+						];
+					$tmpArray[$value->ID] = $tmp;
+					$keyword_innerlinkArray[$keyword] = $tmpArray;
+
+				} else {
+					$keyword_innerlinkArray[$keyword] = array(
+																$value->ID => [
+																	'keyword_id' => $valueArray['keyword_id'],
+																	'post_title' => $value->post_title,
+																	'url' => $value->guid
+																]
+															);
+				}
+				$doc_idArray[$value->ID] = null;
+			}
+			//entrsArrayの中身を外部URLのみにする
+			foreach ($valueArray['target'] as $index => $target) {
+				if ( $target == $value->post_title || $target == $value->guid ) {
+					unset( $valueArray['target'][$index] );
+					$valueArray['target'] = array_values( $valueArray['target'] );
+				}
+			}
+		}
+
+		$outerLinkArray[$keyword] = $valueArray;
+	}
+// dump('dump.txt', $entrysArray);
+// dump('dump.txt', $outerLinkArray);
+// dump('dump.txt', $keyword_innerlinkArray);
+// dump('dump.txt', $doc_idArray);
+
+	// $keyword_innerlinkArray = wix_entry_disambiuation_with_docSim($doc_id, $doc_idArray, $keyword_innerlinkArray, $entrysArray);
+	$keyword_innerlinkArray = wix_entry_disambiuation_with_googleSearch($doc_id, $doc_idArray, $keyword_innerlinkArray, $entrysArray);
+
+	//クライアントサイドオブジェクト作成
+	$returnValue = array();
+	foreach ($keyword_innerlinkArray as $keyword => $valueArray) {
+		$tmpArray = array();
+
+		foreach ($valueArray as $doc_id2 => $array) {
+			$keyword_id = $array['keyword_id'];
+			array_push($tmpArray, ['url' => $array['url'], 'title' => $array['post_title'], 'doc_id' => $doc_id2 ]);
+		}
+
+		$returnValue[$keyword] = array(
+										'keyword_id' => $keyword_id,
+										'targets' => $tmpArray
+									);
+	}
+
+	foreach ($outerLinkArray as $keyword => $valueArray) {
+		if ( array_key_exists($keyword, $returnValue) ) {
+			$tmpArray = $returnValue[$keyword]['targets'];
+		} else {
+			$tmpArray = array();
+			$returnValue[$keyword]['keyword_id'] = $valueArray['keyword_id'];
+		}
+
+		foreach ($valueArray['target'] as $index => $value) {
+			array_push($tmpArray, ['url' => $value]);
+		}
+		$returnValue[$keyword]['targets'] = $tmpArray;
+	}
+
+
+	$json = array(
+		"entrys" => $returnValue,
+	);
+
+	echo json_encode( $json );
+
+	
+    die();
+}
+
+function wix_entry_disambiuation_with_docSim($doc_id, $doc_idArray, $keyword_innerlinkArray, $entrysArray) {
+
+	//とりあえず類似度計算すべきdoc_idが2つ以上あったら計算。それがたとえ別々のキーワードにおけるdefault候補ターゲットだったとしても。
+	if ( count($doc_idArray) > 1 ) {
+		//類似度計算
+		$doc_simArray = wix_documentSim_for_ranking( $doc_id, $doc_idArray );
+		/**
+			ambiguationScore計算
+		*/
+		$keyword_innerlinkArray = wix_calc_disambiguation_score($keyword_innerlinkArray, $entrysArray);
+		// $keyword_innerlinkArray = wix_calc_disambiguation_score_hard($keyword_innerlinkArray, $entrysArray);
+		// $keyword_innerlinkArray = wix_calc_disambiguation_score_veryhard($keyword_innerlinkArray, $entrysArray);
+
+
+		//Ranking
+		foreach ($keyword_innerlinkArray as $keyword => $valueArray) {
+			if ( count($valueArray) > 1 ) {
+				$tmpArray = array();
+
+				foreach ($valueArray as $doc_id2 => $array) {
+					$tmpArray[$doc_id2] = $array['disambiguatoin_score'] * $doc_simArray[$doc_id2];
+					unset($keyword_innerlinkArray[$keyword][$doc_id2]);
+				}
+				arsort($tmpArray);
+				foreach ($tmpArray as $doc_id2 => $finalScore) {
+					$keyword_innerlinkArray[$keyword][$doc_id2] = $valueArray[$doc_id2];
+				}
+			}
+		}
+	}
+
+	return $keyword_innerlinkArray;
+}
+
+/**
+	↓類似ドキュメントの重み、閾値をどうするか？
+*/
+function wix_documentSim_for_ranking( $doc_id, $doc_idArray ) {
+	global $wpdb;
+
+	$wix_document_similarity = $wpdb->prefix . 'wix_document_similarity';
+	$doc_simArray = $doc_idArray;
+
+	$w1=0.3; $w2=0.3; $w3=0; $w4=0.4;
+
+	foreach ($doc_idArray as $doc_id2 => $null) {
+		$sql = 'SELECT * FROM ' . $wix_document_similarity .
+			' WHERE (doc_id=' . $doc_id . ' AND doc_id2=' . $doc_id2 . 
+				') OR (doc_id=' . $doc_id2 . ' AND doc_id2=' . $doc_id . ')';
+		$similar_documents = $wpdb->get_results($sql);
+
+
+		foreach ($similar_documents as $index => $value) {
+			$score = $w1 * $value->cos_similarity_tfidf
+					 + $w2 * $value->cos_similarity_bm25
+					  + $w3 * $value->jaccard
+					   + $w4 *  $value->minhash;
+
+			$doc_simArray[$doc_id2] = $score;
+		}
+		
+	}
+
+	return $doc_simArray;
+}
+
+function wix_calc_disambiguation_score($keyword_innerlinkArray, $entrysArray) {
+	$siteURL = get_option('home');
+
+	foreach ($keyword_innerlinkArray as $keyword => $valueArray) {
+		//内部リンクターゲット候補が2つ以上ある場合のみ、default-entry決定してあげる必要がある
+		if ( count($valueArray) > 1 ) { 
+			$keyword_num = count($entrysArray);
+
+			foreach ($valueArray as $ID => $array) {
+				$match = 0; 
+				$url = $array['url'];
+				$title = $array['post_title'];
+
+				foreach ($entrysArray as $key => $value) {
+					foreach ($value['target'] as $index => $target) {
+						if ( $target == $url || $target == $siteURL.$title ) {
+							$match++;
+						}
+					}
+				}
+				$array['disambiguatoin_score'] = $match / $keyword_num;
+				$valueArray[$ID] = $array;
+				$keyword_innerlinkArray[$keyword] = $valueArray;
+			}
+
+		}
+		
+	}
+
+	return $keyword_innerlinkArray;
+}
+
+
+function wix_calc_disambiguation_score_hard($keyword_innerlinkArray, $entrysArray) {
+	$siteURL = get_option('home');
+
+	foreach ($keyword_innerlinkArray as $keyword => $valueArray) {
+		//内部リンクターゲット候補が2つ以上ある場合のみ、default-entry決定してあげる必要がある
+		if ( count($valueArray) > 1 ) { 
+			$weight = 1;
+
+			foreach ($valueArray as $ID => $array) {
+				$url = $array['url'];
+				$title = $array['post_title'];
+				$match = 0;
+
+				foreach ($entrysArray as $key => $value) {
+					$entry_num = count($value['target']);
+					foreach ($value['target'] as $index => $target) {
+						if ( $target == $url || $target == $siteURL.$title ) {
+							$match = $match + $weight / $entry_num;
+						}
+					}
+				}
+				$array['disambiguatoin_score'] = $match;
+				$valueArray[$ID] = $array;
+				$keyword_innerlinkArray[$keyword] = $valueArray;
+			}
+
+		}
+		
+	}
+
+	return $keyword_innerlinkArray;
+}
+
+function wix_calc_disambiguation_score_veryhard($keyword_innerlinkArray, $entrysArray) {
+	$siteURL = get_option('home');
+
+	foreach ($keyword_innerlinkArray as $keyword => $valueArray) {
+		//内部リンクターゲット候補が2つ以上ある場合のみ、default-entry決定してあげる必要がある
+		if ( count($valueArray) > 1 ) { 
+			$weight = 1;
+			$keyword_num = count($entrysArray);
+
+			foreach ($valueArray as $ID => $array) {
+				$url = $array['url'];
+				$title = $array['post_title'];
+				$match = 0;
+
+				foreach ($entrysArray as $key => $value) {
+					$entry_num = count($value['target']);
+					foreach ($value['target'] as $index => $target) {
+						if ( $target == $url || $target == $siteURL.$title ) {
+							$match = $match + $weight / $entry_num;
+						}
+					}
+				}
+				$array['disambiguatoin_score'] = $match / $keyword_num;
+				$valueArray[$ID] = $array;
+				$keyword_innerlinkArray[$keyword] = $valueArray;
+			}
+
+		}
+		
+	}
+
+	return $keyword_innerlinkArray;
+}
+
+
+function wix_entry_disambiuation_with_googleSearch($doc_id, $doc_idArray, $keyword_innerlinkArray, $entrysArray) {
+	global $wpdb;
+	$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
+
+	if ( 'a' == 'b' ) {
+		/* hayashi法 */
+		//ターゲットのDocを形態素解析し、Google検索する
+
+		foreach ($keyword_innerlinkArray as $keyword => $valueArray) {
+			if ( count($valueArray) > 1 ) {
+
+				//毎回Google検索するんじゃなくて、既にDBに情報があり、まだ検索して間もないならそれを使う。結構時間(1日)が経ってるならNew検索
+				foreach ($valueArray as $doc_id2 => $array) {
+					$keyword_id = $array['keyword_id'];
+					$sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta_posts . ' WHERE doc_id='. $doc_id2 . ' AND keyword_id=' . $keyword_id . ' AND context_info IS NOT NULL AND time > (NOW()-INTERVAL 1 DAY)';
+
+					if ( $wpdb->get_var($sql) == 0 ) {
+						//AND検索用の単語群をDBから取得
+						$sql = 'SELECT words_obj FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id2;
+						$wordsObj = $wpdb->get_results($sql);
+
+						foreach ($wordsObj as $index => $value) {
+							$wordsArray = explode(',', $value->words_obj);
+						}
+
+						//Context情報の取得
+						$context_info = wix_get_contextInfo($keyword, $wordsArray);
+
+						//Context情報をDBに登録(挿入 or 更新)
+					    $sql = 'UPDATE ' . $wixfilemeta_posts . ' SET context_info="' . $context_info . '" WHERE keyword_id=' . $keyword_id . ' AND doc_id=' . $doc_id2;
+					    $wpdb->query( $sql );
+					}
+
+				}
+
+				//対象ドキュメントの対象キーワードの周辺N単語取得
+				$sql = 'SELECT words_obj FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
+				$wordsObj = $wpdb->get_results($sql);
+				foreach ($wordsObj as $index => $value) {
+					$wordsArray = explode(',', $value->words_obj);
+				}
+				//対象ドキュメントの対象キーワードの周辺N単語取得
+				$surwordsArray = wix_surrounding_words($keyword, $wordsArray);
+
+				//Context情報とのマッチング
+				foreach ($valueArray as $doc_id2 => $array) {
+					$keyword_id = $array['keyword_id'];
+
+					//Context情報をDBから取得
+					$sql = 'SELECT context_info FROM ' . $wixfilemeta_posts . ' WHERE doc_id=' . $doc_id2 . ' AND keyword_id=' . $keyword_id;
+					$contextObj = $wpdb->get_results($sql);
+
+					$count = 0;
+					foreach ($contextObj as $index => $value) {
+						foreach ($surwordsArray as $i => $ar) {
+							foreach ($ar as $j => $word) {
+								if ( strpos($value->context_info, $word) !== false ) {
+									$count++;
+								}
+							}
+						}
+					}
+
+
+					$array['disambiguatoin_score'] = $count;
+					$valueArray[$doc_id2] = $array;
+					$keyword_innerlinkArray[$keyword] = $valueArray;
+				}
+			}
+		}
+
+	} else {
+		/* hayashi法・改 */
+
+		//対象ドキュメントにおいて、Ambiguate Entryに含まれるKeywordの周辺N文字列を探る
+		$sql = 'SELECT words_obj FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
+		$wordsObj = $wpdb->get_results($sql);
+		foreach ($wordsObj as $index => $value) {
+			$wordsArray = explode(',', $value->words_obj);
+		}
+
+		foreach ($keyword_innerlinkArray as $keyword => $valueArray) {
+
+			if ( count($valueArray) > 1 ) {
+				foreach ($valueArray as $doc_id2 => $array) {
+					$keyword_id = $array['keyword_id'];
+					break;
+				}
+
+				//毎回Google検索するんじゃなくて、既にDBに情報があり、まだ検索して間もないならそれを使う。結構時間(1日)が経ってるならNew検索
+				$sql = 'SELECT COUNT(*) FROM ' . $wixfilemeta_posts . ' WHERE doc_id='. $doc_id . ' AND keyword_id=' . $keyword_id . ' AND context_info IS NOT NULL AND time > (NOW()-INTERVAL 1 DAY)';
+				if ( $wpdb->get_var($sql) == 0 ) {
+					//Context情報の取得
+					$context_info = wix_get_contextInfo($keyword, $wordsArray);
+
+					//Context情報をDBに登録(挿入 or 更新)
+				    $sql = 'UPDATE ' . $wixfilemeta_posts . ' SET context_info="' . $context_info . '" WHERE keyword_id=' . $keyword_id . ' AND doc_id=' . $doc_id;
+				    $wpdb->query( $sql );
+				}
+
+			    //Context情報をDBから取得
+				$sql = 'SELECT context_info FROM ' . $wixfilemeta_posts . ' WHERE doc_id=' . $doc_id . ' AND keyword_id=' . $keyword_id;
+				$contextObj = $wpdb->get_results($sql);
+
+			    //TargetドキュメントとContext情報のマッチング
+			    foreach ($valueArray as $doc_id2 => $array) {
+					$sql = 'SELECT words_obj FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id2;
+					$wordsObj = $wpdb->get_results($sql);
+					foreach ($wordsObj as $index => $value) {
+						$wordsArray = explode(',', $value->words_obj);
+					}
+					
+					//Targetドキュメントの対象キーワードの周辺N単語取得
+					$surwordsArray = wix_surrounding_words($keyword, $wordsArray);
+
+					$count = 0;
+					foreach ($contextObj as $index => $value) {
+						foreach ($surwordsArray as $i => $ar) {
+							foreach ($ar as $j => $word) {
+								if ( strpos($value->context_info, $word) !== false ) {
+									$count++;
+								}
+							}
+						}
+					}
+
+
+					$array['disambiguatoin_score'] = $count;
+					$valueArray[$doc_id2] = $array;
+					$keyword_innerlinkArray[$keyword] = $valueArray;
+				}
+			}
+
+		}
+
+
+	}
+
+	//Ranking
+	foreach ($keyword_innerlinkArray as $keyword => $valueArray) {
+		if ( count($valueArray) > 1 ) {
+			$tmpArray = array();
+
+			foreach ($valueArray as $doc_id2 => $array) {
+				$tmpArray[$doc_id2] = $array['disambiguatoin_score'];
+				unset($keyword_innerlinkArray[$keyword][$doc_id2]);
+			}
+			arsort($tmpArray);
+			foreach ($tmpArray as $doc_id2 => $finalScore) {
+				$keyword_innerlinkArray[$keyword][$doc_id2] = $valueArray[$doc_id2];
+			}
+		}
+	}
+
+
+
+	return $keyword_innerlinkArray;
+}
+
+
+//Context情報の取得
+function wix_get_contextInfo($keyword, $wordsArray) {
+	$M = 5; //上位M件をContext情報とする
+
+	//対象ドキュメントの対象キーワードの周辺N単語取得
+	$surwordsArray = wix_surrounding_words($keyword, $wordsArray);
+
+	//Google検索
+	$google_resultsArray = get_snippet_by_google($keyword, $surwordsArray);
+
+	//Google検索の結果から形態素解析
+	$snippet_wordsArray = array();
+	$words_num = 0;
+	foreach ($google_resultsArray as $search_query => $obj) {
+		$snippet = $obj['snippet'];
+		// $title = $obj['title'];
+
+		/* Yahoo形態素解析使用 */
+		$parse = wix_morphological_analysis($snippet);
+		$wordsArray = wix_compound_noun_extract($parse);
+		//空白要素の削除
+		$wordsArray = wix_blank_remove($wordsArray);
+		//Stopwords removal
+		$wordsArray = wix_stopwords_remove($wordsArray);
+		array_push($snippet_wordsArray, $wordsArray);
+
+		$words_num += count($wordsArray);
+	}
+
+	//スニペットから抽出した単語群の出現回数とTFを計算
+	$tf_rankingArray = wix_tf_ranking($snippet_wordsArray, $words_num);
+
+	$context_info = '';
+	$roop = 0;
+	foreach ($tf_rankingArray as $word => $tf) {
+		if ( $roop == 0 )
+			$context_info = $word;
+		else 
+			$context_info = $context_info . ',' . $word;
+
+		$roop++;
+		if ( $roop >= $M ) break;
+	}
+
+	return $context_info;
+}
+
+
+//対象単語の周辺N単語を返す
+function wix_surrounding_words($subjectWord, $wordsArray) {
+	$returnValue = array();
+	$N = 2; //前後2件の周辺文字列を返す
+	$queue = array();
+
+	foreach ($wordsArray as $index => $word) {
+		$index = intval($index);
+
+		if ( $word == $subjectWord ) {
+
+			if ( count($queue) < 2 ) {
+				if ( count($queue) == 0 ) 
+					$tmpArray = array();
+				else
+					$tmpArray = $queue;
+
+				if ( count($wordsArray) < $index + $N  )
+					$limit = count($wordsArray) + 1;
+				else
+					$limit = $index + $N + ($N - count($tmpArray)) + + 1;
+
+			} else {
+				//前2単語
+				$tmpArray = $queue;
+
+				//後2単語
+				if ( count($wordsArray) < $index + $N  )
+					$limit = count($wordsArray) + 1;
+				else
+					$limit = $index + $N + 1;
+			}
+	
+			for ( $i = $index + 1; $i < $limit; $i++ ) {
+				array_push($tmpArray, $wordsArray[$i]);
+			}
+			array_push($returnValue, $tmpArray);
+		}
+
+		array_push($queue, $word);
+		if ( $index > $N - 1 ) {
+			unset($queue[0]);
+			$queue = array_values($queue);
+		}
+	}
+
+	return $returnValue;
+}
+
+//Google検索によるスニペット取得
+function get_snippet_by_google($word, $and_searchArray) {
+	$returnValue = array();
+
+	if ( get_option('google_api_key') == false ) {
+		add_option('google_api_key', 'AIzaSyAMuI57RqVxOYyvuSNaYaaftkHCr84EZKc');
+	} else if ( get_option('google_cx') == false ) {
+		add_option('google_cx', '010976553709886870857:jczva9zbhag');
+	}
+	// $google_api_key = get_option('google_api_key');
+	// $google_cx = get_option('google_cx');
+	$google_api_key = 'AIzaSyAx1KGY7MrMTGWYAvMG8OzdZyCb4w-G-ao';
+	$google_cx = '006932243093891704093:kkupxt3ya1e';
+
+	// 検索用URL
+	$tmp_url = "https://www.googleapis.com/customsearch/v1?";
+
+	foreach ($and_searchArray as $index => $array) {
+		foreach ($array as $i => $andWord) {
+
+			//検索クエリ
+			$search_query = $word . '+' . $andWord;
+
+			// 検索パラメタ発行
+			$params_list = array(
+								'q'=>$search_query,
+								'key'=>$google_api_key,
+								'cx'=>$google_cx,
+								'alt'=>'json',
+								'start'=>'1');
+
+			// リクエストパラメータ作成
+			$req_param = http_build_query($params_list);
+
+			// リクエスト本体作成
+			$request = $tmp_url.$req_param;
+
+			// jsonデータ取得
+			$response = file_get_contents($request,true);
+			$json_obj = json_decode($response,true);
+
+			foreach ($json_obj['items'] as $index => $value) {
+				$snippet = $value['snippet'];
+				$title = $value['title'];
+				// $url = $value['link'];
+
+				$returnValue[$search_query] = array('snippet' => $snippet, 'title' => $title);
+			}
+
+		}
+	}
+
+	return $returnValue;
+}
 
 
 

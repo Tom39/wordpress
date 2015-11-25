@@ -14,15 +14,6 @@ function ajaxURL() {
 	printf($str, $ajaxurl);
 }
 
-//モーダルウィンドウの<head>にインクルード
-add_action('wp_head','wix_decide_include_file');
-function wix_decide_include_file(){
-    // if ( is_preview() == true ) {
-    	echo "<script type=\"text/javascript\" src=\"" . wix_decide_iframe_js . "\"></script>";
-    	echo "<link rel=\"stylesheet\" href=\"" . wix_decide_css . "\" type=\"text/css\" charset=\"UTF-8\" />";
-    // }
-}
-
 //WIX用meta box
 add_action( 'add_meta_boxes', 'wix_meta_box' );
 function wix_meta_box() {
@@ -571,7 +562,9 @@ function wix_decide_preview() {
 
 		$json = array(
 			"html" => $returnValue,
-			"test" => $innerLinkArray,
+			// "test" => $innerLinkArray,
+			// "test2" => $response_html,
+			// "test2" => strip_tags(wpautop($_POST['after_body_part'])),
 			// "js" => $tmp,
 			// "js2" => html_entity_decode($_POST['after_body_part']),
 		);

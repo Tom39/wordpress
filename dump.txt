@@ -1,30 +1,181 @@
 <pre>Array
 (
-    [研究室] => 0.13465974397829
-    [斎藤] => 0.13049791374236
-    [計算機アーキテクチャ] => 0.12383062842864
-    [オペレーティングシステム] => 0.077675928213584
-    [システムソフトウェア] => 0.077479672910065
-    [河野研究室] => 0.077273088380045
-    [分散型ネットワークシステム] => 0.077055630980025
-    [金子研究室] => 0.076565854656917
-    [グループウェア] => 0.075317476448146
-    [協調作業支援] => 0.075039430113566
-    [アプリケーション指向ネットワーキング] => 0.074839332491253
-    [岡田研究室] => 0.074746749761377
-    [セキュリティ] => 0.074438665180125
-    [無線通信] => 0.0734519003001
-    [グリッドネットワーク] => 0.0734519003001
-    [認知ロボティクス] => 0.073030611035279
-    [山中研究室] => 0.073030611035279
-    [計算機ネットワーク] => 0.07238493013989
-    [松谷研究室] => 0.072164229308894
-    [今井研究室] => 0.072062481056386
+    [佐草友也] => Array
+        (
+            [keyword_id] => 0
+            [target] => Array
+                (
+                    [0] => http://localhost/wordpress/
+                    [1] => http://www.db.ics.keio.ac.jp
+                    [2] => http://www.keio.ac.jp/index-jp.html
+                )
+
+        )
+
+    [慶應義塾大学] => Array
+        (
+            [keyword_id] => 1
+            [target] => Array
+                (
+                    [0] => http://localhost/wordpress/
+                    [1] => http://localhost/wordpress/?page_id=415
+                    [2] => http://localhost/wordpress/?page_id=484
+                    [3] => http://www.db.ics.keio.ac.jp
+                    [4] => http://www.keio.ac.jp/index-jp.html
+                )
+
+        )
+
+    [大槻研究室] => Array
+        (
+            [keyword_id] => 2
+            [target] => Array
+                (
+                    [0] => http://localhost/wordpress/?page_id=484
+                    [1] => http://www.ohtsuki.ics.keio.ac.jp/
+                )
+
+        )
+
 )
 </pre>
 <pre>Array
 (
-    [0] =>  研究室 斎藤 計算機アーキテクチャ オペレーティングシステム システムソフトウェア 河野研究室 分散型ネットワークシステム 金子研究室 グループウェア 協調作業支援 アプリケーション指向ネットワーキング 岡田研究室 セキュリティ 無線通信 グリッドネットワーク 認知ロボティクス 山中研究室 計算機ネットワーク 松谷研究室 今井研究室
+    [慶應義塾大学] => Array
+        (
+            [415] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => デモ
+                    [url] => http://localhost/wordpress/?page_id=415
+                )
+
+            [484] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                )
+
+        )
+
+    [大槻研究室] => Array
+        (
+            [484] => Array
+                (
+                    [keyword_id] => 2
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                )
+
+        )
+
+)
+</pre>
+<pre>Array
+(
+    [慶應義塾大学] => Array
+        (
+            [484] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                    [disambiguatoin_score] => 0.66666666666667
+                )
+
+            [415] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => デモ
+                    [url] => http://localhost/wordpress/?page_id=415
+                    [disambiguatoin_score] => 0.33333333333333
+                )
+
+        )
+
+    [大槻研究室] => Array
+        (
+            [484] => Array
+                (
+                    [keyword_id] => 2
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                )
+
+        )
+
+)
+</pre>
+
+<pre>Array
+(
+    [慶應義塾大学] => Array
+        (
+            [415] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => デモ
+                    [url] => http://localhost/wordpress/?page_id=415
+                    [disambiguatoin_score] => 0.2
+                )
+
+            [484] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                    [disambiguatoin_score] => 0.7
+                )
+
+        )
+
+    [大槻研究室] => Array
+        (
+            [484] => Array
+                (
+                    [keyword_id] => 2
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                )
+
+        )
+
+)
+</pre>
+<pre>Array
+(
+    [慶應義塾大学] => Array
+        (
+            [415] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => デモ
+                    [url] => http://localhost/wordpress/?page_id=415
+                    [disambiguatoin_score] => 0.066666666666667
+                )
+
+            [484] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                    [disambiguatoin_score] => 0.23333333333333
+                )
+
+        )
+
+    [大槻研究室] => Array
+        (
+            [484] => Array
+                (
+                    [keyword_id] => 2
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                )
+
+        )
+
 )
 </pre>
 
@@ -32,3 +183,75 @@
 
 
 
+
+
+
+
+<pre>Array
+(
+    [慶應義塾大学] => Array
+        (
+            [415] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => デモ
+                    [url] => http://localhost/wordpress/?page_id=415
+                )
+
+            [484] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                )
+
+        )
+
+    [大槻研究室] => Array
+        (
+            [484] => Array
+                (
+                    [keyword_id] => 2
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                )
+
+        )
+
+)
+</pre>
+<pre>Array
+(
+    [慶應義塾大学] => Array
+        (
+            [484] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                    [disambiguatoin_score] => 0
+                )
+
+            [415] => Array
+                (
+                    [keyword_id] => 1
+                    [post_title] => デモ
+                    [url] => http://localhost/wordpress/?page_id=415
+                    [disambiguatoin_score] => 0
+                )
+
+        )
+
+    [大槻研究室] => Array
+        (
+            [484] => Array
+                (
+                    [keyword_id] => 2
+                    [post_title] => 遠山研究室
+                    [url] => http://localhost/wordpress/?page_id=484
+                )
+
+        )
+
+)
+</pre>

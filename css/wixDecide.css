@@ -96,7 +96,7 @@ table.predecidetable {
 }
 
 table.predecidetable td, table.predecidetable th {
-		padding:5px;
+	padding:5px;
 }
 
 /* =links
@@ -126,6 +126,9 @@ table.predecidetable thead th, table.predecidetable tfoot th {
 
 /* =body
 ----------------------------------------------- */
+table.predecidetable tbody {
+	line-height: 1;
+}
 table.predecidetable tbody th, table.predecidetable tbody td {
 	border-bottom: dotted 1px #333;
 }

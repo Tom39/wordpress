@@ -268,8 +268,8 @@ function wix_admin_settings(){
 						global $wpdb;
 						$sql = 'SELECT keyword, target FROM wp_wixfilemeta wm, wp_wixfile_targets wt WHERE wm.id = wt.keyword_id';
 						$entrys = $wpdb->get_results($sql);
-						// $entryNum = count($entrys);
-						$entryNum = 80;
+						$entryNum = count($entrys);
+						// $entryNum = 80;
 						echo '<li class="selected"><a href="#wixfile_tab1">タブ1</a></li>';
 						if ( $entryNum > 20 ) {
 							$count = 2;
@@ -287,8 +287,8 @@ function wix_admin_settings(){
 
 						<div id="wixfile_contents">
 							<?php
-								// $entryNum = count($entrys);
-								$entryNum = 80;
+								$entryNum = count($entrys);
+								// $entryNum = 80;
 								if ( $entryNum < 20 ) {
 									echo '<div id="wixfile_tab1" class="wixfile_tabbox">';
 										echo '<table id="wixfile_table1" class="wixfile_table">';
@@ -548,8 +548,8 @@ function wix_admin_settings(){
 
 						<div id="second_wixfile_contents">
 							<?php
-								// $entryNum = count($entrys);
-								$entryNum = 80;
+								$entryNum = count($entrys);
+								// $entryNum = 80;
 								if ( $entryNum < 20 ) {
 									echo '<div id="second_wixfile_tab1" class="second_wixfile_tabbox">';
 										echo '<table id="second_wixfile_table1" class="second_wixfile_table">';
@@ -915,7 +915,7 @@ function wix_detail_settings() {
 													$post_title = $value->post_title;
 													$url = $value->guid;
 													$id = $value->ID;
-													echo '<tr><td><a id=' . $id . ' class="doc_page" target="doc_page" href="' . $url . '">' . $post_title . '</a></td></tr>';
+													echo '<tr><td><a id=' . $id . ' class="doc_page" href="' . $url . '">' . $post_title . '</a></td></tr>';
 												}
 												echo '</tbody>';
 											echo '</table>';
@@ -925,41 +925,61 @@ function wix_detail_settings() {
 						}
 					?>
 				</div> <!-- #doc_list -->
-
-				<div id="decide_list">
-					<div id="similarity_info">
-						<table id="similarity_entrys">
-							<tr>
-								<th>Keyword</th>
-								<th>Document Title</th>
-							</tr>
-							<?php
-								// $sql = 'SELECT ID, post_title, guid FROM ' . $wpdb->posts . 
-								// 			' WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft" ORDER BY post_type, ID ASC LIMIT 1';
-								// $documentInfo = $wpdb->get_results($sql);
-								// if ( !empty($documentInfo) ) {
-								// 	$doc_id = $documentInfo[0]->ID;
-
-
-								// }
-
-
-							?>
-						</table>
-					</div>
-
-					
-
-
-
-
-
-
-
-
-				</div> <!-- #decide_list -->
 			</div> <!-- #createdDoc -->
 
+			<div id="wixfile_entry_decide_contents">
+				<ul id="decide_entrys_tab">
+					<li class="selected"><a href="#decide_entrys_tab1">Default設定</a></li>
+					<li><a href="#decide_entrys_tab2">詳細設定</a></li>
+				</ul>
+				<div id="decide_entrys">
+					<table id="decide_entrys_table">
+						<thead>
+							<tr>
+								<th id="thead_keywords">Keyword</th>
+								<th id="thead_targets">リンク先URL</th>
+								<th id="thead_default">選択</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>
+									<div id="decide_entrys_tab1" class="decide_entrys_tabbox">
+										<!-- <table>
+											<tr>
+												<td>aaa</td>
+												<td>bbb</td>
+												<td>ccc</td>
+											</tr>
+										</table> -->
+
+									</div>
+									<div id="decide_entrys_tab2" class="decide_entrys_tabbox">
+										<table>
+											<tr>
+												<td>a</td>
+												<td>b</td>
+												<td>ccc</td>
+											</tr>
+										</table>
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table> <!-- #decide_entrys_table -->
+				</div> <!-- #decide_entrys -->
+			</div>
+
+
+			<div id="decide_iframe">
+				<div id="decide_iframe_inline_div">
+					<iframe id="doc_iframe" name="doc_page"></iframe>
+				</div>
+			</div> <!-- #decide_iframe -->
+
+			<div id="existing_latest_decidefile">
+
+			</div> <!-- #existing_latest_decidefile -->
 
 		</div> <!-- #tab1 -->
 

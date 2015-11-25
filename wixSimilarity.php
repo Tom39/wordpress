@@ -44,13 +44,6 @@ function wix_morphological_analysis_mecab($content) {
 	$mecab = new MeCab_Tagger();
 	$nodes = $mecab->parseToNode($content);
 
-	// foreach ($nodes as $n) {
-	// 	dump('dump.txt', $n->getSurface());
-	// 	dump('dump.txt', $n->getPosId());
-	// 	// dump('dump.txt', $n->getStat());
-	// 	dump('dump.txt', $n->getFeature());
-	// }
-
 	return $nodes;
 }
 
@@ -91,7 +84,7 @@ function wix_compound_noun_extract_mecab($parse){
 
 	foreach ($parse as $node => $value) {
 		$str = $value->getSurface();
-		
+
 		if ( !empty($str) ) {
 			$array = explode(',', $value->getFeature());
 			if ( $array[0] == '名詞' ) {
@@ -105,6 +98,34 @@ function wix_compound_noun_extract_mecab($parse){
 	if ( !empty($tmpString) )
 		array_push($returnValue, $tmpString);
 
+	return $returnValue;
+}
+
+//複合名詞を持つ配列から空白要素の削除
+function wix_blank_remove($array) {
+	$returnValue = array();
+
+	foreach ($array as $key => $word) {
+		$word = trim($word);
+
+		if ( !empty($word) ) {
+			array_push($returnValue, $word);
+		}
+	}
+	
+	return $returnValue;
+}
+
+//要素が全部数字などの削除
+function wix_stopwords_remove($array) {
+	$returnValue = array();
+
+	foreach ($array as $key => $word) {
+		if ( !preg_match("/^[0-9]+$/", $word) ) {
+			array_push($returnValue, $word);
+		}
+	}
+	
 	return $returnValue;
 }
 
@@ -138,6 +159,7 @@ function array_word_count($array) {
 	return $returnValue;
 }
 
+//TF-IDFの計算
 function wix_tfidf( $words_countArray ) {
 	global $term_featureObj;
 
@@ -210,8 +232,6 @@ function wix_bm25( $words_countArray, $doc_id ) {
 function wix_tf($array) {
 	global $words_countArray_num, $term_featureObj;
 
-	$all_words_len = count($array);
-
 	if ( empty($term_featureObj) ) {
 		foreach ($array as $word => $count) {
 			$tf = $count / 	$words_countArray_num;
@@ -225,6 +245,31 @@ function wix_tf($array) {
 			$term_featureObj[$key] = $value;
 		}
 	}
+}
+
+//Entry Disambiuation用のTFランキング計算
+function wix_tf_ranking($array, $words_num) {
+	$returnValue = array();
+
+	//各単語の出現回数を計算
+	foreach ($array as $arrayIndex => $valueArray) {
+		foreach ($valueArray as $index => $word) {
+			if ( array_key_exists($word, $returnValue) ) {
+				$count = $returnValue[$word] + 1;
+				$returnValue[$word] = $count;
+			} else {
+				$returnValue[$word] = 1;
+			}
+		}
+	}
+
+	foreach ($returnValue as $word => $count) {
+		$returnValue[$word] = $count / $words_num;
+	}
+
+	arsort($returnValue);
+
+	return $returnValue;
 }
 
 //IDF値の計算
@@ -439,10 +484,17 @@ function wix_cosSimilarity($doc_id) {
 					}
 				}
 				
-				$doc_simObj[$tmpId] = array(
+				if ( array_key_exists($tmpId, $doc_simObj) ) {
+					$tmpArray = $doc_simObj[$tmpId];
+					$tmpArray['cos_similarity_tfidf'] = $cos_similarityArray['tfidf'];
+					$tmpArray['cos_similarity_bm25'] = $cos_similarityArray['bm25'];
+					$doc_simObj[$tmpId] = $tmpArray;
+				} else {
+					$doc_simObj[$tmpId] = array(
 											'cos_similarity_tfidf' => $cos_similarityArray['tfidf'],
 											'cos_similarity_bm25' => $cos_similarityArray['bm25'],
 										);
+				}
 
 				$tmpId = $doc_id2; 
 				$bunsiArray = array(); $bunbo1Array = array(); $cos_similarityArray = array();
@@ -484,11 +536,68 @@ function wix_cosSimilarity($doc_id) {
 				$cos_similarityArray[$method] = 0;
 		}
 		
-		$doc_simObj[$tmpId] = array(
+		if ( array_key_exists($tmpId, $doc_simObj) ) {
+			$tmpArray = $doc_simObj[$tmpId];
+			$tmpArray['cos_similarity_tfidf'] = $cos_similarityArray['tfidf'];
+			$tmpArray['cos_similarity_bm25'] = $cos_similarityArray['bm25'];
+			$doc_simObj[$tmpId] = $tmpArray;
+		} else {
+			$doc_simObj[$tmpId] = array(
 									'cos_similarity_tfidf' => $cos_similarityArray['tfidf'],
 									'cos_similarity_bm25' => $cos_similarityArray['bm25'],
 								);
+		}
 	}
+}
+
+//Jaccard類似度の計算
+function wix_jaccard($doc_id) {
+	global $wpdb, $doc_simObj;
+	
+	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
+
+	$sql = 'SELECT doc_id, keyword FROM ' . $wix_keyword_similarity . ' WHERE doc_id!=' . $doc_id . ' ORDER BY doc_id ASC';
+	$docInfoObj = $wpdb->get_results($sql);
+
+	if ( !empty($docInfoObj) ) {
+
+		$docInfoArray = array();
+		foreach ($docInfoObj as $index => $value) {
+			$doc_id2 = $value->ID;
+			$keyword = $value->keyword;
+
+			if ( array_key_exists($doc_id2, $docInfoArray) ) {
+				$tmpArray = $docInfoArray[$doc_id2];
+				array_push($tmpArray, $keyword);
+				$docInfoArray[$doc_id2] = $tmpArray;
+			} else {
+				$docInfoArray[$doc_id2] = array($keyword);
+			}
+		}
+
+		$sql = 'SELECT doc_id, keyword FROM ' . $wix_keyword_similarity . ' WHERE doc_id=' . $doc_id;
+		$subjectDocInfoObj = $wpdb->get_results($sql);
+
+		$subjectDocInfoArray = array();
+		foreach ($subjectDocInfoObj as $index => $value) {
+			array_push($subjectDocInfoArray, $value->keyword);
+		}
+
+		//Jaccard類似度計算
+		foreach ($docInfoArray as $doc_id2 => $valueArray) {
+			$intersect = array_intersect($subjectDocInfoArray, $valueArray);
+
+			if ( array_key_exists($doc_id2, $doc_simObj) ) {
+				$tmpArray = $doc_simObj[$doc_id2];
+				$tmpArray['jaccard'] = count($intersect)/(count($valueArray) + count($subjectDocInfoArray) - count($intersect));
+				$doc_simObj[$doc_id2] = $tmpArray;
+			} else {
+				$doc_simObj[$doc_id2] = array( 'jaccard' => count($intersect)/(count($valueArray) + count($subjectDocInfoArray) - count($intersect)) );
+			}
+		}
+
+	}
+
 }
 
 //MinHashの計算

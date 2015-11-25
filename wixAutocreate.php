@@ -12,6 +12,21 @@ function wix_documnt_length( $new_status, $old_status, $post ) {
 	}
 }
 
+//Entry Disambiguation用に形態素解析結果を保存(正規化無視)
+function words_for_entry_disambiguation($wordsArray, $doc_id) {
+	global $wpdb;
+
+	$tmpArray = array();
+	foreach ($wordsArray as $index => $word) {
+		if ( !empty($word) )
+			array_push($tmpArray, $word); 
+	}
+
+	$wordsArray_toString = implode(',', $tmpArray);
+	$sql = 'UPDATE ' . $wpdb->posts . ' SET words_obj="' . $wordsArray_toString . '" WHERE ID=' . $doc_id;
+	$wpdb->query( $sql );
+}
+
 //ドキュメントの投稿ステータスが変わったら、類似度計算
 add_action( 'transition_post_status', 'wix_similarity_func', 10, 3 );
 function wix_similarity_func( $new_status, $old_status, $post ) {
@@ -27,17 +42,26 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 
 	} else if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
 		/*
-		* $parse: 形態素解析結果
-		* $wordsArray: [(複合)名詞]
-		* $words_countArray: [単語 => 単語数]
+			* $parse: 形態素解析結果
+			* $wordsArray: [(複合)名詞]
+			* $words_countArray: [単語 => 単語数]
 		*/
-		// $parse = wix_morphological_analysis($post->post_content);
-		// $wordsArray = wix_compound_noun_extract($parse);
+		$doc_id = $post->ID;
+
+		/* Yahoo形態素解析使用 */
+		$parse = wix_morphological_analysis($post->post_content);
+		$wordsArray = wix_compound_noun_extract($parse);
 		// $words_countArray = array_word_count($wordsArray);
 
+		/* Mecab使用 */
 		// $parse = wix_morphological_analysis_mecab($post->post_content);
 		// $wordsArray = wix_compound_noun_extract_mecab($parse);
 		// $words_countArray = array_word_count($wordsArray);
+
+		//Entry Disambiguation用
+		// words_for_entry_disambiguation($wordsArray, $doc_id);
+
+		
 
 		//まだDBに１つもドキュメントがなかったら計算しないでDBに挿入するだけ.	
 		$sql = 'SELECT COUNT(*) FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft"';
@@ -53,7 +77,6 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 */
 
 		} else {
-			$doc_id = $post->ID;
 
 			//TextRank計算
 			// wix_textrank( $wordsArray );
@@ -71,6 +94,9 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 
 			//MinHash値計算
 			// wix_minhash($doc_id);
+
+			//Jaccard類似度計算
+			// wix_jaccard($doc_id);
 
 			//DBに挿入・更新
 			// wix_keyword_similarity_score_inserts_updates($doc_id);
@@ -572,11 +598,25 @@ function wix_cosSimilarity_update() {
 		}
 
 	}
-
-	
 }
 
+//postsテーブルのwords_obj更新
+function wix_words_obj_update(){
+	global $wpdb;
 
+	$sql = 'SELECT ID, post_content FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft"';
+	$doc_idObj = $wpdb->get_results($sql);
+
+	foreach ($doc_idObj as $index => $value) {
+		$doc_id = $value->ID;
+		$body = strip_tags($value->post_content);
+
+		$parse = wix_morphological_analysis($body);
+		$wordsArray = wix_compound_noun_extract($parse);
+
+		words_for_entry_disambiguation($wordsArray, $doc_id);
+	}
+}
 
 
 

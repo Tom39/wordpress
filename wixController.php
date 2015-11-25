@@ -104,15 +104,18 @@ function wix_admin_setting_scripts($hook_suffix) {
         wp_enqueue_script( 'wix-detail-settings-js', wix_detail_settings_js, array('jquery') );
         wp_enqueue_style( 'popupwindow-css', popupwindow_css, array() );
         wp_enqueue_script( 'popupwindow-js', popupwindow_js );
+        wp_enqueue_script( 'wix-decide-js', wix_decide_js );
         echo "<link rel=\"shortcut icon\" href=\"" . wix_favicon . "\">;";
     }
 }
 
-//外部リンクの明示化用ファイル読み込み
 add_action( 'wp_enqueue_scripts', 'wix_eternal_link_scripts' );
-function wix_eternal_link_scripts() {
+function wix_eternal_link_scripts($hook_suffix) {
     wp_enqueue_style( 'wix-eternal-link-css', wix_eternal_link_css, array() );
     wp_enqueue_script( 'wix-eternal-link-js', wix_eternal_link_js, array( 'jquery' ) );
+
+    wp_enqueue_style( 'wix-decide-css', wix_decide_css, array() );
+    wp_enqueue_script( 'wix-decide-iframe-js', wix_decide_iframe_js, array( 'jquery' ) );
 }
 
 //dumpのファイル書き込み
@@ -129,18 +132,5 @@ function dump( $filename, $obj ) {
     ob_end_clean();
     file_put_contents($filepath, $out . PHP_EOL, FILE_APPEND);
 }
-
-
-// add_action( 'wp_head', 'wix_decide_popup_css' );
-function wix_decide_popup_css() {
-    if ( is_preview() == true ) {
-        wp_register_style( 'wix-decide-css', wix_decide_css );
-        wp_enqueue_style( 'wix-decide-css', wix_decide_css, array() );
-    }
-}
-
-
-
-
 
 ?>

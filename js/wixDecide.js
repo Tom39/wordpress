@@ -11,7 +11,7 @@ var manual_decide_check;
 
 jQuery(function($) {
 
-
+	/* ↓ 使ってない??? (2015/11/18) */
 	window.onmessage = function(e){
 	 	var tmp_leftPosition = Number(e.data.split(",")[0]);
 	 	var tmp_topPosition = Number(e.data.split(",")[1]);
@@ -289,7 +289,7 @@ console.log(json['similarity']);
 							* post_format: フォーマットの種類
 							* after_body_part: 差し替え用のBody
 							*/
-							var href =  decodeURI( $('#post-preview').attr('href') );
+							var href = decodeURI( $('#post-preview').attr('href') );
 							var target = $('#post-preview').attr('target');
 							var post_format = $('#post-formats-select :input:checked').val();
 
@@ -313,7 +313,8 @@ console.log(json['similarity']);
 
 								success: function(json) {
 	// console.log(json['html']);
-	console.log(json['test']);
+	// console.log(json['test']);
+	// console.log(json['test2']);
 	// console.log(json['js']);
 	// console.log(json['js2']);
 

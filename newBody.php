@@ -33,7 +33,7 @@ function new_body( $content, $decideFileArray = '', $decideFlag = false ) {
 				    'innerLinkArray' => $decideFileArray
 				);
 				$data = http_build_query($data, "", "&");
-			
+				
 			} else {
 				$DecideFileInfo = '';
 				$WIXFileInfo = '';
