@@ -31,18 +31,50 @@ jQuery(function($) {
 		return false;
 	});	
 
-	var decideLinkArray = new Array();
+	$('.decidefileDoc_tabbox:first').show();
+	$('#decidefileDoc_tab li:first').addClass('active');
+	$('#decidefileDoc_tab li').click(function() {
+		$('#decidefileDoc_tab li').removeClass('active');
+		$(this).addClass('active');
+		$('.decidefileDoc_tabbox').hide();
+		$($(this).find('a').attr('href')).fadeIn();
+		return false;
+	});
+
+/***********************************************************************************************************/
+
+			//Tab 1
+	
+	/***********************************************************************************************************/
+	var decideLinkArray = new Object();
+	var defaultLinkArray = new Object();
+	var oldBody = '';
+	var newBody = '';
+	var innerLinkArray = '';
+	var doc_id = '';
+	var doc_title = '';
+
 	$('.doc_page').on('click', function(event) {
 		event.preventDefault();
 		
-		var doc_id = $(this).attr('id');
+		doc_id = $(this).attr('id');
+		doc_title = $(this).text();
 		var url = $(this).attr('href');
+
+		//クリックされたドキュメントの色を変更
+		$.each($(this).parent().parent().siblings('tr'), function(index, el) {
+			$(this).children().css('background-color', '');
+		});
+		$(this).parent().css('background-color', 'Yellow');
+		if ( doc_id in defaultLinkArray || doc_id in decideLinkArray ) {
+			$(this).css('color', 'Red');
+		}
+
 		var data = {
 			'action': 'wix_setting_decideBody',
 			'doc_id' : doc_id,
 			'url' : url,
 		};
-
 		$.ajax({
 			async: true,
 			dataType: "json",
@@ -51,21 +83,23 @@ jQuery(function($) {
 			data: data,
 
 			success: function(json) {
-// console.log(json['html']);
-// console.log(json['test']);
-// console.log( json['test2'] );
+console.log(json['innerLinkArray']);
+				newBody = json['html'];
+				innerLinkArray = json['innerLinkArray'];
 
 				//iframeへの挿入
 				$('#doc_iframe')[0].contentDocument.location.replace(url);
 
+				$('#doc_iframe').off();				
 				$('#doc_iframe').on('load', function(event) {
 					event.preventDefault();
-					
+
+					//Decide処理可能Bodyに変更
 					var subject_obj = $('#doc_iframe').contents().find('.entry-content').eq(0);
 					subject_obj.children().remove();
-					subject_obj.append(json['html']);
+					subject_obj.append(newBody);
 
-					var decideBody = $.trim( $('#doc_iframe').contents().find('.entry-content').text() );
+					oldBody = $.trim( $('#doc_iframe').contents().find('.entry-content').text() );
 
 					//ポップアップの処理
 					$('#doc_iframe').contents().find('.wix-authorLink').mouseover(function() {
@@ -77,20 +111,76 @@ jQuery(function($) {
 
 							var start = $(this).parents('span').prev().attr('start');
 							var keyword, target, end;
-
-							if ( (start in decideLinkArray) == true ){
-								delete decideLinkArray[start];
-							}
 							keyword = $(this).parents('span').prev().html();
 							target = $(this).html();
 							end = parseInt(start) + keyword.length;
 
-							decideLinkArray[start] = {'keyword':keyword,'target':target,'end':end};
+							if ( doc_id in decideLinkArray ) {
+								var tmpArray = decideLinkArray[doc_id];
+								if ( start in tmpArray ){
+									delete tmpArray[start];
+								}
+								tmpArray[start] = {'keyword':keyword,'target':target,'end':end};
+								decideLinkArray[doc_id] = tmpArray;
+							} else {
+								var tmpArray = new Object();
+								tmpArray[start] = {'keyword':keyword,'target':target,'end':end};
+								decideLinkArray[doc_id] = tmpArray;
+							}
+
+							console.log(decideLinkArray);
 
 							//クリックされたキーワードの色変更
 							$(this).parents('span')
 									.prev()
-									.css('background', '#ccccff');
+									.css('background-color', 'Red');
+
+							$.each($('.decide_entrys_tab2_table_keyword_span'), function(index, elm) {
+								var tmp_start = $(this).attr('start_end').split(':')[0];
+
+								if ( tmp_start == start ) {
+									$(this).css('background-color', 'Red');
+
+									var subject_el = $(this)
+															.parent()
+															.next()
+															.find('.decide_entrys_tab2_table_targets_tr');
+									$.each(subject_el, function(index, el) {
+										var e = $(this).find('.decide_entrys_tab2_table_target_a');
+
+										if ( typeof e.attr('href') === 'undefined' ) {
+											if ( e.attr('no_attach') == target ) {
+												e.parent()
+													.next()
+													.children()
+													.prop('checked', true); 
+											}
+
+										} else {
+											if ( e.attr('href') == target ) {
+												e.parent()
+													.next()
+													.children()
+													.prop('checked', true); 
+											}
+										}
+
+										var title = e.text();
+										decideLinkArray[doc_id][start]['title'] = title;
+										decideLinkArray[doc_id][start]['doc_title'] = doc_title;
+
+										
+									});
+
+								}
+							});
+
+							//docの文字色を赤くする
+							$.each($('.doc_page'), function(index, el) {
+								if ( $(el).attr('id') == doc_id )
+									$(el).css('color', 'Red'); 
+							});
+
 						});
 					});
 
@@ -103,7 +193,7 @@ jQuery(function($) {
 						}, 
 					});
 
-
+					//既存Decide情報の表示
 					var data2 = {
 						'action': 'wix_existing_decidefile_presentation',
 						'doc_id' : doc_id,
@@ -171,33 +261,67 @@ jQuery(function($) {
 									}).css({
 										'width': '50%',
 									}).appendTo(tr);
-									var a = $("<A />", {
-										id: 'exisitng_latest_decidefile_a' + index,
-										class: 'exisitng_latest_decidefile_a',
-										href: elm['target'],
-										text: elm['title'],
-									}).css({
-										'width': '100%',
-									}).appendTo(td);
+									if ( elm['target'] == 'no_attach' ) {
+										var a = $("<A />", {
+											id: 'exisitng_latest_decidefile_a' + index,
+											class: 'exisitng_latest_decidefile_a',
+											text: 'リンク生成しない',
+										}).css({
+											'width': '100%',
+										}).appendTo(td);
+									} else {
+										var a = $("<A />", {
+											id: 'exisitng_latest_decidefile_a' + index,
+											class: 'exisitng_latest_decidefile_a',
+											href: elm['target'],
+											target: 'blank',
+											text: elm['title'],
+										}).css({
+											'width': '100%',
+										}).appendTo(td);
+
+									}
 
 
 									var surword = '';
 									if ( start == 0 ) {
-										if ( end+10 <= decideBody.length ) 
-											surword = decideBody.substr(end, 10);
+										if ( end+5 <= oldBody.length ) 
+											surword = oldBody.substr(end, 10);
 										else
-											surword = decideBody.substr(end, decideBody.length-end);
+											surword = oldBody.substr(end, oldBody.length-end);
 									} else if ( start < 4 ) {
-										if ( end+10 <= decideBody.length ) 
-											surword = decideBody.substr(0, 10);
-										else
-											surword = decideBody.substr(0, decideBody.length-end);
+										if ( end+5 <= oldBody.length ) {
+											surword = oldBody.substr(0, start);
+											surword = surword + ', ' + oldBody.substr(end+1, 5);
+										} else {
+											surword = oldBody.substr(0, start);
+											surword = surword + ', ' + oldBody.substr(end+1, oldBody.length-end);
+										}
 									} else {
-										if ( end+10 <= decideBody.length ) 
-											surword = decideBody.substr(start-3, 10);
-										else
-											surword = decideBody.substr(start-3, decideBody.length-end);
+										if ( end+5 <= oldBody.length ) {
+											surword = oldBody.substr(start-3, 3);
+											surword = surword + ', ' + oldBody.substr(end+1, 5);
+										} else {
+											surword = oldBody.substr(start-3, 3);
+											surword = surword + ', ' + oldBody.substr(end+1, oldBody.length-end);
+										}
 									}
+									// if ( start == 0 ) {
+									// 	if ( end+10 <= oldBody.length ) 
+									// 		surword = oldBody.substr(end, 10);
+									// 	else
+									// 		surword = oldBody.substr(end, oldBody.length-end);
+									// } else if ( start < 4 ) {
+									// 	if ( end+10 <= oldBody.length ) 
+									// 		surword = oldBody.substr(0, 10);
+									// 	else
+									// 		surword = oldBody.substr(0, oldBody.length-end);
+									// } else {
+									// 	if ( end+10 <= oldBody.length ) 
+									// 		surword = oldBody.substr(start-3, 10);
+									// 	else
+									// 		surword = oldBody.substr(start-3, oldBody.length-end);
+									// }
 
 									td = $("<TD />", {
 										id: 'exisitng_latest_decidefile_surword_td' + index,
@@ -210,14 +334,6 @@ jQuery(function($) {
 									index++;
 								});
 
-
-								$('.exisitng_latest_decidefile_a').on('click', function(event) {
-									event.preventDefault();
-									var url = $(this).attr('href');
-									$('#doc_iframe')[0].contentDocument.location.replace(url);
-								});
-
-
 							} else {
 								var th = $("<TH />", {
 									class: 'exisitng_latest_decidefile_th',
@@ -229,14 +345,1277 @@ jQuery(function($) {
 
 
 							$('#existing_latest_decidefile').append(table);
-							
 						},
 
 						error: function(xhr, textStatus, errorThrown){
 							alert('wixSetting.js Error');
 						}
 					});
+					
+					//既にdoc_idのdefaultLinkArrayやdecideLinkArrayがあるなら色づけ
+					if ( doc_id in defaultLinkArray ) {
+						$.each(defaultLinkArray[doc_id], function(keyword_id, elm) {
+							$.each($('.decide_entrys_tab1_table_keyword_span'), function(index, el) {
+								if ( $(el).attr('keyword_id') == keyword_id ) {
 
+									var subject_el = $(this)
+														.parent()
+														.next()
+														.find('.decide_entrys_tab1_table_targets_tr');
+									
+									$.each(subject_el, function(i, e) {
+										if ( $(e).find('.decide_entrys_tab1_table_target_a').text() == elm['title'] ) {
+											$(this)
+												.find('.decide_entrys_tab1_table_target_radio_input')
+												.prop('checked', true);
+
+												return false;
+										}
+										
+									});
+
+								}
+							});	
+						});
+					}
+
+					if ( doc_id in decideLinkArray ) {
+						$.each(decideLinkArray[doc_id], function(start, elm) {
+
+							$.each($('#doc_iframe').contents().find('.wix-authorLink'), function(index, el) {
+								if ( start == $(this).attr('start') ) {
+									$(this).css('background-color', 'Red');
+								}
+							});
+							$.each($('.decide_entrys_tab2_table_keyword_span'), function(index, el) {
+								var tmp_start = $(el).attr('start_end').split(':')[0];
+								if ( start == tmp_start ) {
+									$(this).css('background-color', 'Red');
+
+									var subject_el = $(this)
+														.parent()
+														.next()
+														.find('.decide_entrys_tab2_table_targets_tr');
+									$.each(subject_el, function(index, el) {
+										var e = $(this).find('.decide_entrys_tab2_table_target_a');
+
+										if ( typeof e.attr('href') === 'undefined' ) {
+											if ( e.attr('no_attach') == elm['target'] ) {
+												e.parent()
+													.next()
+													.children()
+													.prop('checked', true);
+											}
+
+										} else {
+											if ( e.attr('href') == elm['target'] ) {
+												e.parent()
+													.next()
+													.children()
+													.prop('checked', true);
+											}
+
+										}
+									});
+								}
+							});
+							// $.each($('.decide_entrys_tab2_table_target_a'), function(index, el) {
+							// 	if ( typeof $(this).attr('href') === 'undefined' ) {
+							// 		if ( $(this).attr('no_attach') == elm['target'] ) {
+							// 			$(this)
+							// 				.parent()
+							// 				.next()
+							// 				.children()
+							// 				.prop('checked', true);
+							// 		}
+
+							// 	} else {
+							// 		if ( $(this).attr('href') == elm['target'] ) {
+							// 			$(this)
+							// 				.parent()
+							// 				.next()
+							// 				.children()
+							// 				.prop('checked', true);
+							// 		}
+
+							// 	}
+							// });
+						});
+					}
+				});
+			},
+
+			error: function(xhr, textStatus, errorThrown){
+				alert('wixSetting.js Error');
+			}
+		}).done(function(e) {
+// console.log(e);
+
+			$('#decide_entrys_tab1_table').children('tbody').remove();
+			$('#decide_entrys_tab2_table').children('tbody').remove();
+			$('#decide_entrys_tab1').children('button').remove();
+			$('#decide_entrys_tab2').children('button').remove();
+
+			var data2 = {
+				'action': 'wix_disambiguation_recommend',
+				'doc_id' : doc_id,
+			};
+			$.ajax({
+				async: true,
+				dataType: "json",
+				type: "POST",
+				url: ajaxurl,
+				data: data2,
+
+				success: function(json) {
+// console.log(json['entrys']);
+					if ( json['entrys'].length != 0 ) {
+						//Default設定
+						var tbody = $("<TBODY />",{});
+
+						var count = 0;
+						$.each(json['entrys'], function(keyword, elm) {
+							var tr = $("<TR />", {
+								id: 'decide_entrys_tab1_table_tr'+count,
+								class: 'decide_entrys_tab1_table_tr'
+							}).appendTo(tbody);
+							var td = $("<TD />", {
+								id: 'decide_entrys_tab1_table_keyword_td' + count,
+								class: 'decide_entrys_tab1_table_keyword_td',
+								keyword_id: elm['keyword_id'],
+							}).appendTo(tr);
+							var span = $("<SPAN />", {
+								id: 'decide_entrys_tab1_table_keyword_span' + count,
+								class: 'decide_entrys_tab1_table_keyword_span',
+								keyword_id: elm['keyword_id'],
+								text: keyword
+							}).appendTo(td);
+							var td2 = $("<TD />", {
+								id: 'decide_entrys_tab1_table_targets_td' + count,
+								class: 'decide_entrys_tab1_table_targets_td',
+								keyword_id: elm['keyword_id'],
+							}).appendTo(tr);
+
+							$.each(elm, function(key, el) {
+								if ( key == 'targets' ) {
+									var table2 = $("<TABLE />",{
+										id: 'decide_entrys_tab1_table_targets_table'
+									}).appendTo(td2);
+
+									var no_attach_index = 0;
+									$.each(el, function(index, e) {
+										tr = $("<TR />", {
+											id: 'decide_entrys_tab1_table_targets_tr' + index,
+											class: 'decide_entrys_tab1_table_targets_tr'
+										}).appendTo(table2);
+
+										td = $("<TD />", {
+											id: 'decide_entrys_tab1_table_target_td' + index,
+											class: 'decide_entrys_tab1_table_target_td',
+										}).appendTo(tr);
+
+										if ( 'doc_id' in e ) {
+											var a = $("<A />", {
+												id: 'decide_entrys_tab1_table_target_a' + index,
+												class: 'decide_entrys_tab1_table_target_a',
+												href: e['url'],
+												text: e['title'],
+												doc_id: e['doc_id'],
+											}).appendTo(td);
+										} else {
+											var a = $("<A />", {
+												id: 'decide_entrys_tab1_table_target_a' + index,
+												class: 'decide_entrys_tab1_table_target_a',
+												href: e['url'],
+												target: 'blank',
+												text: e['url'],
+											}).appendTo(td);
+										}
+
+										td = $("<TD />", {
+											id: 'decide_entrys_tab1_table_target_radio_td' + index,
+											class: 'decide_entrys_tab1_table_target_radio_td',
+										}).appendTo(tr);
+										var input = $("<input />", {
+											type: 'radio',
+											id: 'decide_entrys_tab1_table_target_radio_input' + index,
+											class: 'decide_entrys_tab1_table_target_radio_input',
+											name: 'decide_entry[' + count + ']',
+											value: count+':'+index,
+										}).appendTo(td);
+										
+										no_attach_index = index;
+									});
+
+									//no_attach用
+									tr = $("<TR />", {
+										id: 'decide_entrys_tab1_table_targets_tr' + no_attach_index,
+										class: 'decide_entrys_tab1_table_targets_tr'
+									}).appendTo(table2);
+
+									td = $("<TD />", {
+										id: 'decide_entrys_tab1_table_target_td' + no_attach_index,
+										class: 'decide_entrys_tab1_table_target_td',
+									}).appendTo(tr);
+									var a = $("<A />", {
+										id: 'decide_entrys_tab1_table_target_a' + no_attach_index,
+										class: 'decide_entrys_tab1_table_target_a',
+										text: 'この単語にリンク生成しない',
+										no_attach: 'no_attach'
+									}).appendTo(td);
+
+									td = $("<TD />", {
+										id: 'decide_entrys_tab1_table_target_radio_td' + no_attach_index,
+										class: 'decide_entrys_tab1_table_target_radio_td',
+									}).appendTo(tr);
+									var input = $("<input />", {
+										type: 'radio',
+										id: 'decide_entrys_tab1_table_target_radio_input' + no_attach_index,
+										class: 'decide_entrys_tab1_table_target_radio_input',
+										name: 'decide_entry[' + count + ']',
+										value: count + ':' + no_attach_index,
+									}).appendTo(td);
+
+
+								}
+
+							});
+
+							count++;
+							
+						});
+						$('#decide_entrys_tab1_table').append(tbody);
+
+
+						//詳細設定							
+						var tbody = $("<TBODY />",{});
+						var count = 0;
+						$.each(innerLinkArray, function(start, element) {
+							var tr = $("<TR />", {
+								id: 'decide_entrys_tab2_table_tr'+count,
+								class: 'decide_entrys_tab2_table_tr'
+							}).appendTo(tbody);
+							var td = $("<TD />", {
+								id: 'decide_entrys_tab2_table_keyword_td' + count,
+								class: 'decide_entrys_tab2_table_keyword_td',
+								keyword_id: json['entrys'][element['keyword']]['keyword_id'],
+							}).appendTo(tr);
+							var span = $("<SPAN />", {
+								id: 'decide_entrys_tab2_table_keyword_span' + count,
+								class: 'decide_entrys_tab2_table_keyword_span',
+								keyword_id: json['entrys'][element['keyword']]['keyword_id'],
+								start_end: start + ':' + element['end'],
+								nextStart: element['nextStart'],
+								value: element['keyword'],
+								html: start + '~' + element['end'] + '文字目の<br>' + '<strong>' + element['keyword'] + '</strong>'
+							}).appendTo(td);
+							var td2 = $("<TD />", {
+								id: 'decide_entrys_tab2_table_targets_td' + count,
+								class: 'decide_entrys_tab2_table_targets_td',
+								keyword_id: json['entrys'][element['keyword']]['keyword_id'],
+							}).appendTo(tr);
+
+							$.each(json['entrys'][element['keyword']], function(k, el) {
+								if ( k == 'targets' ) {
+									var table2 = $("<TABLE />",{
+										id: 'decide_entrys_tab2_table_targets_table'
+									}).appendTo(td2);
+
+									var no_attach_index = 0;
+									$.each(el, function(index, e) {
+										tr = $("<TR />", {
+											id: 'decide_entrys_tab2_table_targets_tr' + index,
+											class: 'decide_entrys_tab2_table_targets_tr'
+										}).appendTo(table2);
+
+										td = $("<TD />", {
+											id: 'decide_entrys_tab2_table_target_td' + index,
+											class: 'decide_entrys_tab2_table_target_td',
+										}).appendTo(tr);
+
+										if ( 'doc_id' in e ) {
+											var a = $("<A />", {
+												id: 'decide_entrys_tab2_table_target_a' + index,
+												class: 'decide_entrys_tab2_table_target_a',
+												href: e['url'],
+												text: e['title'],
+												doc_id: e['doc_id'],
+											}).appendTo(td);
+										} else {
+											var a = $("<A />", {
+												id: 'decide_entrys_tab2_table_target_a' + index,
+												class: 'decide_entrys_tab2_table_target_a',
+												href: e['url'],
+												target: 'blank',
+												text: e['url'],
+											}).appendTo(td);
+										}
+
+										td = $("<TD />", {
+											id: 'decide_entrys_tab2_table_target_radio_td' + index,
+											class: 'decide_entrys_tab2_table_target_radio_td',
+										}).appendTo(tr);
+										var input = $("<input />", {
+											type: 'radio',
+											id: 'decide_entrys_tab2_table_target_radio_input' + index,
+											class: 'decide_entrys_tab2_table_target_radio_input',
+											name: 'decide_entry[' + count + ']',
+											value: count+':'+index,
+										}).appendTo(td);
+										
+										no_attach_index = index;
+									});
+
+									//no_attach用
+									tr = $("<TR />", {
+										id: 'decide_entrys_tab2_table_targets_tr' + no_attach_index,
+										class: 'decide_entrys_tab2_table_targets_tr'
+									}).appendTo(table2);
+
+									td = $("<TD />", {
+										id: 'decide_entrys_tab2_table_target_td' + no_attach_index,
+										class: 'decide_entrys_tab2_table_target_td',
+									}).appendTo(tr);
+									var a = $("<A />", {
+										id: 'decide_entrys_tab2_table_target_a' + no_attach_index,
+										class: 'decide_entrys_tab2_table_target_a',
+										text: 'この単語にリンク生成しない',
+										no_attach: 'no_attach'
+									}).appendTo(td);
+
+									td = $("<TD />", {
+										id: 'decide_entrys_tab2_table_target_radio_td' + no_attach_index,
+										class: 'decide_entrys_tab2_table_target_radio_td',
+									}).appendTo(tr);
+									var input = $("<input />", {
+										type: 'radio',
+										id: 'decide_entrys_tab2_table_target_radio_input' + no_attach_index,
+										class: 'decide_entrys_tab2_table_target_radio_input',
+										name: 'decide_entry[' + count + ']',
+										value: count + ':' + no_attach_index,
+									}).appendTo(td);
+								}
+
+							});
+
+							count++;
+
+						});
+						$('#decide_entrys_tab2_table').append(tbody);
+
+						//設定解除ボタンの作成
+						$('<button />', {
+							id: 'decide_entrys_tab1_button',
+							text: "Default設定の全解除",
+							click : function(event) {
+								if ( doc_id in defaultLinkArray ) {
+									delete defaultLinkArray[doc_id];
+									$.each($('.decide_entrys_tab1_table_target_radio_input'), function(index, el) {
+										$(this).prop('checked', false);
+									});
+
+									$.each($('.decide_entrys_tab1_table_keyword_span'), function(index, el) {
+										$(this).css('background-color', '');
+									});
+									$.each($('#doc_iframe').contents().find('.wix-authorLink'), function(index, el) {
+										if ( $(this).css('background-color') !== 'rgb(255, 0, 0)' )
+											$(el).css('background-color', '');
+									});
+
+									//docの文字色をなくす
+									$.each($('.doc_page'), function(index, el) {
+										if ( $(el).attr('id') == doc_id )
+											$(el).css('color', '#0073aa'); 
+									});
+
+								}
+							}
+						}).appendTo('#decide_entrys_tab1');
+
+						$('<button />', {
+							id: 'decide_entrys_tab2_button',
+							text: "詳細設定の全解除",
+							click : function(event) {
+								if ( doc_id in decideLinkArray ) {
+									delete decideLinkArray[doc_id];
+									$.each($('.decide_entrys_tab2_table_target_radio_input'), function(index, el) {
+										$(this).prop('checked', false);
+									});
+
+									$.each($('.decide_entrys_tab2_table_keyword_span'), function(index, el) {
+										$(this).css('background-color', '');
+									});
+									$.each($('#doc_iframe').contents().find('.wix-authorLink'), function(index, el) {
+										$(el).css('background-color', '');
+									});
+
+									//docの文字色をなくす
+									$.each($('.doc_page'), function(index, el) {
+										if ( $(el).attr('id') == doc_id )
+											$(el).css('color', '#0073aa'); 
+									});
+
+								}
+							}
+						}).appendTo('#decide_entrys_tab2');
+
+					}
+
+					//キーワードと、インラインフレーム内の連携
+					$('.decide_entrys_tab1_table_keyword_span').on('click', function(event) {
+						event.preventDefault();
+						
+						var keyword = $(this).text();
+
+						$.each($('.decide_entrys_tab1_table_keyword_span'), function(index, el) {
+							if ( $(this).css('background-color') !== 'rgb(255, 0, 0)' ) {
+								$(el).css('background-color', '');
+							}	
+						});
+						if ( $(this).css('background-color') !== 'rgb(255, 0, 0)' ) {
+							$(this).css('background-color', 'Aqua');
+						}
+
+						$.each($('#doc_iframe').contents().find('.wix-authorLink'), function(index, el) {
+							if ( $(el).css('background-color') !== 'rgb(255, 0, 0)' )
+								$(el).css('background-color', '');
+
+							if ( keyword == $(this).text() ) {
+								if ( $(this).css('background-color') !== 'rgb(255, 0, 0)' )
+									$(this).css('background-color', 'Aqua');
+							}
+						});
+					});
+					$('.decide_entrys_tab2_table_keyword_span').on('click', function(event) {
+						event.preventDefault();
+						
+						var keyword = $(this).val()[0];
+						var start = $(this).attr('start_end').split(':')[0];
+
+						
+						$.each($('.decide_entrys_tab2_table_keyword_span'), function(index, el) {
+							if ( $(this).css('background-color') !== 'rgb(255, 0, 0)' ) {
+								$(el).css('background-color', '');
+							}	
+						});
+						if ( $(this).css('background-color') !== 'rgb(255, 0, 0)' ) {
+							$(this).css('background-color', 'Aqua');
+						}
+						
+
+						$.each($('#doc_iframe').contents().find('.wix-authorLink'), function(index, el) {
+							if ( $(el).css('background-color') !== 'rgb(255, 0, 0)' )
+								$(el).css('background-color', '');
+
+							if ( start == $(this).attr('start') ) {
+								if ( $(this).css('background-color') !== 'rgb(255, 0, 0)' )
+									$(this).css('background-color', 'Aqua');
+							}
+						});
+
+					});
+
+					//ターゲット選択イベント
+					$('.decide_entrys_tab1_table_target_radio_input').on('change', function(event) {
+						event.preventDefault();
+
+						var name = $(this).attr('name');
+						var keyword = $(this)
+											.parents('.decide_entrys_tab1_table_tr')
+											.find('.decide_entrys_tab1_table_keyword_span')
+											.text();
+						var keyword_id = $(this)
+											.parents('.decide_entrys_tab1_table_tr')
+											.find('.decide_entrys_tab1_table_keyword_span')
+											.attr('keyword_id');
+						var target = $(this)
+											.parent()
+											.prev()
+											.children('.decide_entrys_tab1_table_target_a')
+											.attr('href');
+
+						if ( typeof target === 'undefined'  ) {
+							target = $(this)
+											.parent()
+											.prev()
+											.children('.decide_entrys_tab1_table_target_a')
+											.attr('no_attach');
+						}
+						var title = $(this)
+										.parent()
+										.prev()
+										.children('.decide_entrys_tab1_table_target_a')
+										.text();
+							
+						if ( doc_id in defaultLinkArray ) {
+							var tmpArray = defaultLinkArray[doc_id];
+							if ( keyword_id in tmpArray) 
+								delete tmpArray[keyword_id];
+							tmpArray[keyword_id] = {'keyword': keyword, 
+													'target': target, 
+													'name': name, 
+													'title': title, 
+													'doc_title': doc_title};
+							defaultLinkArray[doc_id] = tmpArray;
+
+						} else {
+							var tmpArray = new Object();
+							tmpArray[keyword_id] = {'keyword': keyword, 
+													'target': target, 
+													'name': name, 
+													'title': title, 
+													'doc_title': doc_title};
+							defaultLinkArray[doc_id] = tmpArray;
+
+						}
+
+						//docの文字色を赤くする
+						$.each($('.doc_page'), function(index, el) {
+							if ( $(el).attr('id') == doc_id )
+								$(el).css('color', 'Red'); 
+						});
+
+console.log(defaultLinkArray);
+
+					});
+
+					$('.decide_entrys_tab2_table_target_radio_input').on('change', function(event) {
+						event.preventDefault();
+
+						var name = $(this).attr('name');
+						var keyword = $(this)
+											.parents('.decide_entrys_tab2_table_tr')
+											.find('.decide_entrys_tab2_table_keyword_span')
+											.val();
+
+						var target = $(this)
+											.parent()
+											.prev()
+											.children('.decide_entrys_tab2_table_target_a')
+											.attr('href');
+
+						if ( typeof target === 'undefined'  ) {
+							target = $(this)
+											.parent()
+											.prev()
+											.children('.decide_entrys_tab2_table_target_a')
+											.attr('no_attach');
+						}
+
+						var start = $(this)
+										.parents('.decide_entrys_tab2_table_tr')
+										.find('.decide_entrys_tab2_table_keyword_span')
+										.attr('start_end')
+										.split(':')[0];
+						var end = $(this)
+										.parents('.decide_entrys_tab2_table_tr')
+										.find('.decide_entrys_tab2_table_keyword_span')
+										.attr('start_end')
+										.split(':')[1];
+						var title = $(this)
+											.parent()
+											.prev()
+											.children('.decide_entrys_tab2_table_target_a')
+											.text();
+
+
+						if ( doc_id in decideLinkArray ) {
+							var tmpArray = decideLinkArray[doc_id];
+							if ( start in tmpArray )
+								delete tmpArray[start];
+
+							tmpArray[start] = {'keyword':keyword[0],'target':target,'end':end, 'doc_title': doc_title, 'title': title};
+							decideLinkArray[doc_id] = tmpArray;
+						} else {
+							var tmpArray = new Object();
+							tmpArray[start] = {'keyword':keyword[0],'target':target,'end':end, 'doc_title': doc_title, 'title': title};
+							decideLinkArray[doc_id] = tmpArray;
+						}
+
+console.log(decideLinkArray);
+
+						//テーブル側の該当キーワードの色付け
+						$(this)
+							.parents('.decide_entrys_tab2_table_tr')
+							.find('.decide_entrys_tab2_table_keyword_span')
+							.css('background-color', 'Red');
+
+						//インラインフレーム側の該当キーワードの色付け
+						$.each($('#doc_iframe').contents().find('.wix-authorLink'), function(index, el) {
+							if ( start == $(this).attr('start') ) {
+								$(this).css('background-color', 'Red');
+								return false;
+							}
+						});
+						//docの文字色を赤くする
+						$.each($('.doc_page'), function(index, el) {
+							if ( $(el).attr('id') == doc_id )
+								$(el).css('color', 'Red'); 
+						});
+
+					});
+
+				},
+
+				error: function(xhr, textStatus, errorThrown){
+					alert('wixSetting.js Error');
+				}
+			});
+		});	
+	});
+
+	$('#add_decidefile').on('click', function(event) {
+		event.preventDefault();
+		if ( Object.keys(defaultLinkArray).length > 0 || Object.keys(decideLinkArray).length > 0 ) {
+			//モーダル要素作成
+			var content = $("<div />", {
+				id: 'insert_popTableDiv'
+			});
+			var table = $("<TABLE />",{
+				class: 'insert_popTable'
+			}).appendTo(content);
+			var tr = $("<TR />", {
+				class: 'insert_popTr'
+			}).appendTo(table);
+			var td = $("<TD />", {
+				class: 'insert_popTd'
+			}).appendTo(tr);
+			var inner_table = $("<TABLE />",{
+				class: 'insert_innerTable'
+			}).appendTo(td);
+			var thead = $("<THEAD />", {
+				class: 'insert_innerThead'
+			}).appendTo(inner_table);
+			var tbody = $("<TBODY />", {
+				class: 'insert_innerTbody'
+			}).appendTo(inner_table);
+			$("<TH />", {
+				text: 'ドキュメント'
+			}).css({'white-space': 'nowrap'}).appendTo(thead);
+			$("<TH />", {
+				text: '単語'
+			}).css({'white-space': 'nowrap'}).appendTo(thead);
+			$("<TH />", {
+				text: 'リンク先URL'
+			}).css({'white-space': 'nowrap'}).appendTo(thead);
+
+
+			if ( Object.keys(defaultLinkArray).length > 0 ) {
+				var doc_td;
+				var keyword_td;
+				var target_td;
+				//keyword
+				var keyword_table;
+				var keyword_table_tr;
+				var keyword_table_setting_td;
+				var keyword_table_keyword_td;
+				var keyword_table_inner_table;
+				//target
+				var target_table;
+				var target_table_tr;
+				var target_table_td;
+				var target_table_inner_table;
+
+				$.each(defaultLinkArray, function(document_id, elm) {
+					var inner_table_tr = $("<TR />", {
+						class: 'insert_elmTr'
+					}).appendTo(tbody);
+
+					var count = 0;
+					$.each(elm, function(keyword_id, el) {
+						if ( count == 0 ) {
+							doc_td = $("<TD />", {
+								class: 'insert_elm_docTd',
+								text: el['doc_title']
+							}).appendTo(inner_table_tr);
+							keyword_td = $("<TD />", {
+								class: 'insert_elm_keywordTd'
+							}).appendTo(inner_table_tr);
+							target_td = $("<TD />", {
+								class: 'insert_elm_targetTd'
+							}).appendTo(inner_table_tr);
+
+							//keyword
+							keyword_table = $("<TABLE />",{
+								class: 'insert_keywordTd_table'
+							}).appendTo(keyword_td);
+							keyword_table_tr = $("<TR />", {
+								class: 'insert_keywordTd_table_tr'
+							}).appendTo(keyword_table);
+							keyword_table_setting_td = $("<TD />", {
+								text: 'Default設定'
+							}).appendTo(keyword_table_tr);
+							keyword_table_keyword_td = $("<TD />", {
+								class: 'insert_keywordTd_table_td',
+							}).appendTo(keyword_table_tr);
+							keyword_table_inner_table = $("<TABLE />",{
+								class: 'insert_keywordTd_table_td_table'
+							}).appendTo(keyword_table_keyword_td);
+
+							//target
+							target_table = $("<TABLE />",{
+								class: 'insert_targetTd_table'
+							}).appendTo(target_td);
+							target_table_tr = $("<TR />", {
+								class: 'insert_targetTd_table_tr'
+							}).appendTo(target_table);
+							target_table_td = $("<TD />", {
+								class: 'insert_targetTd_table_td',
+							}).appendTo(target_table_tr);
+							target_table_inner_table = $("<TABLE />",{
+								class: 'insert_targetTd_table_td_table'
+							}).appendTo(target_table_td);
+						}
+						//keyword
+						var keyword_table_inner_table_tr = $("<TR />", {
+							class: 'insert_keywordTd_table_td_table_tr'
+						}).appendTo(keyword_table_inner_table);
+						var keyword_table_inner_table_td = $("<TD />", {
+							class: 'insert_keywordTd_table_td_table_td',
+							text: el['keyword']
+						}).appendTo(keyword_table_inner_table_tr);
+
+						//target
+						var target_table_inner_table_tr = $("<TR />", {
+							class: 'insert_targetTd_table_td_table_tr'
+						}).appendTo(target_table_inner_table);
+						var target_table_inner_table_td = $("<TD />", {
+							class: 'insert_targetTd_table_td_table_td',
+							text: el['title']
+						}).appendTo(target_table_inner_table_tr);
+
+						count++;
+					});
+
+					if ( Object.keys(decideLinkArray).length > 0 ) {
+						$.each(decideLinkArray, function(doc_id, elm) {
+							if ( document_id == doc_id ) {
+								var count = 0;
+								$.each(elm, function(start, el) {
+									if ( count == 0 ) {
+										//keyword
+										keyword_table_tr = $("<TR />", {
+											class: 'insert_keywordTd_table_tr'
+										}).appendTo(keyword_table);
+										keyword_table_setting_td = $("<TD />", {
+											text: '詳細設定'
+										}).appendTo(keyword_table_tr);
+										keyword_table_keyword_td = $("<TD />", {
+											class: 'insert_keywordTd_table_td',
+										}).appendTo(keyword_table_tr);
+										keyword_table_inner_table = $("<TABLE />",{
+											class: 'insert_keywordTd_table_td_table'
+										}).appendTo(keyword_table_keyword_td);
+
+										//target
+										target_table = $("<TABLE />",{
+											class: 'insert_targetTd_table'
+										}).appendTo(target_td);
+										target_table_tr = $("<TR />", {
+											class: 'insert_targetTd_table_tr'
+										}).appendTo(target_table);
+										target_table_td = $("<TD />", {
+											class: 'insert_targetTd_table_td',
+										}).appendTo(target_table_tr);
+										target_table_inner_table = $("<TABLE />",{
+											class: 'insert_targetTd_table_td_table'
+										}).appendTo(target_table_td);
+									}
+
+									//keyword
+									var keyword_table_inner_table_tr = $("<TR />", {
+										class: 'insert_keywordTd_table_td_table_tr'
+									}).appendTo(keyword_table_inner_table);
+									var keyword_table_inner_table_td = $("<TD />", {
+										class: 'insert_keywordTd_table_td_table_td',
+										text: start + '~' + el['end'] + '文字目の ' + el['keyword']
+									}).appendTo(keyword_table_inner_table_tr);
+
+									//target
+									var target_table_inner_table_tr = $("<TR />", {
+										class: 'insert_targetTd_table_td_table_tr'
+									}).appendTo(target_table_inner_table);
+									var target_table_inner_table_td = $("<TD />", {
+										class: 'insert_targetTd_table_td_table_td',
+										text: el['title']
+									}).appendTo(target_table_inner_table_tr);
+
+									count++;
+
+								});
+
+							}
+							
+						});
+					}
+
+				});
+
+			} else if ( Object.keys(decideLinkArray).length > 0 ) {
+				var doc_td;
+				var keyword_td;
+				var target_td;
+				//keyword
+				var keyword_table;
+				var keyword_table_tr;
+				var keyword_table_setting_td;
+				var keyword_table_keyword_td;
+				var keyword_table_inner_table;
+				//target
+				var target_table;
+				var target_table_tr;
+				var target_table_td;
+				var target_table_inner_table;
+
+				$.each(decideLinkArray, function(doc_id, elm) {
+					var inner_table_tr = $("<TR />", {
+						class: 'insert_elmTr'
+					}).appendTo(tbody);
+
+					var count = 0;
+					$.each(elm, function(start, el) {
+						if ( count == 0 ) {
+							doc_td = $("<TD />", {
+								class: 'insert_elm_docTd',
+								text: el['doc_title']
+							}).appendTo(inner_table_tr);
+							keyword_td = $("<TD />", {
+								class: 'insert_elm_keywordTd'
+							}).appendTo(inner_table_tr);
+							target_td = $("<TD />", {
+								class: 'insert_elm_targetTd'
+							}).appendTo(inner_table_tr);
+
+							//keyword
+							keyword_table = $("<TABLE />",{
+								class: 'insert_keywordTd_table'
+							}).appendTo(keyword_td);
+							keyword_table_tr = $("<TR />", {
+								class: 'insert_keywordTd_table_tr'
+							}).appendTo(keyword_table);
+							keyword_table_tr = $("<TR />", {
+								class: 'insert_keywordTd_table_tr'
+							}).appendTo(keyword_table);
+							keyword_table_setting_td = $("<TD />", {
+								text: '詳細設定'
+							}).appendTo(keyword_table_tr);
+							keyword_table_keyword_td = $("<TD />", {
+								class: 'insert_keywordTd_table_td',
+							}).appendTo(keyword_table_tr);
+							keyword_table_inner_table = $("<TABLE />",{
+								class: 'insert_keywordTd_table_td_table'
+							}).appendTo(keyword_table_keyword_td);
+
+							//target
+							target_table = $("<TABLE />",{
+								class: 'insert_targetTd_table'
+							}).appendTo(target_td);
+							target_table_tr = $("<TR />", {
+								class: 'insert_targetTd_table_tr'
+							}).appendTo(target_table);
+							target_table_td = $("<TD />", {
+								class: 'insert_targetTd_table_td',
+							}).appendTo(target_table_tr);
+							target_table_inner_table = $("<TABLE />",{
+								class: 'insert_targetTd_table_td_table'
+							}).appendTo(target_table_td);
+						}
+
+						//keyword
+						var keyword_table_inner_table_tr = $("<TR />", {
+							class: 'insert_keywordTd_table_td_table_tr'
+						}).appendTo(keyword_table_inner_table);
+						var keyword_table_inner_table_td = $("<TD />", {
+							class: 'insert_keywordTd_table_td_table_td',
+							text: start + '~' + el['end'] + '文字目の ' + el['keyword']
+						}).appendTo(keyword_table_inner_table_tr);
+
+						//target
+						var target_table_inner_table_tr = $("<TR />", {
+							class: 'insert_targetTd_table_td_table_tr'
+						}).appendTo(target_table_inner_table);
+						var target_table_inner_table_td = $("<TD />", {
+							class: 'insert_targetTd_table_td_table_td',
+							text: el['title']
+						}).appendTo(target_table_inner_table_tr);
+
+						count++;
+
+					});
+					
+				});
+
+			}
+
+			//モーダル作成
+			var pop = new $pop(content, {
+				type: 'inline',
+				title: 'リンク先詳細設定',
+				width: 600,
+				modal: true,
+				windowmode: false,
+				close: true
+			});
+			$('.pWindow tbody').ready(function() {
+				if ( $('.pWindow').position().top < 35 ) {
+					$('.pWindow').offset({top: 40});
+				}
+			});
+			var buttonDiv = $("<div />", {
+				id: 'popButtonDiv'
+			}).appendTo(content);
+			$('<button />', {
+				text: "中止",
+				click : function(event) {
+					pop.close();
+				}
+			}).appendTo(buttonDiv);
+			$('<button />', {
+				text: "データ更新",
+				click: function(event) {
+					var data = {
+						'action': 'wix_setting_createDecidefile',
+						'defaultLinkArray': defaultLinkArray,
+						'decideLinkArray': decideLinkArray,
+					};
+					$.ajax({
+						async: true,
+						dataType: "json",
+						type: "POST",
+						url: ajaxurl,
+						data: data,
+
+						success: function(json) {
+console.log(json['test']);
+							
+							pop.close();
+							location.reload();
+						},
+
+						error: function(xhr, textStatus, errorThrown){
+							alert('wixSetting.js Error');
+							pop.close();
+						}
+					});
+		
+				}
+			}).appendTo(buttonDiv);
+
+		}
+
+	});
+
+/***********************************************************************************************************/
+
+			//Tab 2
+	
+	/***********************************************************************************************************/
+
+	$('.decidefileDoc_page').on('click', function(event) {
+		event.preventDefault();
+		var document_id = $(this).attr('id');
+		var document_url = $(this).attr('href');
+		//iframeへの挿入
+		$('#decidefileDoc_iframe')[0].contentDocument.location.replace(document_url);
+		
+		var data = {
+			'action': 'wix_existing_decidefile_presentation',
+			'doc_id': document_id,
+			'tab': 'detailsettings_tab2',
+		};
+		$.ajax({
+			async: true,
+			dataType: "json",
+			type: "POST",
+			url: ajaxurl,
+			data: data,
+
+			success: function(json) {
+console.log(json['latest_decideinfo']);
+
+				var body = $.trim( json['body'] );
+				$('.latest_decide_table').remove();
+
+				//最新情報を提示
+				var table = $("<TABLE />",{
+					class: 'latest_decide_table'
+				});
+				var thead = $("<THEAD />", {
+					class: 'latest_decide_thead'
+				}).appendTo(table);
+				$("<TH />", {
+					text: 'Keyword'
+				}).css({'white-space': 'nowrap'}).appendTo(thead);
+				$("<TH />", {
+					text: 'リンク先URL情報'
+				}).css({'white-space': 'nowrap'}).appendTo(thead);
+				$("<TH />", {
+					text: '周辺単語'
+				}).css({'white-space': 'nowrap'}).appendTo(thead);
+				var tbody = $("<TBODY />", {
+					class: 'latest_decide_tbody'
+				}).appendTo(table);
+
+				var count = 0;
+				$.each(json['latest_decideinfo'], function(start, elm) {
+					var end = parseInt(elm['end']);
+
+					var tr = $("<TR />", {
+						id: 'latest_decide_tr' + count,
+						class: 'latest_decide_tr',
+						start_end: start + ':' + elm['end'],
+						nextStart: elm['nextStart'],
+					}).appendTo(tbody);
+					var keyword_td = $("<TD />", {
+						class: 'latest_decide_keyword_td',
+						text: elm['keyword'],
+					}).appendTo(tr);
+					var target_td = $("<TD />", {
+						class: 'latest_decide_target_td'
+					}).appendTo(tr);
+					if ( elm['title'] == 'no_attach' ) {
+						var target_td_a = $("<A />", {
+							id: 'latest_decide_target_td_a' + count,
+							class: 'latest_decide_target_td_a',
+							text: 'リンク生成しない'
+						}).appendTo(target_td);
+					} else {
+						var target_td_a = $("<A />", {
+							id: 'latest_decide_target_td_a' + count,
+							class: 'latest_decide_target_td_a',
+							target: 'blank',
+							href: elm['target'],
+							text: elm['title']
+						}).appendTo(target_td);
+					}
+
+					var surword = '';
+					if ( start == 0 ) {
+						if ( end+5 <= body.length ) 
+							surword = body.substr(end, 10);
+						else
+							surword = body.substr(end, body.length-end);
+					} else if ( start < 4 ) {
+						if ( end+5 <= body.length ) {
+							surword = body.substr(0, start);
+							surword = surword + ', ' + body.substr(end+1, 5);
+						} else {
+							surword = body.substr(0, start);
+							surword = surword + ', ' + body.substr(end+1, body.length-end);
+						}
+					} else {
+						if ( end+5 <= body.length ) {
+							surword = body.substr(start-3, 3);
+							surword = surword + ', ' + body.substr(end+1, 5);
+						} else {
+							surword = body.substr(start-3, 3);
+							surword = surword + ', ' + body.substr(end+1, body.length-end);
+						}
+					}
+					var surword_td = $("<TD />", {
+						class: 'latest_decide_surword_td',
+						text: surword
+					}).appendTo(tr);
+
+
+					count++;
+				});
+				$('#decidefile_latest_table_tbody_td').append(table);
+	
+				
+				//履歴情報		
+				var data = {
+					'action': 'wix_decidefile_history',
+					'doc_id': document_id,
+				};
+				$.ajax({
+					async: true,
+					dataType: "json",
+					type: "POST",
+					url: ajaxurl,
+					data: data,
+
+					success: function(json) {
+console.log(json['decideinfo']);
+						
+						$('#decidefile_history_contents').children().remove();
+						
+						//タブを作成
+						var ul = $("<UL />",{
+							id: 'decide_history_tab'
+						});
+						$.each(json['decideinfo'], function(index, elm) {
+							var i = index;
+							index = parseInt(index) + parseInt(1);
+
+							if ( index == 0 ) {
+								var li = $("<LI />",{
+									class: 'selected',
+								}).appendTo(ul);
+							} else {
+								var li = $("<LI />",{}).appendTo(ul);
+							}
+							var a = $("<A />", {
+								href: '#decide_history_tab' + index,
+								text: 'ver.' + i
+							}).appendTo(li);
+						});
+						$('#decidefile_history_contents').append(ul);
+
+						//最新情報を提示
+						var list_div = $("<DIV />", {
+							id: 'decide_history_list'
+						});
+						$.each(json['decideinfo'], function(index, elm) {
+							index = parseInt(index) + parseInt(1);
+
+							var div_id = 'decide_history_tab' + index;
+							var body = elm['body'];
+
+							if ( index == 1 ) {
+								var div = $("<DIV />", {
+									id: div_id,
+									class: 'decide_history_tabbox'
+								}).appendTo(list_div);
+							} else {
+								var div = $("<DIV />", {
+									id: div_id,
+									class: 'decide_history_tabbox'
+								}).css('display', 'none').appendTo(list_div);
+							}
+
+							var table = $("<TABLE />",{
+								class: 'decide_history_table'
+							}).appendTo(div);
+							var thead = $("<THEAD />", {
+								class: 'decide_history_thead'
+							}).appendTo(table);
+							$("<TH />", {
+								text: 'Keyword'
+							}).css({'white-space': 'nowrap'}).appendTo(thead);
+							$("<TH />", {
+								text: 'リンク先URL情報'
+							}).css({'white-space': 'nowrap'}).appendTo(thead);
+							$("<TH />", {
+								text: '周辺単語'
+							}).css({'white-space': 'nowrap'}).appendTo(thead);
+							var tbody = $("<TBODY />", {
+								class: 'decide_history_tbody'
+							}).appendTo(table);
+
+							$.each(elm['decideInfo'], function(start, el) {
+
+								var end = parseInt(el['end']);
+
+								var tr = $("<TR />", {
+									class: div_id + '_tr',
+									start_end: start + ':' + el['end'],
+									nextStart: el['nextStart'],
+								}).appendTo(tbody);
+								var keyword_td = $("<TD />", {
+									class: div_id + '_keyword_td',
+									text: el['keyword'],
+								}).appendTo(tr);
+								var target_td = $("<TD />", {
+									class: div_id + '_target_td'
+								}).appendTo(tr);
+								if ( el['title'] == 'no_attach' ) {
+									var target_td_a = $("<A />", {
+										class: div_id + '_target_td_a',
+										text: 'リンク生成しない'
+									}).appendTo(target_td);
+								} else {
+									var target_td_a = $("<A />", {
+										class: div_id + '_target_td_a',
+										target: 'blank',
+										href: el['target'],
+										text: el['title']
+									}).appendTo(target_td);
+								}
+
+								var surword = '';
+								if ( start == 0 ) {
+									if ( end+5 <= body.length ) 
+										surword = body.substr(end, 10);
+									else
+										surword = body.substr(end, body.length-end);
+								} else if ( start < 4 ) {
+									if ( end+5 <= body.length ) {
+										surword = body.substr(0, start);
+										surword = surword + ', ' + body.substr(end+1, 5);
+									} else {
+										surword = body.substr(0, start);
+										surword = surword + ', ' + body.substr(end+1, body.length-end);
+									}
+								} else {
+									if ( end+5 <= body.length ) {
+										surword = body.substr(start-3, 3);
+										surword = surword + ', ' + body.substr(end+1, 5);
+									} else {
+										surword = body.substr(start-3, 3);
+										surword = surword + ', ' + body.substr(end+1, body.length-end);
+									}
+								}
+								var surword_td = $("<TD />", {
+									class: 'latest_decide_surword_td',
+									text: surword
+								}).appendTo(tr);
+								
+							});
+
+							var input = $("<input />", {
+								type: 'button',
+								id: 'decide_history_table' + index,
+								class: 'decide_history_table_input',
+								value: 'この履歴を最新版にする',
+								click: function(event) {
+									var form = $('#update_decidefileForm');
+									var input = $("<input />", {
+										type: 'text',
+										class: 'update_decidefileInfo',
+										name: 'update_decidefileInfo[0]',
+										value: document_id,
+									}).css({
+										'display': 'none'
+									}).appendTo(form);	
+
+									$.each($('#decide_history_tab').children('li'), function(index, el) {
+										if ( $(this).hasClass('active') ) {
+											var version = $(this).find('a').text();
+											var input = $("<input />", {
+												type: 'text',
+												class: 'update_decidefileInfo',
+												name: 'update_decidefileInfo[1]',
+												value: version,
+											}).css({
+												'display': 'none'
+											}).appendTo(form);	
+										}
+									});
+									$('.update_decidefileButton').click();
+						
+								}
+							}).appendTo(div);
+							
+						});
+						$('#decidefile_history_contents').append(list_div);
+						
+						//タブ機能
+						$('.decide_history_tabbox:first').show();
+						$('#decide_history_tab li:first').addClass('active');
+						$('#decide_history_tab li').click(function() {
+							$('#decide_history_tab li').removeClass('active');
+							$(this).addClass('active');
+							$('.decide_history_tabbox').hide();
+							$($(this).find('a').attr('href')).fadeIn();
+							return false;
+						});
+
+					},
+
+					error: function(xhr, textStatus, errorThrown){
+						alert('wixSetting.js Error');
+					}
 				});
 
 			},
@@ -245,34 +1624,8 @@ jQuery(function($) {
 				alert('wixSetting.js Error');
 			}
 		});
+	});		
 
-		var data2 = {
-			'action': 'wix_disambiguation_recommend',
-			'doc_id' : doc_id,
-		};
-
-		$.ajax({
-			async: true,
-			dataType: "json",
-			type: "POST",
-			url: ajaxurl,
-			data: data2,
-
-			success: function(json) {
-console.log(json['entrys']);
-
-
-			},
-
-			error: function(xhr, textStatus, errorThrown){
-				alert('wixSetting.js Error');
-			}
-		});
-
-		
-		
-
-	});
 
 
 });

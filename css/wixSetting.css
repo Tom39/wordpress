@@ -7,7 +7,7 @@
   ----------------------------------------------------------------------------------------------------------*/
 
 html, body {
-	height:100%;
+    height:100%;
     margin: 0;
 }
 
@@ -162,7 +162,7 @@ ul#tab li.active a:hover {
 
     font-size: 10pt;
     font-weight: bold;
-    background-color: #248;
+    background-color: #ff0038;
     color: #fff;
     border-style: none;
 
@@ -217,15 +217,121 @@ ul#tab li.active a:hover {
 
 /* 初期設定項目部分 */
 #init_settings {
+    width: 100%;
     height: 30vh;
     overflow: auto;
 }
+#init_settings p {
+    width: 100%;
+}
+#init_settings p input[type="text"] {
+    width: 50%;
+}
+#init_settings strong {
+    font-size: 13pt;
+}
+#init_settings #pattern_filename li {
+    width: 100%;
+}
+#init_settings #pattern_filename li input[type="text"] {
+    width: 40%;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  margin: 4px 0;
+  width: 90%;
+}
+input[type=range]:focus {
+  outline: none;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 5.4px;
+  cursor: pointer;
+  animate: 0.2s;
+  /*box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;*/
+  background: #3071a9;
+  border-radius: 1.3px;
+  border: 0.2px solid #010101;
+}
+input[type=range]::-webkit-slider-thumb {
+  /*box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;*/
+  border: 1px solid #000000;
+  height: 16px;
+  width: 16px;
+  border-radius: 3px;
+  background: #ffffff;
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -6px;
+}
+input[type=range]:focus::-webkit-slider-runnable-track {
+  background: #367ebd;
+}
+input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 8.4px;
+  cursor: pointer;
+  animate: 0.2s;
+  /*box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;*/
+  background: #3071a9;
+  border-radius: 1.3px;
+  border: 0.2px solid #010101;
+}
+input[type=range]::-moz-range-thumb {
+  /*box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;*/
+  border: 1px solid #000000;
+  height: 16px;
+  width: 16px;
+  border-radius: 3px;
+  background: #ffffff;
+  cursor: pointer;
+}
+input[type=range]::-ms-track {
+  width: 100%;
+  height: 8.4px;
+  cursor: pointer;
+  animate: 0.2s;
+  background: transparent;
+  border-color: transparent;
+  border-width: 16px 0;
+  color: transparent;
+}
+input[type=range]::-ms-fill-lower {
+  background: #2a6495;
+  border: 0.2px solid #010101;
+  border-radius: 2.6px;
+  /*box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;*/
+}
+input[type=range]::-ms-fill-upper {
+  background: #3071a9;
+  border: 0.2px solid #010101;
+  border-radius: 2.6px;
+  /*box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;*/
+}
+input[type=range]::-ms-thumb {
+  /*box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;*/
+  border: 1px solid #000000;
+  height: 16px;
+  width: 16px;
+  border-radius: 3px;
+  background: #ffffff;
+  cursor: pointer;
+}
+input[type=range]:focus::-ms-fill-lower {
+  /*background: #3071a9;*/
+}
+input[type=range]:focus::-ms-fill-upper {
+  /*background: #367ebd;*/
+}
+
 
 /* オプション部分 */
 #option_settings {
     width: 100%;
-    height: 46vh;
+    height: 43vh;
     overflow: auto;
+    margin-top: 9%;
 }
 .contents_option {
     width: 100%;
@@ -237,10 +343,10 @@ ul#tab li.active a:hover {
 .contents_option fieldset{
     margin-top: 3%;
 }
-.contents_option input{
+#wixfile_option_settings input, #decidefile_option_settings input{
     display: none;
 }
-.contents_option label {
+#wixfile_option_settings label, #decidefile_option_settings label {
     display: block;
     float: left;
     cursor: pointer;
@@ -254,17 +360,17 @@ ul#tab li.active a:hover {
     line-height: 1;
     transition: .2s;
 }
-.contents_option label:first-of-type {
+#wixfile_option_settings label:first-of-type, #decidefile_option_settings label:first-of-type {
     border-radius: 3px 0 0 3px;
 }
-.contents_option label:last-of-type {
+#wixfile_option_settings label:last-of-type, #decidefile_option_settings label:last-of-type {
     border-radius: 0 3px 3px 0;
 }
-.contents_option input[type="radio"]:checked + .switch-on {
+#wixfile_option_settings input[type="radio"]:checked + .switch-on, #decidefile_option_settings input[type="radio"]:checked + .switch-on {
     background-color: #CCCCFF;
     color: #fff;
 }
-.contents_option input[type="radio"]:checked + .switch-off {
+#wixfile_option_settings input[type="radio"]:checked + .switch-off, #decidefile_option_settings input[type="radio"]:checked + .switch-off {
     background-color: #e67168;
     color: #fff;
 }
@@ -320,14 +426,21 @@ ul#wixfile_tab li.active a:hover {
     height: 100%;
     overflow: hidden;
 }
-.wixfile_table tbody{
+.wixfile_table thead{
     width: 100%;
 }
-.wixfile_table tr {
-
-}
-.wixfile_table td, th {
+.wixfile_table td {
     height: 100%;
+}
+.wixfile_table thead th {
+    width: 30%;
+    height: 100%;
+}
+.wixfile_table tbody {
+    width: 100%;
+}
+.wixfile_table tbody tr {
+    width: 100%;
 }
 .wixfile_table input[type="text"] {
     height: 100%;

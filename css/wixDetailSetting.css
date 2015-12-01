@@ -101,10 +101,6 @@ ul#tab li.active a:hover {
   ----------------------------------------------------------------------------------------------------------*/
 /* 大枠部分 */
 #createdDoc {
-    width: 22%;
-    float: left;
-}
-#createdDoc {
     width: 20%;
     float: left;
 }
@@ -242,37 +238,128 @@ ul#decide_entrys_tab li.active a:hover {
 #decide_entrys_table {
     width: 100%;
 }
-#decide_entrys_table thead, #decide_entrys_table tbody {
-    width: 100%;
-}
-#decide_entrys_table thead #thead_keywords {
-    width: 30%;
-}
-#decide_entrys_table thead #thead_targets {
-    width: 60%;
-}
-#decide_entrys_table thead #thead_default {
-    width: 10%;
-}
 #decide_entrys_table tbody {
     width: 100%;
 }
-#decide_entrys_table tbody tr {
+#tbody_tr {
     width: 100%;
 }
-#decide_entrys_table tbody tr td .decide_entrys_tabbox {
+#tbody_td {
     width: 100%;
 }
-#decide_entrys_table tbody tr td .decide_entrys_tabbox table {
+#decide_entrys_tab1 {
     width: 100%;
 }
-#decide_entrys_table tbody tr td .decide_entrys_tabbox table tr {
+#decide_entrys_tab1_table {
+    width: 100%;
+    /*table-layout: fixed;*/
+}
+#decide_entrys_tab1_table thead {
     width: 100%;
 }
-#add_wixfile {
+.thead_tr {
+    width: 100%;
+}
+.thead_keywords {
+    width: 35%;
+}
+.thead_targets {
+    width: 65%;
+}
+.decide_entrys_tab1_table_tr {
+    width: 100%;
+}
+.decide_entrys_tab1_table_keyword_td {
+    width: 35%;
+}
+.decide_entrys_tab1_table_keyword_span {
+    width: 100%;
+    cursor: pointer;
+    font-weight: bold;
+}
+.decide_entrys_tab1_table_targets_td {
+    width: 65%;
+}
+#decide_entrys_tab1_table_targets_table {
+    width: 100%;
+}
+.decide_entrys_tab1_table_targets_tr {
+    width: 100%;
+}
+.decide_entrys_tab1_table_target_td {
+    width: 93%;
+}
+.decide_entrys_tab1_table_target_a {
+    width: 100%;
+    overflow: auto;
+}
+.decide_entrys_tab1_table_target_radio_td {
+    width: 7%;
+}
+.decide_entrys_tab1_table_target_radio_input {
+    width: 100%;
+    float: right;
+}
+#decide_entrys_tab2 {
+    clear: both;
+    width: 100%;
+}
+#decide_entrys_tab2_table {
+    width: 100%;
+}
+#decide_entrys_tab2_table thead {
+    width: 100%;
+}
+.decide_entrys_tab2_table_tr {
+    width: 100%;
+}
+.decide_entrys_tab2_table_keyword_td {
+    width: 35%;
+}
+.decide_entrys_tab2_table_keyword_span {
+    width: 100%;
+    cursor: pointer;
+}
+.decide_entrys_tab2_table_targets_td {
+    width: 65%;
+}
+#decide_entrys_tab2_table_targets_table {
+    width: 100%;
+}
+.decide_entrys_tab2_table_targets_tr {
+    width: 100%;
+}
+.decide_entrys_tab2_table_target_td {
+    width: 93%;
+}
+.decide_entrys_tab2_table_target_a {
+    width: 100%;
+    overflow: auto;
+}
+.decide_entrys_tab2_table_target_radio_td {
+    width: 7%;
+}
+.decide_entrys_tab2_table_target_radio_input {
+    width: 100%;
+    float: right;
+}
+#decide_entrys_tab1_button, #decide_entrys_tab2_button {
+    width: 33%;
+    float: right;
+    margin-top: 5%;
+    font-size: 8pt;
+    font-weight: bold;
+    background-color: #ff0038;
+    color: #fff;
+    border-style: none;
+}
+#add_decidefile {
     float: right;
     margin-top: 3%;
 }
+
+/* モーダルウィンドウ部分 */
+
 
 /* インラインフレーム部分 */
 #decide_iframe_inline_div {
@@ -304,7 +391,213 @@ ul#decide_entrys_tab li.active a:hover {
     clear: both;
     overflow: auto;
 }
+#created_DecidefileDoc {
+    width: 20%;
+    float: left;
+    /*border : 1px solid orange;*/
+}
+.decidefileDoc_tabbox {
+    display: none;
+    width: 100%;
+}
+#decidefile_latest_contents {
+    width: 34%;
+    height: 100%;
+    float: left;
+    margin-left: 2%;
+    border : 1px solid red;
+}
+#decidefile_iframe {
+    float: left;
+    width: 41%;
+    height: 100%;
+    margin-left: 2.5%;
+}
+#decidefile_history_contents {
+    float: left;
+    width: 41%;
+    height: 30vh;
+    margin-left: 2.5%;
+    margin-top: 1%;
+    border : 1px solid blue;
+}
 
+/* ドキュメントタブ部分*/
+ul#decidefileDoc_tab {
+    zoom: 1;
+    background: #c9c3c4;
+    border-bottom: 3px solid #c81528;
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+    float: left;
+    width: 100%;
+}
+ul#decidefileDoc_tab:after { content:"."; display: block; height:0px; clear:both; line-height:0; visibility:hidden; }
+ul#decidefileDoc_tab li {
+    float: left;
+    text-align: center;
+    margin-bottom: 0px;
+}
+ul#decidefileDoc_tab li:last-child {
+    background: none;
+}
+ul#decidefileDoc_tab li a {
+    display: block;
+    width: 102px;
+    padding: 4px 0;
+    text-decoration: none;
+    color: #222;
+}
+ul#decidefileDoc_tab li a:hover {
+    background: #c95560;
+    color: #fff;
+}
+ul#decidefileDoc_tab li.active,
+ul#decidefileDoc_tab li.active a,
+ul#decidefileDoc_tab li.active a:hover {
+    background: #c81528;
+    color: #fff;
+}
+
+/* ドキュメントリスト部分 */
+#decidefileDoc_list {
+    clear: both;
+    width: 100%;
+    height: 76vh;
+    overflow: auto;
+}
+.decidefileDoc_table {
+    width: 100%;
+    table-layout:fixed;
+}
+.decidefileDoc_table .decidefileDoc_table_heading {
+    text-align: left;
+    width: 100%;
+}
+
+/* 最新Decide情報部分 */
+#decidefile_latest_table {
+    clear: both;
+    width: 100%;
+    height: 80vh;
+    overflow: auto;
+}
+#decidefile_latest_table_thead_tr {
+    width: 100%;
+}
+#decidefile_latest_table_thead_th {
+    width: 100%;
+}
+#decidefile_latest_table_tbody_tr {
+    width: 100%;
+}
+#decidefile_latest_table_tbody_td {
+    width: 100%;
+    vertical-align: top;
+}
+.latest_decide_table {
+    width: 100%;
+}
+.latest_decide_table {
+    width: 100%;
+}
+.latest_decide_tr {
+    width: 100%;
+}
+.latest_decide_keyword_td {
+    width: 20%;
+    font-size: 8pt;
+}
+.latest_decide_target_td {
+    width: 45%;
+}
+.latest_decide_target_td_a {
+    width: 100%;
+    font-size: 8pt;
+}
+.latest_decide_surword_td {
+    width: 35%;
+    font-size: 8pt;
+}
+
+/* インラインフレーム部分 */
+#decidefile_iframe_inline_div {
+    width: 100%;
+    height: 48vh;
+}
+#decidefile_iframe_inline_div #decidefileDoc_iframe {
+    border : 1px solid black;
+    width: 100%;
+    height: 100%;
+    -webkit-transform: scale(1);
+    -webkit-transform-origin: 0 0;
+    -ms-transform: scale(1);
+    -ms-transform-origin: 0 0;
+    -o-transform: scale(1);
+    -o-transform-origin: 0 0;
+    -moz-transform: scale(1);
+    -moz-transform-origin: 0 0;
+}
+
+/* Decide履歴タブ部分 */
+ul#decide_history_tab {
+    zoom: 1;
+    background: #c9c3c4;
+    border-bottom: 3px solid #c81528;
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+    float: left;
+    width: 100%;
+}
+ul#decide_history_tab:after { content:"."; display: block; height:0px; clear:both; line-height:0; visibility:hidden; }
+ul#decide_history_tab li {
+    float: left;
+    text-align: center;
+    margin-bottom: 0px;
+}
+ul#decide_history_tab li:last-child {
+    background: none;
+}
+ul#decide_history_tab li a {
+    display: block;
+    width: 50px;
+    padding: 4px 0;
+    text-decoration: none;
+    color: #222;
+}
+ul#decide_history_tab li a:hover {
+    background: #c95560;
+    color: #fff;
+}
+ul#decide_history_tab li.active,
+ul#decide_history_tab li.active a,
+ul#decide_history_tab li.active a:hover {
+    background: #c81528;
+    color: #fff;
+}
+
+/* Decide履歴タブ部分 */
+.decidefile_settings_form {
+    display: none;
+}
+.update_decidefileButton {
+    display: none;
+}
+
+/* Decide履歴部分 */
+.decide_history_table_input {
+    width: 33%;
+    float: right;
+    margin-top: 5%;
+    margin-right: 2%;
+    font-size: 8pt;
+    font-weight: bold;
+    background-color: #ff0038;
+    color: #fff;
+    border-style: none;
+}
 
 
 /*----------------------------------------------------------------------------------------------------------
@@ -312,7 +605,7 @@ ul#decide_entrys_tab li.active a:hover {
 　　WIX Similarity
 
   ----------------------------------------------------------------------------------------------------------*/
-
+/*
 .left{
     float: left;
     width: 30%;
@@ -390,35 +683,6 @@ ul#decide_entrys_tab li.active a:hover {
 .left table,.left th,.left td,.top table,.top th,.top td, .bottom table,.bottom th,.bottom td{
     font-size:10pt;
 }
-
-/*.main h2,.main h3,.left h4,.right h4,.left h5,.right h5{
-    margin:auto;
-    margin-top:0px;
-    margin-bottom:0px;
-    height:30px;
-    line-height:30px;
-    background-position:top left;
-    background-repeat:no-repeat;
-    overflow: hidden;
-}*/
-
-/*.left h4,.right h4{
-    font-size:8pt;
-    width:100%;
-    text-align:center;
-    vertical-align: bottom;
-    background-image:url(./images/external-link-icons/PNG/aqua/external-link-aqua02-Shapes4FREE.png);
-    background-size: 100%;
-}*/
-/*.left h5,.right h5{
-    font-size:8pt;
-    width:100%;
-    text-align:center;
-    vertical-align: bottom;
-    background-image:url(./image/external-link-icons/PNG/aqua/external-link-aqua02-Shapes4FREE.png);
-    background-size: 100%;
-}*/
-
-
+*/
 
 

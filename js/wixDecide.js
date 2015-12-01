@@ -427,6 +427,7 @@ console.log(json['similarity']);
 													if ( $('#wixDecide_message').length != 0 )
 														 $('#wixDecide_message').remove();
 														
+													$('#wixDecide_message').remove();
 													$('#lost-connection-notice')
 														.before('<div id="wixDecide_message" class="updated below-h2"><p>WIX Decide処理を行いました</p></div>');
 													$('#publish').show();
@@ -434,6 +435,7 @@ console.log(json['similarity']);
 													pop.close(); pop2.close();
 												} else {
 													if ( confirm('Decide処理してませんが、閉じていいですか？') ) {
+														$('#wixDecide_message').remove();
 														$('#lost-connection-notice')
 															.before('<div id="wixDecide_message" class="updated below-h2"><p>WIX Decide処理は行ってません</p></div>');
 														$('#publish').show();

@@ -16,6 +16,7 @@ function new_body( $content, $decideFileArray = '', $decideFlag = false ) {
 	global $start;
 	if( is_preview() == false ) {
 
+		$minLength = intval( get_option( 'minLength', '3' ) );
 		$patternMatching = new patternMatching;
 		$WixID = $patternMatching -> returnWixID();
 			if ( $decideFlag == true ) {
@@ -26,7 +27,7 @@ function new_body( $content, $decideFileArray = '', $decideFlag = false ) {
 				$ch = curl_init();
 				// パラメータ	
 				$data = array(
-				    'minLength' => 3,
+				    'minLength' => $minLength,
 				    'rewriteAnchorText' => 'false',
 				    'bookmarkedWIX' => $WixID,
 				    'body' => mb_convert_encoding($content, 'UTF-8'),
@@ -88,7 +89,7 @@ function new_body( $content, $decideFileArray = '', $decideFlag = false ) {
 					$attachURL = 'http://trezia.db.ics.keio.ac.jp/sakusa_WIXServer_0.3.5/attach';
 					$ch = curl_init();
 					$data = array(
-					    'minLength' => 3,
+					    'minLength' => $minLength,
 					    'rewriteAnchorText' => 'false',
 					    'bookmarkedWIX' => $WixID,
 					    'body' => mb_convert_encoding($content, 'UTF-8'),
@@ -101,7 +102,7 @@ function new_body( $content, $decideFileArray = '', $decideFlag = false ) {
 					$attachURL = 'http://trezia.db.ics.keio.ac.jp/sakusa_WIXServer_0.3.5/attach';
 					$ch = curl_init();
 					$data = array(
-					    'minLength' => 3,
+					    'minLength' => $minLength,
 					    'rewriteAnchorText' => 'false',
 					    'bookmarkedWIX' => $WixID,
 					    'body' => mb_convert_encoding($content, 'UTF-8'),

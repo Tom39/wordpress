@@ -677,9 +677,6 @@ function keyword_location($body) {
 	return $returnValue;
 }
 
-/**
-		[タスク] この時、Decide情報をテーブルに格納する
-**/
 //各ページのDecideファイル作成
 add_action( 'wp_ajax_wix_create_decidefile', 'wix_create_decidefile' );
 add_action( 'wp_ajax_nopriv_wix_create_decidefile', 'wix_create_decidefile' );

@@ -102,6 +102,171 @@ jQuery(function($) {
 	$('input[type=submit]').on('click', function(event) {
 		$(window).off('beforeunload');
 	});
+/***********************************************************************************************************/
+
+			//Setting Form
+	
+	/***********************************************************************************************************/
+	$('#add_patternFile').on('click', function(event) {
+		event.preventDefault();
+		// console.log( $('pattern_filename').children('li').children().eq(0).val() );
+		var new_form = $('#pattern_filename li:last')
+											.clone(true);
+		var form_num = $('#pattern_filename li').length;
+
+		$.each(new_form.children(), function(index, el) {
+			// console.log($(this).val());
+			if ( index == 0 ) 
+				$(this).attr('name', 'pattern['+form_num+']');
+			else if ( index == 1 )
+				$(this).attr('name', 'filename['+form_num+']');
+
+			$(this).val('');
+		});
+		new_form.insertAfter('#pattern_filename li:last');
+	});
+
+	$('#other_option_settings').find('input').on('change', function(event) {
+		event.preventDefault();
+		if ( $(this).attr('id') == 'morphological_analysis_yahoo' ) {
+			var input = $("<input />", {
+				type: 'text',
+				name: 'yahoo_id',
+				id: 'yahoo_id',
+				placeholder: 'Yahoo Develper ID'
+			}).css({
+				'display': 'none'
+			});
+			$(this).next().after(input);
+
+			//もしIDがあるならtextに挿入
+			$('#yahoo_id').ready(function() {
+				var data = {
+					'action': 'wix_contents_option',
+					'contents_option' : 'yahoo_id'
+				};
+				$.ajax({
+					async: true,
+					dataType: "json",
+					type: "POST",
+					url: ajaxurl,
+					data: data,
+
+					success: function(json) {
+						console.log(json['contents_option']);
+						if ( json['contents_option'].length != 0 ) {
+							$('#yahoo_id').val(json['contents_option']);
+						}
+						$('#yahoo_id').show('slow/400/fast', function() {});
+					},
+
+					error: function(xhr, textStatus, errorThrown){
+						alert('wixSetting.js Error');
+					}
+				});
+			});
+			
+
+		} else if ( $(this).attr('id') == 'morphological_analysis_mecab' ) {
+			if ( $('#morphological_analysis_mecab').prevAll('input:text').length != 0 ) {
+				$.each($('#morphological_analysis_mecab').prevAll('input:text'), function(index, el) {
+					$(this).remove();
+				});
+			}
+
+		} else if ( $(this).attr('id') == 'recommend_support_docsim' ) {
+			if ( $('#recommend_support_google').nextAll('input').length != 0 ) {
+				$.each($('#recommend_support_google').nextAll('input:text'), function(index, el) {
+					$(this).remove();
+				});
+			}
+
+		} else if ( $(this).attr('id') == 'recommend_support_google' ) {
+			var input = $("<input />", {
+				type: 'text',
+				name: 'google_api_key',
+				id: 'google_api_key',
+				placeholder: 'Google API Key'
+			}).css({
+				'display': 'none'
+			});
+			var input2 = $("<input />", {
+				type: 'text',
+				name: 'google_cx',
+				id: 'google_cx',
+				placeholder: 'Custom search engine ID'
+			}).css({
+				'display': 'none'
+			});
+
+			$(this).next()
+						.after(input2)
+						.after(input);
+
+			//もしIDがあるならtextに挿入
+			$('#google_api_key').ready(function() {
+				var data = {
+					'action': 'wix_contents_option',
+					'contents_option' : 'google_api_key'
+				};
+				$.ajax({
+					async: true,
+					dataType: "json",
+					type: "POST",
+					url: ajaxurl,
+					data: data,
+
+					success: function(json) {
+						console.log(json['contents_option']);
+						if ( json['contents_option'].length != 0 ) {
+							$('#google_api_key').val(json['contents_option']);
+						}
+						$('#google_api_key').show('slow/400/fast', function() {});
+					},
+
+					error: function(xhr, textStatus, errorThrown){
+						alert('wixSetting.js Error');
+					}
+				});
+			});
+
+			$('#google_cx').ready(function() {
+				var data = {
+					'action': 'wix_contents_option',
+					'contents_option' : 'google_cx'
+				};
+				$.ajax({
+					async: true,
+					dataType: "json",
+					type: "POST",
+					url: ajaxurl,
+					data: data,
+
+					success: function(json) {
+						console.log(json['contents_option']);
+						if ( json['contents_option'].length != 0 ) {
+							$('#google_cx').val(json['contents_option']);
+						}
+						$('#google_cx').show('slow/400/fast', function() {});
+					},
+
+					error: function(xhr, textStatus, errorThrown){
+						alert('wixSetting.js Error');
+					}
+				});
+			});
+		}
+	});
+
+	$('#morphological_analysis_reset, #recommend_support_reset').on('click', function(event) {
+		event.preventDefault();
+		$.each($(this).prevAll('input:radio'), function(index, el) {
+			$(this).prop('checked', false);
+		});
+		$.each($(this).prevAll('input:text'), function(index, el) {
+			$(this).remove();
+		});
+	});
 
 /***********************************************************************************************************/
 
@@ -118,8 +283,11 @@ jQuery(function($) {
 		 $(this).select();
 	});
 
+
 	//WIXFileコンテンツの"編集"イベント
-	$('.wixfile_entry_edit').click(function() {
+	$('.wixfile_entry_edit').click(function(event) {
+		if ( $(this).parent('tr').attr('id') == 'wixfile_ex_entry0' ) return false;
+
 		$(this)
 			.parent()
 			.hide()
@@ -305,6 +473,8 @@ jQuery(function($) {
 
 	//WIXFileコンテンツの"削除"イベント
 	$('.wixfile_entry_delete').click(function(event) {
+		if ( $(this).parent('tr').attr('id') == 'wixfile_ex_entry0' ) return false;
+		
 		var content = '';
 		$.each($(this).nextAll(), function(index, el) {
 			if ( index == 0 )
@@ -1361,22 +1531,33 @@ jQuery(function($) {
 					// }
 				}
 			}
-			console.log('subjectTableは');
+			console.log('subjectTableは↓');
 			console.log(subjectTable);
+
+
+			//現在隠してあるエントリ要素取得
+			var existingEntry_lastElement = subjectTable.find('tr:last');
 
 			//現在の最後のエントリ要素取得
 			var existingEntry_lastElement = subjectTable.find('tr:last');
 			console.log( '最後尾のエントリは' );
 			console.log( existingEntry_lastElement.attr('id') );
 
-			//挿入エントリに使用するNewIDを作成
-			var newId = parseInt(existingEntry_lastElement
-									.attr('id')
-									.substr('wixfile_entry_hidden'.length) )
-									+ 1;
-			var newClass = '';
-			if ( newId % 2 == 0 ) newClass = 'wixfile_even';
-			else newClass = 'wixfile_odd';
+			if ( existingEntry_lastElement.attr('id') == 'wixfile_ex_entry_hidden0' ) {
+				//挿入エントリに使用するNewIDを作成
+				var newId = 0;
+				var newClass = 'wixfile_even';		
+
+			} else {
+				//挿入エントリに使用するNewIDを作成
+				var newId = parseInt(existingEntry_lastElement
+										.attr('id')
+										.substr('wixfile_entry_hidden'.length) )
+										+ 1;
+				var newClass = '';
+				if ( newId % 2 == 0 ) newClass = 'wixfile_even';
+				else newClass = 'wixfile_odd';
+			}
 
 			//現在の最後尾エントリ要素を複製し調整
 			var newHiddenElement = existingEntry_lastElement
@@ -1433,7 +1614,6 @@ jQuery(function($) {
 					}
 				}
 			});
-
 
 			if ( tmp_subjectTable.find('tr').size() != 0 ) {
 				//もし最後尾タブが20エントリ(hidden含め40)で一杯だったら、新規タブを作ってそこに挿入
@@ -1765,6 +1945,11 @@ jQuery(function($) {
 									.after( newHiddenElement )
 									.after( newElement );
 				}
+			}
+
+			if ( existingEntry_lastElement.attr('id') == 'wixfile_ex_entry_hidden0' ) {
+				existingEntry_lastElement.prev().remove();
+				existingEntry_lastElement.remove();
 			}
 
 			//エントリ挿入フォームを空にする

@@ -1,194 +1,5 @@
 <?php
 
-//--------------------------------------------------------------------------
-//
-//  プラグイン有効の際に行うオプションの追加
-//
-//--------------------------------------------------------------------------
-register_activation_hook( __FILE__, 'wix_manual_decide_init' );
-function wix_manual_decide_init() {
-	// update_option( 'manual_decideFlag', 'true' );
-	add_option( 'manual_decideFlag', 'true' );
-}
-
-//--------------------------------------------------------------------------
-//
-//  プラグイン有効の際に行うオプションの追加
-//
-//--------------------------------------------------------------------------
-register_activation_hook( __FILE__, 'wix_table_create' );
-function wix_table_create() {
-	global $wpdb;
-	require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-
-	$table_name = $wpdb->prefix . 'wix_keyword_similarity';
-	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "CREATE TABLE " . $table_name . " (
-	         doc_id bigint(20) UNSIGNED,
-		     keyword tinytext NOT NULL,
-		     tf float NOT NULL DEFAULT 0,
-		     idf float NOT NULL DEFAULT 0,
-		     tf_idf float NOT NULL DEFAULT 0,
-		     bm25 float NOT NULL DEFAULT 0,
-		     textrank float NOT NULL DEFAULT 0,
-		     PRIMARY KEY(doc_id,keyword(255)),
-		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
-		     ON UPDATE CASCADE ON DELETE CASCADE
-	        );";
-	dbDelta($sql);
-
-
-	$table_name = $wpdb->prefix . 'wix_document_similarity';
-	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "CREATE TABLE " . $table_name . " (
-	         doc_id bigint(20) UNSIGNED,
-		     doc_id2 bigint(20) UNSIGNED,
-		     cos_similarity_tfidf float NOT NULL DEFAULT 0,
-		     cos_similarity_bm25 float NOT NULL DEFAULT 0,
-		     jaccard float NOT NULL DEFAULT 0,
-		     minhash float NOT NULL DEFAULT 0,
-		     PRIMARY KEY(doc_id,doc_id2),
-		     FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
-		      ON UPDATE CASCADE ON DELETE CASCADE,
-		     FOREIGN KEY (doc_id2) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
-		      ON UPDATE CASCADE ON DELETE CASCADE
-	        );";
-	dbDelta($sql);
-
-
-	$table_name = $wpdb->prefix . 'wixfilemeta';
-	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "CREATE TABLE " . $table_name . " (
-			id bigint(20) NOT NULL, 
-			keyword tinytext NOT NULL, 
-			target_num mediumint(9) NOT NULL, 
-			doc_num mediumint(9) NOT NULL, 
-			PRIMARY KEY id (id)
-			);";
-	dbDelta($sql);
-
-
-	$table_name = $wpdb->prefix . 'wixfile_targets';
-	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "CREATE TABLE " . $table_name . " (
-			keyword_id bigint(20) NOT NULL, 
-			target tinytext NOT NULL, 
-			PRIMARY KEY(keyword_id, target(255)), 
-			FOREIGN KEY (keyword_id) REFERENCES wp_wixfilemeta(id) ON UPDATE CASCADE ON DELETE CASCADE
-			);";
-	dbDelta($sql);
-
-
-	$table_name = $wpdb->prefix . 'wixfilemeta_posts';
-	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "CREATE TABLE " . $table_name . " (
-			keyword_id bigint(20) NOT NULL, 
-			doc_id bigint(20) UNSIGNED NOT NULL, 
-			context_info TEXT,
-			time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, 
-			PRIMARY KEY(keyword_id, doc_id), 
-			FOREIGN KEY (keyword_id) REFERENCES wp_wixfilemeta(id) 
-				ON UPDATE CASCADE ON DELETE CASCADE, 
-			FOREIGN KEY (doc_id) REFERENCES wp_posts(ID) 
-				ON UPDATE CASCADE ON DELETE CASCADE
-			);";
-	dbDelta($sql);
-
-
-	$table_name = $wpdb->prefix . 'wix_minhash';
-	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "CREATE TABLE " . $table_name . " (
-			doc_id bigint(20) UNSIGNED NOT NULL, 
-			minhash TEXT NOT NULL, 
-			PRIMARY KEY(doc_id), 
-			FOREIGN KEY (doc_id) REFERENCES wp_posts(ID)
-			 ON UPDATE CASCADE ON DELETE CASCADE
-			);";
-	dbDelta($sql);
-
-
-	$table_name = $wpdb->prefix . 'wix_decidefile_index';
-	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "CREATE TABLE " . $table_name . " (
-			dfile_id bigint(20) auto_increment, 
-			doc_id bigint(20) UNSIGNED NOT NULL, 
-			version bigint(20) NOT NULL, 
-			time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, 
-			PRIMARY KEY(dfile_id), 
-			FOREIGN KEY(doc_id) REFERENCES wp_posts(ID) 
-				ON UPDATE CASCADE ON DELETE CASCADE
-			);";
-	dbDelta($sql);
-
-
-	$table_name = $wpdb->prefix . 'wix_decidefile_history';
-	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "CREATE TABLE " . $table_name . " (
-			dfile_id bigint(20) NOT NULL, 
-			start bigint(20) NOT NULL, 
-			end bigint(20) NOT NULL, 
-			nextStart bigint(20) NOT NULL, 
-			keyword_id bigint(20) NOT NULL, 
-			target tinytext NOT NULL, 
-			PRIMARY KEY(dfile_id, start), 
-			FOREIGN KEY(dfile_id) REFERENCES wp_wix_decidefile_index(dfile_id) 
-				ON UPDATE CASCADE ON DELETE CASCADE, 
-			FOREIGN KEY(keyword_id) REFERENCES wp_wixfilemeta(id) 
-				ON UPDATE CASCADE ON DELETE CASCADE
-			);";
-	dbDelta($sql);
-
-
-	$table_name = $wpdb->prefix . 'wix_entry_ranking';
-	$is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "CREATE TABLE " . $table_name . " (
-			doc_id bigint(20) UNSIGNED NOT NULL, 
-			keyword_id bigint(20) NOT NULL, 
-			target tinytext NOT NULL, 
-			rank int(20) NOT NULL DEFAULT 0, 
-			PRIMARY KEY(doc_id, keyword_id, target(100)), 
-			FOREIGN KEY (doc_id) REFERENCES wp_posts(ID)
-			 ON UPDATE CASCADE ON DELETE CASCADE, 
-			FOREIGN KEY (keyword_id) REFERENCES wp_wixfilemeta(id)
-			 ON UPDATE CASCADE ON DELETE CASCADE
-			);";
-	dbDelta($sql);
-
-
-
-	$table_name = $wpdb->prefix . 'posts';
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "ALTER TABLE " . $table_name . " ADD COLUMN doc_length bigint DEFAULT 0 NOT NULL;";
-	dbDelta($sql);
-
-	$table_name = $wpdb->prefix . 'posts';
-	if ( $is_db_exists == $table_name ) return;
-	$sql = "ALTER TABLE " . $table_name . " ADD COLUMN words_obj text NOT NULL;";
-	dbDelta($sql);
-
-}
-
-//--------------------------------------------------------------------------
-//
-//  プラグイン削除の際に行うオプションの削除
-//
-//--------------------------------------------------------------------------
-register_deactivation_hook(__FILE__, 'wix_uninstall_hook');
-function wix_uninstall_hook () {
-    delete_option('manual_decideFlag');
-}
-
-
-
 /* 設定部分 */
 add_action( 'admin_init', 'wix_settings_core' );
 function wix_settings_core() {
@@ -222,12 +33,17 @@ function wix_settings_core() {
 						// stripslashesでアンエスケープ
 						file_put_contents( PatternFile, $hostName, FILE_USE_INCLUDE_PATH | LOCK_EX );
 
-						foreach ( $_POST['pattern'] as $key => $pattern ) {
-							foreach ($wids_filenames as $wid => $filename) {
-								if ( $filename == $_POST['filename'][$key] ) {
-									$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . $wid . "\n";
-									file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
-									break;
+						if ( empty($wids_filenames) ) {
+							$pattern_filename = "\t" . stripslashes('/*') . ' : 0' . "\n";
+							file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
+						} else {
+							foreach ( $_POST['pattern'] as $key => $pattern ) {
+								foreach ($wids_filenames as $wid => $filename) {
+									if ( $filename == $_POST['filename'][$key] ) {
+										$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . $wid . "\n";
+										file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
+										break;
+									}
 								}
 							}
 						}
@@ -237,12 +53,82 @@ function wix_settings_core() {
 						file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
 					}
 
+					if ( isset( $_POST['minLength'] ) && $_POST['minLength'] ) {
+						add_option( 'minLength', $_POST['minLength'] );
+					} else {
+						add_option( 'minLength', '3' );
+					}
+
+					//WIXファイル系
+					if ( isset( $_POST['wixfile_autocreate'] ) && $_POST['wixfile_autocreate'] ) {
+						if ( $_POST['wixfile_autocreate'] == 'true' )
+							add_option( 'wixfile_autocreate', 'true' );
+						else
+							add_option( 'wixfile_autocreate', 'false' );
+					}
+					if ( isset( $_POST['wixfile_manualupdate'] ) && $_POST['wixfile_manualupdate'] ) {
+						if ( $_POST['wixfile_manualupdate'] == 'true' )
+							add_option( 'wixfile_manualupdate', 'true' );
+						else
+							add_option( 'wixfile_manualupdate', 'false' );
+					}
+	
+
+					//Decideファイル系
+					if ( isset( $_POST['decidefile_apply'] ) && $_POST['decidefile_apply'] ) {
+						if ( $_POST['decidefile_apply'] == 'true' )
+							add_option( 'decidefile_apply', 'true' );
+						else
+							add_option( 'decidefile_apply', 'false' );
+					}
+					if ( isset( $_POST['decidefile_autocreate'] ) && $_POST['decidefile_autocreate'] ) {
+						if ( $_POST['decidefile_autocreate'] == 'true' )
+							add_option( 'decidefile_autocreate', 'true' );
+						else
+							add_option( 'decidefile_autocreate', 'false' );
+					}
 					if ( isset( $_POST['decidefile_manualupdate'] ) && $_POST['decidefile_manualupdate'] ) {
 						if ( $_POST['decidefile_manualupdate'] == 'true' )
 							add_option( 'manual_decide', 'true' );
 						else 
 							add_option( 'manual_decide', 'false' );
 					}
+
+					//その他系
+					if ( isset($_POST['morphological_analysis']) && $_POST['morphological_analysis'] ) {
+						if ( $_POST['morphological_analysis'] == 'Yahoo' ) {
+							if ( !empty($_POST['yahoo_id']) ) {
+								if ( get_option('morphological_analysis') == false ) 
+									add_option( 'morphological_analysis', $_POST['morphological_analysis'] );	
+
+								if ( get_option('yahoo_id') == false ) 
+									add_option( 'yahoo_id', $_POST['yahoo_id'] );	
+							}
+
+						} else if ( $_POST['morphological_analysis'] == 'Mecab' ) {
+							if ( get_option('morphological_analysis') == false ) 
+								add_option( 'morphological_analysis', $_POST['morphological_analysis'] );	
+						}
+					}
+
+					if ( isset($_POST['recommend_support']) && $_POST['recommend_support'] ) {
+						if ( $_POST['recommend_support'] == 'ドキュメント類似度' ) {
+							if ( get_option('recommend_support') == false ) 
+									add_option( 'recommend_support', $_POST['recommend_support'] );	
+
+						} else if ( $_POST['recommend_support'] == 'Google検索' ) {
+							if ( !empty($_POST['google_api_key']) && !empty($_POST['google_cx']) ) {
+								if ( get_option('recommend_support') == false ) 
+									add_option( 'recommend_support', $_POST['recommend_support'] );	
+
+								if ( get_option('google_api_key') == false ) 
+									add_option( 'google_api_key', $_POST['google_api_key'] );	
+								if ( get_option('google_cx') == false ) 
+									add_option( 'google_cx', $_POST['google_cx'] );	
+							}
+						}
+					}
+					
 
 					set_transient( 'wix_init_settings', '初期設定完了しました', 10 );
 
@@ -264,57 +150,148 @@ function wix_settings_core() {
 
 			if ( isset( $_POST['wix_settings'] ) && $_POST['wix_settings'] ) {
 
-				// if ( isset( $_POST['pattern'] ) && $_POST['pattern'] && isset( $_POST['filename'] ) && $_POST['filename'] ) {
+				//初期設定系
+				if ( isset( $_POST['pattern'] ) && $_POST['pattern'] && isset( $_POST['filename'] ) && $_POST['filename'] ) {
+					$hostName = '<' . get_option( 'wix_host_name' ) . '>' . "\n";
 
-				// 	$hostName = '<' . get_option( 'wix_host_name' ) . '>' . "\n";
+					file_put_contents( PatternFile, $hostName, FILE_USE_INCLUDE_PATH | LOCK_EX );
 
-				// 	file_put_contents( PatternFile, $hostName, FILE_USE_INCLUDE_PATH | LOCK_EX );
+					if ( empty($wids_filenames) ) {
+						foreach ( $_POST['pattern'] as $key => $pattern ) {
+							$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . 0 . "\n";
+							file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
+						}
 
-				// 	foreach ( $_POST['pattern'] as $key => $pattern ) {
-				// 		foreach ($wids_filenames as $wid => $filename) {
-				// 			if ( $filename == $_POST['filename'][$key] ) {
-				// 				$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . $wid . "\n";
-				// 				file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
-				// 				break;
-				// 			}
-				// 		}
-				// 	}
+					} else {
+						foreach ( $_POST['pattern'] as $key => $pattern ) {
+							foreach ($wids_filenames as $wid => $filename) {
+								if ( $filename == $_POST['filename'][$key] ) {
+									$pattern_filename = "\t" . stripslashes($pattern) . ' : ' . $wid . "\n";
+									file_put_contents( PatternFile, $pattern_filename, FILE_APPEND | LOCK_EX );
+									break;
+								}
+							}
+						}
+					}
+				}
+				if ( isset( $_POST['minLength'] ) && $_POST['minLength'] ) {
+					if ( get_option('minLength') == false ) 
+						add_option( 'minLength', $_POST['minLength'] );
+					update_option( 'minLength', $_POST['minLength'] );
+				}
 
-				// 	set_transient( 'wix_settings', '設定更新しました', 10 );
-				// }
 
 				//WIXファイル系
 				if ( isset( $_POST['wixfile_autocreate'] ) && $_POST['wixfile_autocreate'] ) {
-					if ( $_POST['wixfile_autocreate'] == 'true' )
+					if ( $_POST['wixfile_autocreate'] == 'true' ) {
+						if ( get_option('wixfile_autocreate') == false ) 
+							add_option( 'wixfile_autocreate', 'true' );
 						update_option( 'wixfile_autocreate', 'true' );
-					else
+					} else {
+						if ( get_option('wixfile_autocreate') == false ) 
+							add_option( 'wixfile_autocreate', 'false' );
 						update_option( 'wixfile_autocreate', 'false' );
+					}
 				}
 				if ( isset( $_POST['wixfile_manualupdate'] ) && $_POST['wixfile_manualupdate'] ) {
-					if ( $_POST['wixfile_manualupdate'] == 'true' )
+					if ( $_POST['wixfile_manualupdate'] == 'true' ) {
+						if ( get_option('wixfile_manualupdate') == false ) 
+							add_option( 'wixfile_manualupdate', 'true' );
 						update_option( 'wixfile_manualupdate', 'true' );
-					else
+					} else {
+						if ( get_option('wixfile_manualupdate') == false ) 
+							add_option( 'wixfile_manualupdate', 'false' );
 						update_option( 'wixfile_manualupdate', 'false' );
+					}
 				}
 
 				//Decideファイル系
 				if ( isset( $_POST['decidefile_apply'] ) && $_POST['decidefile_apply'] ) {
-					if ( $_POST['decidefile_apply'] == 'true' )
+					if ( $_POST['decidefile_apply'] == 'true' ) {
+						if ( get_option('decidefile_apply') == false ) 
+							add_option( 'decidefile_apply', 'true' );
 						update_option( 'decidefile_apply', 'true' );
-					else
+					} else {
+						if ( get_option('decidefile_apply') == false ) 
+							add_option( 'decidefile_apply', 'false' );
 						update_option( 'decidefile_apply', 'false' );
+					}
 				}
 				if ( isset( $_POST['decidefile_autocreate'] ) && $_POST['decidefile_autocreate'] ) {
-					if ( $_POST['decidefile_autocreate'] == 'true' )
+					if ( $_POST['decidefile_autocreate'] == 'true' ) {
+						if ( get_option('decidefile_autocreate') == false ) 
+							add_option( 'decidefile_autocreate', 'true' );
 						update_option( 'decidefile_autocreate', 'true' );
-					else
+					} else {
+						if ( get_option('decidefile_autocreate') == false ) 
+							add_option( 'decidefile_autocreate', 'false' );
 						update_option( 'decidefile_autocreate', 'false' );
+					}
 				}
 				if ( isset( $_POST['decidefile_manualupdate'] ) && $_POST['decidefile_manualupdate'] ) {
-					if ( $_POST['decidefile_manualupdate'] == 'true' )
+					if ( $_POST['decidefile_manualupdate'] == 'true' ) {
+						if ( get_option('manual_decide') == false ) 
+							add_option( 'manual_decide', 'true' );
 						update_option( 'manual_decide', 'true' );
-					else 
+					} else {
+						if ( get_option('manual_decide') == false ) 
+							add_option( 'manual_decide', 'false' );
 						update_option( 'manual_decide', 'false' );
+					}
+				}
+
+				//その他系
+				if ( isset($_POST['morphological_analysis']) && $_POST['morphological_analysis'] ) {
+					if ( $_POST['morphological_analysis'] == 'Yahoo' ) {
+						if ( !empty($_POST['yahoo_id']) ) {
+							if ( get_option('morphological_analysis') == false ) 
+								add_option( 'morphological_analysis', $_POST['morphological_analysis'] );	
+							update_option( 'morphological_analysis', $_POST['morphological_analysis'] );
+
+							if ( get_option('yahoo_id') == false ) 
+								add_option( 'yahoo_id', $_POST['yahoo_id'] );	
+							update_option( 'yahoo_id', $_POST['yahoo_id'] );
+						}
+
+					} else if ( $_POST['morphological_analysis'] == 'Mecab' ) {
+						if ( get_option('morphological_analysis') == false ) 
+							add_option( 'morphological_analysis', $_POST['morphological_analysis'] );	
+						update_option( 'morphological_analysis', $_POST['morphological_analysis'] );
+
+					} else {
+						delete_option( 'morphological_analysis' );
+					}
+
+				} else {
+					delete_option( 'morphological_analysis' );
+				}
+
+				if ( isset($_POST['recommend_support']) && $_POST['recommend_support'] ) {
+					if ( $_POST['recommend_support'] == 'ドキュメント類似度' ) {
+						if ( get_option('recommend_support') == false ) 
+								add_option( 'recommend_support', $_POST['recommend_support'] );	
+							update_option( 'recommend_support', $_POST['recommend_support'] );
+
+					} else if ( $_POST['recommend_support'] == 'Google検索' ) {
+						if ( !empty($_POST['google_api_key']) && !empty($_POST['google_cx']) ) {
+							if ( get_option('recommend_support') == false ) 
+								add_option( 'recommend_support', $_POST['recommend_support'] );	
+							update_option( 'recommend_support', $_POST['recommend_support'] );
+
+							if ( get_option('google_api_key') == false ) 
+								add_option( 'google_api_key', $_POST['google_api_key'] );	
+							update_option( 'google_api_key', $_POST['google_api_key'] );
+							if ( get_option('google_cx') == false ) 
+								add_option( 'google_cx', $_POST['google_cx'] );	
+							update_option( 'google_cx', $_POST['google_cx'] );
+
+						}
+					} else {
+						delete_option( 'recommend_support' );
+					}
+
+				} else {
+					delete_option( 'recommend_support' );
 				}
 
 				set_transient( 'wix_settings', '設定更新しました', 10 );
@@ -810,6 +787,89 @@ function wixfile_settings_core() {
 	}
 }
 
+add_action( 'admin_init', 'wix_decidefile_update_core' );
+function wix_decidefile_update_core() {
+	global $wpdb;
+
+	if ( isset( $_POST['nonce_decidefile_settings'] ) && $_POST['nonce_decidefile_settings'] ) {
+		if ( check_admin_referer( 'my-nonce-key', 'nonce_decidefile_settings' ) ) {
+
+			$e = new WP_Error();
+
+			if ( isset( $_POST['decidefile_settings'] ) && $_POST['decidefile_settings'] ) {
+
+				if ( isset( $_POST['update_decidefileInfo'] ) && $_POST['update_decidefileInfo'] ) {
+					
+					$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+					$wix_decidefile_index = $wpdb->prefix . 'wix_decidefile_index';
+					$wix_decidefile_history = $wpdb->prefix . 'wix_decidefile_history';
+
+					$doc_id = $_POST['update_decidefileInfo'][0];
+					$version = $_POST['update_decidefileInfo'][1];
+					$version = substr($version, strlen('ver.') );
+
+					//最新版に昇格するDecide情報
+					$sql = 'SELECT dfile_id, start, end, nextStart, keyword_id, keyword, target FROM ' . 
+								$wixfilemeta . ' wf, ' . $wix_decidefile_history . 
+								' wdh WHERE wf.id=wdh.keyword_id AND wdh.dfile_id = (SELECT dfile_id FROM wp_wix_decidefile_index WHERE doc_id=' . 
+								$doc_id . ' AND version=' . $version . ')';
+					$updateObj = $wpdb->get_results($sql);
+
+					//まずindexに挿入
+					$version++;
+					$sql = 'INSERT INTO ' . $wix_decidefile_index . '(doc_id, version) VALUES (' . $doc_id . ', ' . $version . ')';   ;
+					dump('dump.txt', $sql);
+					$wpdb->query( $sql );
+
+					//続いて上で挿入したメタ情報のdfile_id(最新dfile_id)を取ってくる
+					$sql = 'SELECT dfile_id FROM ' . $wix_decidefile_index . ' ORDER BY dfile_id DESC LIMIT 1';
+					dump('dump.txt', $sql);
+					$dfile_idObj = $wpdb->get_results($sql);
+					$dfile_id = $dfile_idObj[0]->dfile_id;
+
+					//DB & ファイル形式のDecide情報をアップデート
+					$dirname = dirname( __FILE__ ) . '/WIXDecideFiles/';
+					if ( file_exists($dirname . $doc_id . '.txt') )
+						unlink($dirname . $doc_id . '.txt');
+
+					foreach ($updateObj as $index => $value) {
+						$start = $value->start;
+						$end = $value->end;
+						$nextStart = $value->nextStart;
+						$keyword_id = $value->keyword_id;
+						$keyword = $value->keyword;
+						$target = $value->target;
+
+						//最新Decide情報を挿入
+						$sql = 'INSERT INTO ' . $wix_decidefile_history . 
+								'(dfile_id, start, end, nextStart, keyword_id, target) VALUES (' . 
+									$dfile_id . ', ' . $start . ', ' . $end . ', ' . 
+									$nextStart . ', ' . $keyword_id . ', "' . $target .'")';
+						dump('dump.txt', $sql);
+						$wpdb->query( $sql );
+
+						//ファイルへと挿入
+						$line = 'start:' . $start . ',end:' . $end . ',nextStart:' . $nextStart . ',keyword:' . $keyword . ',target:' . $target . "\n";
+						file_put_contents( $dirname . $doc_id . '.txt', $line, FILE_APPEND | LOCK_EX );
+					}
+
+
+					/**
+					最新版にした情報の、既DB情報を消さなきゃいけないけど、メンドクサクテ...
+					*/
+
+					set_transient( 'decidefile_settings', 'Decideファイル履歴更新しました', 10 );
+					
+				}
+			}
+		} else {
+			$e -> add('error', __( 'Please entry one more', 'decidefile_settings' ) );
+			set_transient( 'decidefile_settings_errors', $e->get_error_message(), 10 );
+		}
+	}
+
+}
+
 //WIXファイルに挿入が行われた時の、「WIXファイル内キーワードが出現するドキュメント」を表すテーブルをupdate
 function wixfilemeta_posts_insert( $array ) {
 	var_dump( $array );
@@ -1150,7 +1210,7 @@ function wix_setting_decideBody() {
 
 	$json = array(
 		"html" => $decide_body,
-		// "test" => $body,
+		"innerLinkArray" => $innerLinkArray,
 	);
 
 	echo json_encode( $json );
@@ -1174,35 +1234,361 @@ function wix_existing_decidefile_presentation() {
 	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
 	$wix_decidefile_index = $wpdb->prefix . 'wix_decidefile_index';
 	$wix_decidefile_history = $wpdb->prefix . 'wix_decidefile_history';
-	
-	//まずDecideファイル情報があるかチェックかつ、最新版のdfile_idを取ってくる
-	$sql = 'SELECT * FROM ' . $wix_decidefile_index . ' WHERE doc_id=' . $doc_id . ' ORDER BY version DESC LIMIT 1';
-	$decideObj = $wpdb->get_results($sql);
-	if ( !empty($decideObj) ) {
-		$dfile_id = $decideObj[0]->dfile_id;
 
-		$sql = 'SELECT start, end, nextStart, keyword, wdh.target, (CASE WHEN p.guid=wdh.target then post_content ELSE wdh.target END) AS title FROM ' . $wpdb->posts . ' p, ' . $wix_decidefile_history . ' wdh, ' . $wixfilemeta . ' wm WHERE wdh.dfile_id=' . $dfile_id . ' AND wm.id=wdh.keyword_id AND p.ID=' . $doc_id;
-		$decideFileInfo = $wpdb->get_results($sql);
+	if ( isset( $_POST['tab'] ) && $_POST['tab'] )
+		$tab = $_POST['tab'];
 
-		foreach ($decideFileInfo as $index => $value) {
-			$returnValue[$value->start] = [
-											'end' => $value->end, 
-											'keyword' => $value->keyword, 
-											'target' => $value->target,
-											'nextStart' => $value->nextStart,
-											'title' => $value->title
-											];
+
+	if ( !isset($tab) ) {
+		//まずDecideファイル情報があるかチェックかつ、最新版のdfile_idを取ってくる
+		$sql = 'SELECT * FROM ' . $wix_decidefile_index . ' WHERE doc_id=' . $doc_id . ' ORDER BY version DESC LIMIT 1';
+		$decideObj = $wpdb->get_results($sql);
+		if ( !empty($decideObj) ) {
+			$dfile_id = $decideObj[0]->dfile_id;
+
+			$sql = 'SELECT start, end, nextStart, keyword, wdh.target, (CASE WHEN p.guid=wdh.target then post_content ELSE wdh.target END) AS title FROM ' . 
+						$wpdb->posts . ' p, ' . $wix_decidefile_history . ' wdh, ' . $wixfilemeta . 
+						' wm WHERE wdh.dfile_id=' . $dfile_id . ' AND wm.id=wdh.keyword_id AND p.ID=' . $doc_id;
+			$decideFileInfo = $wpdb->get_results($sql);
+
+			foreach ($decideFileInfo as $index => $value) {
+				$returnValue[$value->start] = [
+												'end' => $value->end, 
+												'keyword' => $value->keyword, 
+												'target' => $value->target,
+												'nextStart' => $value->nextStart,
+												'title' => $value->title
+												];
+			}
 		}
+
+		$json = array(
+			"latest_decideinfo" => $returnValue,
+		);
+
+	} else {
+		//まずDecideファイル情報があるかチェックかつ、最新版のdfile_idを取ってくる
+		$sql = 'SELECT * FROM ' . $wix_decidefile_index . ' WHERE doc_id=' . $doc_id . ' ORDER BY version DESC LIMIT 1';
+		$decideObj = $wpdb->get_results($sql);
+		if ( !empty($decideObj) ) {
+			$dfile_id = $decideObj[0]->dfile_id;
+
+			$sql = 'SELECT start, end, nextStart, keyword, wdh.target, (CASE WHEN p.guid=wdh.target then post_content ELSE wdh.target END) AS title FROM ' . 
+						$wpdb->posts . ' p, ' . $wix_decidefile_history . ' wdh, ' . $wixfilemeta . 
+						' wm WHERE wdh.dfile_id=' . $dfile_id . ' AND wm.id=wdh.keyword_id AND p.ID=' . $doc_id;
+			$decideFileInfo = $wpdb->get_results($sql);
+
+			foreach ($decideFileInfo as $index => $value) {
+				$returnValue[$value->start] = [
+												'end' => $value->end, 
+												'keyword' => $value->keyword, 
+												'target' => $value->target,
+												'nextStart' => $value->nextStart,
+												'title' => $value->title
+												];
+			}
+		}
+
+		$sql = 'SELECT post_content FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
+		$bodyObj = $wpdb->get_results($sql);
+		$body = strip_tags( wpautop($bodyObj[0]->post_content) );
+
+		$json = array(
+			"latest_decideinfo" => $returnValue,
+			"body" => $body,
+		);
 	}
 
+	echo json_encode( $json );
+
+	
+    die();
+}
+
+//該当ドキュメントのDecide情報履歴を提示
+add_action( 'wp_ajax_wix_decidefile_history', 'wix_decidefile_history' );
+add_action( 'wp_ajax_nopriv_wix_decidefile_history', 'wix_decidefile_history' );
+function wix_decidefile_history() {
+	global $wpdb;
+	$returnValue = array();
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$doc_id = $_POST['doc_id'];
+
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wix_decidefile_index = $wpdb->prefix . 'wix_decidefile_index';
+	$wix_decidefile_history = $wpdb->prefix . 'wix_decidefile_history';
+
+
+	$sql = 'SELECT * FROM ' . $wix_decidefile_index . ' WHERE doc_id=' . $doc_id;
+	$decideObj = $wpdb->get_results($sql);
+	if ( !empty($decideObj) ) {
+		$sql = 'SELECT post_content FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
+		$bodyObj = $wpdb->get_results($sql);
+		$body = strip_tags( wpautop($bodyObj[0]->post_content) );
+
+		foreach ($decideObj as $index => $valueArray) {
+			$dfile_id = $valueArray->dfile_id;
+
+			$sql = 'SELECT start, end, nextStart, keyword, wdh.target, (CASE WHEN p.guid=wdh.target then post_content ELSE wdh.target END) AS title, time FROM ' . 
+						$wpdb->posts . ' p, ' . $wix_decidefile_history . ' wdh, ' . $wixfilemeta . ' wm, ' . $wix_decidefile_index . 
+						' wdi WHERE wdh.dfile_id=' . $dfile_id . ' AND wdi.dfile_id=' . $dfile_id . ' AND wm.id=wdh.keyword_id AND p.ID=' . $doc_id . ' ORDER BY start ASC';
+
+			$decideFileInfo = $wpdb->get_results($sql);
+			$time;
+			$tmpArray = array();
+			foreach ($decideFileInfo as $i => $value) {
+				$start = $value->start;
+				$tmpArray[$start] = array(
+												'end' => $value->end, 
+												'keyword' => $value->keyword, 
+												'target' => $value->target,
+												'nextStart' => $value->nextStart,
+												'title' => $value->title
+											);
+				$time = $value->time;
+			}
+
+			$returnValue[$valueArray->version] = array(
+														'body' => $body,
+														'time' => $time,
+														'decideInfo' => $tmpArray
+													);
+
+		}
+
+	}
+	
+
+
 	$json = array(
-		"latest_decideinfo" => $returnValue,
+		"decideinfo" => $returnValue,
 	);
 
 	echo json_encode( $json );
 
 	
     die();
+}
+
+//WIX Detail Settingsにおける手動Decide処理用body
+add_action( 'wp_ajax_wix_setting_createDecidefile', 'wix_setting_createDecidefile' );
+add_action( 'wp_ajax_nopriv_wix_setting_createDecidefile', 'wix_setting_createDecidefile' );
+function wix_setting_createDecidefile() {
+	global $wpdb;
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	if ( isset( $_POST['defaultLinkArray'] ) && $_POST['defaultLinkArray'] )
+		$defaultLinkArray = $_POST['defaultLinkArray'];
+
+	if ( isset( $_POST['decideLinkArray'] ) && $_POST['decideLinkArray'] )
+		$decideLinkArray = $_POST['decideLinkArray'];
+
+
+	if ( isset($defaultLinkArray) && !empty($defaultLinkArray) ) {
+		foreach ($defaultLinkArray as $doc_id => $valueArray) {
+			$sql = 'SELECT post_content FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
+			$docObj = $wpdb->get_results($sql);
+			$body = strip_tags( wpautop($docObj[0]->post_content) );
+
+			//対象ドキュメントにおけるキーワード全位置情報
+			$innerLinkArray = keyword_location( $body );
+
+			$decidefileArray = array();
+			foreach ($innerLinkArray as $start => $array) {
+				$keyword = $array['keyword'][0];
+				$end = $array['end'][0];
+				$nextStart = $array['nextStart'][0];
+
+				foreach ($valueArray as $keyword_id => $ar) {
+					$tmp_keyword = $ar['keyword'];
+
+					if ( $keyword == $tmp_keyword ) {
+						$target = $ar['target'];
+						$decidefileArray[$start] = array(
+															'keyword' => $keyword,
+															'end' => $end,
+															'nextStart' => $nextStart,
+															'target' => $target,
+														);
+					}
+				}
+			}
+
+			// dump('dump.txt', $decidefileArray);
+
+			if ( isset($decideLinkArray) && !empty($decideLinkArray) ) {
+				foreach ($decideLinkArray as $doc_id2 => $array) {
+					if ( $doc_id == $doc_id2 ) {
+						foreach ($array as $start => $ar) {
+							$tmpArray = $decidefileArray[$start];
+							$tmpArray['target'] = $ar['target'];
+							$decidefileArray[$start] = $tmpArray;
+						}
+					}
+				}
+			}
+
+			// dump('dump.txt', $decidefileArray);
+
+			//Decideファイル生成 & DB更新
+			$dirname = dirname( __FILE__ ) . '/WIXDecideFiles/';
+			if ( !file_exists($dirname) )
+				mkdir($dirname, 0777, true);
+
+			if ( file_exists($dirname . $doc_id . '.txt') )
+				unlink($dirname . $doc_id . '.txt');
+
+			foreach ($decidefileArray as $start => $array) {
+				$keyword = $array['keyword'];
+				$end = $array['end'];
+				$nextStart = $array['nextStart'];
+				$target = $array['target'];
+
+				$line = 'start:' . $start . ',end:' . $end . ',nextStart:' . $nextStart . ',keyword:' . $keyword . ',target:' . $target . "\n";
+				file_put_contents( $dirname . $doc_id . '.txt', $line, FILE_APPEND | LOCK_EX );
+			}
+			//DBへの挿入
+			wix_setting_createDecidefile_inDB($doc_id, $decidefileArray);
+		}
+
+	} else if ( isset($decideLinkArray) && !empty($decideLinkArray) ) {
+		foreach ($decideLinkArray as $doc_id => $valueArray) {
+			$sql = 'SELECT post_content FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
+			$docObj = $wpdb->get_results($sql);
+			$body = strip_tags( wpautop($docObj[0]->post_content) );
+
+			//対象ドキュメントにおけるキーワード全位置情報
+			$innerLinkArray = keyword_location( $body );
+
+			$decidefileArray = array();
+			foreach ($innerLinkArray as $start => $array) {
+				$keyword = $array['keyword'][0];
+				$end = $array['end'][0];
+				$nextStart = $array['nextStart'][0];
+
+				foreach ($valueArray as $tmp_start => $ar) {
+					$tmp_keyword = $ar['keyword'];
+
+					if ( $start == $tmp_start ) {
+						$target = $ar['target'];
+						$decidefileArray[$start] = array(
+															'keyword' => $keyword,
+															'end' => $end,
+															'nextStart' => $nextStart,
+															'target' => $target,
+														);
+					}
+				}
+			}
+
+			//nextStartの調整
+			$count = 0;
+			$tmp_start;
+			foreach ($decidefileArray as $start => $array) {
+				if ( $count == 0 )	$tmp_start = $start;
+				if ( $tmp_start != $start ) {
+					$decidefileArray[$tmp_start]['nextStart'] = $start;
+					$tmp_start = $start;
+				}
+
+				$count++;
+			}
+			$decidefileArray[$tmp_start]['nextStart'] = 0;
+
+			//Decideファイル生成 & DB更新
+			$dirname = dirname( __FILE__ ) . '/WIXDecideFiles/';
+			if ( !file_exists($dirname) )
+				mkdir($dirname, 0777, true);
+
+			if ( file_exists($dirname . $doc_id . '.txt') )
+				unlink($dirname . $doc_id . '.txt');
+
+			foreach ($decidefileArray as $start => $array) {
+				$keyword = $array['keyword'];
+				$end = $array['end'];
+				$nextStart = $array['nextStart'];
+				$target = $array['target'];
+
+				$line = 'start:' . $start . ',end:' . $end . ',nextStart:' . $nextStart . ',keyword:' . $keyword . ',target:' . $target . "\n";
+				file_put_contents( $dirname . $doc_id . '.txt', $line, FILE_APPEND | LOCK_EX );
+			}
+
+			//DBへの挿入
+			wix_setting_createDecidefile_inDB($doc_id, $decidefileArray);
+		}
+
+	}
+
+
+
+	$json = array(
+		"test" => 'a',
+	);
+
+	echo json_encode( $json );
+	
+    die();
+}
+
+function wix_setting_createDecidefile_inDB($doc_id, $object) {
+	global $wpdb;
+
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wix_decidefile_index = $wpdb->prefix . 'wix_decidefile_index';
+	$wix_decidefile_history = $wpdb->prefix . 'wix_decidefile_history';
+	$version = 0;
+	$dfile_id = 0;
+	$keywordArray = array();
+
+	//現在の最新バージョンの値を取ってきてから挿入
+	$sql = 'SELECT * FROM ' . $wix_decidefile_index . ' WHERE doc_id=' . $doc_id . ' ORDER BY version DESC LIMIT 1';
+	$latest_decideObj = $wpdb->get_results($sql);
+	if ( !empty($latest_decideObj) ) {
+		foreach ($latest_decideObj as $index => $value) {
+			$version = intval( $value->version ) + 1;
+		}
+	}
+	$sql = 'INSERT INTO ' . $wix_decidefile_index . '(doc_id, version) VALUES ' . '(' . $doc_id . ', ' . $version . ')';
+	$wpdb->query( $sql );
+
+	//キーワードとID一覧
+	$sql = 'SELECT * FROM ' . $wixfilemeta;
+	$keywordObj = $wpdb->get_results($sql);
+	foreach ($keywordObj as $index => $value) {
+		$keywordArray[$value->keyword] = $value->id;
+	}
+
+	//先程挿入したdfile_idの取得
+	$sql = 'SELECT dfile_id FROM ' . $wix_decidefile_index . ' ORDER BY dfile_id DESC LIMIT 1';
+	$latest_Obj = $wpdb->get_results($sql);
+	foreach ($latest_Obj as $index => $value) {
+		$dfile_id = $value->dfile_id;
+	}
+
+
+	//Decideファイル情報の挿入
+	$insertRecord = '';
+	$count = 0;
+	foreach ($object as $start => $array) {
+		$end = $array['end'];
+		$nextStart = $array['nextStart'];
+		$keyword_id = $keywordArray[$array['keyword']];
+		$target = $array['target'];
+
+		if ( $count == 0 ) 
+			$insertRecord = '(' . $dfile_id . ', ' . $start . ', ' . $end . ', ' . $nextStart . ', ' . $keyword_id . ', "' . $target . '")';
+		else 
+			$insertRecord = $insertRecord . ', (' . $dfile_id . ', ' . $start . ', ' . $end . ', ' . $nextStart . ', ' . $keyword_id . ', "' . $target . '")';	
+	
+		$count++;
+	}
+	$sql = 'INSERT INTO ' . $wix_decidefile_history . '(dfile_id, start, end, nextStart, keyword_id, target) VALUES ' . $insertRecord;
+	$wpdb->query( $sql );
 }
 
 
@@ -1323,8 +1709,11 @@ function wix_disambiguation_recommend() {
 // dump('dump.txt', $keyword_innerlinkArray);
 // dump('dump.txt', $doc_idArray);
 
-	// $keyword_innerlinkArray = wix_entry_disambiuation_with_docSim($doc_id, $doc_idArray, $keyword_innerlinkArray, $entrysArray);
-	$keyword_innerlinkArray = wix_entry_disambiuation_with_googleSearch($doc_id, $doc_idArray, $keyword_innerlinkArray, $entrysArray);
+	/**
+		類似度を使うか、Google検索を使うか
+	*/
+	$keyword_innerlinkArray = wix_entry_disambiuation_with_docSim($doc_id, $doc_idArray, $keyword_innerlinkArray, $entrysArray);
+	// $keyword_innerlinkArray = wix_entry_disambiuation_with_googleSearch($doc_id, $doc_idArray, $keyword_innerlinkArray, $entrysArray);
 
 	//クライアントサイドオブジェクト作成
 	$returnValue = array();
@@ -1795,15 +2184,16 @@ function wix_surrounding_words($subjectWord, $wordsArray) {
 function get_snippet_by_google($word, $and_searchArray) {
 	$returnValue = array();
 
-	if ( get_option('google_api_key') == false ) {
-		add_option('google_api_key', 'AIzaSyAMuI57RqVxOYyvuSNaYaaftkHCr84EZKc');
-	} else if ( get_option('google_cx') == false ) {
-		add_option('google_cx', '010976553709886870857:jczva9zbhag');
-	}
-	// $google_api_key = get_option('google_api_key');
-	// $google_cx = get_option('google_cx');
-	$google_api_key = 'AIzaSyAx1KGY7MrMTGWYAvMG8OzdZyCb4w-G-ao';
-	$google_cx = '006932243093891704093:kkupxt3ya1e';
+	// if ( get_option('google_api_key') == false ) {
+	// 	add_option('google_api_key', 'AIzaSyAMuI57RqVxOYyvuSNaYaaftkHCr84EZKc');
+	// } else if ( get_option('google_cx') == false ) {
+	// 	add_option('google_cx', '010976553709886870857:jczva9zbhag');
+	// }
+	$google_api_key = get_option('google_api_key');
+	$google_cx = get_option('google_cx');
+
+	// $google_api_key = 'AIzaSyAx1KGY7MrMTGWYAvMG8OzdZyCb4w-G-ao';
+	// $google_cx = '006932243093891704093:kkupxt3ya1e';
 
 	// 検索用URL
 	$tmp_url = "https://www.googleapis.com/customsearch/v1?";
@@ -1846,6 +2236,31 @@ function get_snippet_by_google($word, $and_searchArray) {
 	return $returnValue;
 }
 
+//YahooIDとかGoogle IDが既にDBにあったら返り値へ。
+add_action( 'wp_ajax_wix_contents_option', 'wix_contents_option' );
+add_action( 'wp_ajax_nopriv_wix_contents_option', 'wix_contents_option' );
+function wix_contents_option() {
+	global $wpdb;
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$contents_option = $_POST['contents_option'];
+
+	if ( get_option($contents_option) == false )
+		$returnValue = '';
+	else
+		$returnValue = get_option( $contents_option );
+
+	$json = array(
+		"contents_option" => $returnValue,
+	);
+
+	echo json_encode( $json );
+
+	
+    die();
+}
 
 
 
@@ -1854,6 +2269,16 @@ function get_snippet_by_google($word, $and_searchArray) {
 
 
 
+
+
+
+
+
+
+
+
+
+//既に作成済みのWIXファイルのIDとファイル名の関係抽出
 function created_wixfile_info() {
 	$URL = 'http://trezia.db.ics.keio.ac.jp/WIXAuthorEditor_0.0.1/GetCreatedWIXFileNames';
 	
@@ -1909,6 +2334,85 @@ function created_wixfile_info() {
 	}
 
 }
+
+
+//更新・エラーメッセージを表示する
+add_action( 'admin_notices', 'wix_settings_notices' );	
+function wix_settings_notices() {
+?>
+	<?php if ( $messages = get_transient( 'wix_init_settings_errors' ) ): ?>
+	<div class="error">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'wix_init_settings' ) ): ?>
+	<div class="updated">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'wix_settings_errors' ) ): ?>
+	<div class="error">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'wix_settings' ) ): ?>
+	<div class="updated">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'wixfile_settings_errors' ) ): ?>
+	<div class="error">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'wixfile_settings' ) ): ?>
+	<div class="updated">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+<?php elseif ( $messages = get_transient( 'decidefile_settings_errors' ) ): ?>
+	<div class="error">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php elseif ( $messages = get_transient( 'decidefile_settings' ) ): ?>
+	<div class="updated">
+		<ul>
+			<?php foreach( (array)$messages as $message ): ?>
+				<li><?php echo esc_html($message); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php endif; ?>
+<?php
+}
+
+
+
+
+
+
 
 //WIXFileのエントリ候補をwix_document_similarityテーブルから推薦
 // add_action( 'wp_ajax_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );

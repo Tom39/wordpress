@@ -182,76 +182,35 @@
 
 
 
-
-
-
+<pre>Array
+(
+    [0] => 0,5,6,大槻研究室,http://www.ohtsuki.ics.keio.ac.jp/
+    [1] => 6,12,48,慶應義塾大学,http://www.db.ics.keio.ac.jp
+    [2] => 48,52,0,佐草友也,no_attach
+)
+</pre>
 
 
 <pre>Array
 (
-    [慶應義塾大学] => Array
-        (
-            [415] => Array
-                (
-                    [keyword_id] => 1
-                    [post_title] => デモ
-                    [url] => http://localhost/wordpress/?page_id=415
-                )
-
-            [484] => Array
-                (
-                    [keyword_id] => 1
-                    [post_title] => 遠山研究室
-                    [url] => http://localhost/wordpress/?page_id=484
-                )
-
-        )
-
-    [大槻研究室] => Array
-        (
-            [484] => Array
-                (
-                    [keyword_id] => 2
-                    [post_title] => 遠山研究室
-                    [url] => http://localhost/wordpress/?page_id=484
-                )
-
-        )
-
+    [0] => ver.0
 )
 </pre>
-<pre>Array
-(
-    [慶應義塾大学] => Array
-        (
-            [484] => Array
-                (
-                    [keyword_id] => 1
-                    [post_title] => 遠山研究室
-                    [url] => http://localhost/wordpress/?page_id=484
-                    [disambiguatoin_score] => 0
-                )
+<pre>0</pre>
 
-            [415] => Array
-                (
-                    [keyword_id] => 1
-                    [post_title] => デモ
-                    [url] => http://localhost/wordpress/?page_id=415
-                    [disambiguatoin_score] => 0
-                )
 
-        )
-
-    [大槻研究室] => Array
-        (
-            [484] => Array
-                (
-                    [keyword_id] => 2
-                    [post_title] => 遠山研究室
-                    [url] => http://localhost/wordpress/?page_id=484
-                )
-
-        )
-
-)
-</pre>
+<pre>INSERT INTO wp_wix_decidefile_index(doc_id, version) VALUES (482, 1)</pre>
+<pre>SELECT dfile_id FROM wp_wix_decidefile_index ORDER BY dfile_id DESC LIMIT 1</pre>
+<pre>INSERT INTO wp_wix_decidefile_history($dfile_id, start, end, nextStart, keyword_id, target) VALUES (4, 0, 5, 6, 2, "http://www.ohtsuki.ics.keio.ac.jp/")</pre>
+<pre>INSERT INTO wp_wix_decidefile_history($dfile_id, start, end, nextStart, keyword_id, target) VALUES (4, 6, 12, 48, 1, "http://www.db.ics.keio.ac.jp")</pre>
+<pre>INSERT INTO wp_wix_decidefile_history($dfile_id, start, end, nextStart, keyword_id, target) VALUES (4, 48, 52, 0, 0, "no_attach")</pre>
+<pre>INSERT INTO wp_wix_decidefile_index(doc_id, version) VALUES (482, 1)</pre>
+<pre>SELECT dfile_id FROM wp_wix_decidefile_index ORDER BY dfile_id DESC LIMIT 1</pre>
+<pre>INSERT INTO wp_wix_decidefile_history($dfile_id, start, end, nextStart, keyword_id, target) VALUES (5, 48, 52, 0, 0, "no_attach")</pre>
+<pre>INSERT INTO wp_wix_decidefile_history($dfile_id, start, end, nextStart, keyword_id, target) VALUES (5, 6, 12, 48, 1, "http://www.db.ics.keio.ac.jp")</pre>
+<pre>INSERT INTO wp_wix_decidefile_history($dfile_id, start, end, nextStart, keyword_id, target) VALUES (5, 0, 5, 6, 2, "http://www.ohtsuki.ics.keio.ac.jp/")</pre>
+<pre>INSERT INTO wp_wix_decidefile_index(doc_id, version) VALUES (482, 1)</pre>
+<pre>SELECT dfile_id FROM wp_wix_decidefile_index ORDER BY dfile_id DESC LIMIT 1</pre>
+<pre>INSERT INTO wp_wix_decidefile_history(dfile_id, start, end, nextStart, keyword_id, target) VALUES (5, 48, 52, 0, 0, "no_attach")</pre>
+<pre>INSERT INTO wp_wix_decidefile_history(dfile_id, start, end, nextStart, keyword_id, target) VALUES (5, 6, 12, 48, 1, "http://www.db.ics.keio.ac.jp")</pre>
+<pre>INSERT INTO wp_wix_decidefile_history(dfile_id, start, end, nextStart, keyword_id, target) VALUES (5, 0, 5, 6, 2, "http://www.ohtsuki.ics.keio.ac.jp/")</pre>

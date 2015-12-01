@@ -27,7 +27,8 @@ $doc_simObj = array();
 
 //yahoo形態素解析
 function wix_morphological_analysis($content) {
-	$yahooID = 'dj0zaiZpPUlGTmRoTElndjRuVCZzPWNvbnN1bWVyc2VjcmV0Jng9Nzk-';
+	// $yahooID = 'dj0zaiZpPUlGTmRoTElndjRuVCZzPWNvbnN1bWVyc2VjcmV0Jng9Nzk-';
+	$yahooID = get_option( 'yahoo_id' );
 	//HTMLタグを除去しつつ戻り値をパースする
 	$url = "http://jlp.yahooapis.jp/MAService/V1/parse?appid=" . $yahooID .
 									 "&results=ma&sentence=" . urlencode(strip_tags($content));
