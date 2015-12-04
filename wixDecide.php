@@ -98,44 +98,39 @@ function wix_entry_recommendation_creating_document() {
 
 	$post_id = (int) substr( $_POST['target'], strlen('wp-preview-') );
 
-	$parse = wix_morphological_analysis($_POST['sentence']);
-	$wordsArray = wix_compound_noun_extract($parse);
-	$words_countArray = array_word_count($wordsArray);
+	if ( get_option('morphological_analysis') != false ) {
+		$parse = wix_morphological_analysis($_POST['sentence']);
+		$wordsArray = wix_compound_noun_extract($parse);
+		$words_countArray = array_word_count($wordsArray);
 
-	// wix_tf($words_countArray);
-	// wix_idf_creating_document($post_id);
+		//tf, idfの計算
+		if ( empty($term_featureObj) ) {
+			wix_tf($words_countArray);
+			wix_idf_creating_document($post_id);
+		}
 
+		//tf-idf値の降順に並び替え
+		$tf_idfArray = array();
+		foreach ($term_featureObj as $key => $value) {
+			$tf_idf = $value['tf'] * $value['idf'];
+			$value['tf_idf'] = $tf_idf;
+			$term_featureObj[$key] = $value;
 
-	//tf, idfの計算
-	if ( empty($term_featureObj) ) {
-		wix_tf($words_countArray);
-		wix_idf_creating_document($post_id);
-	}
-
-
-
-	//tf-idf値の降順に並び替え
-	$tf_idfArray = array();
-	foreach ($term_featureObj as $key => $value) {
-		$tf_idf = $value['tf'] * $value['idf'];
-		$value['tf_idf'] = $tf_idf;
-		$term_featureObj[$key] = $value;
-
-		$tf_idfArray[] = $tf_idf;
-	}
-	array_multisort($tf_idfArray, SORT_DESC, SORT_NUMERIC, $term_featureObj);
+			$tf_idfArray[] = $tf_idf;
+		}
+		array_multisort($tf_idfArray, SORT_DESC, SORT_NUMERIC, $term_featureObj);
 
 
-
-
-
-	//wp_wixfileテーブルに入ってない単語が出現するページタイトルの提示
+		//wp_wixfileテーブルに入ってない単語が出現するページタイトルの提示
 /**
 	これ違う気がする。テーブルに入ってない奴も推薦していいんじゃね？（2015/09/22）
 **/
-	$doc_title = $_POST['doc-title'];
-	$returnValue = wix_post_title(no_wixfile_entry($term_featureObj));
-
+		$doc_title = $_POST['doc-title'];
+		$returnValue = wix_post_title(no_wixfile_entry($term_featureObj));
+		
+	} else {
+		$returnValue = 'no_selection_morphological_analysis';
+	}
 
 	$json = array(
 		"returnValue" => $returnValue,
@@ -828,54 +823,6 @@ function wix_decidefile_check() {
 }
 
 
-//post.phpでID取得
-// if ( isset( $_GET['post'] ) )
-//  	$post_id = $post_ID = (int) $_GET['post'];
-// elseif ( isset( $_POST['post_ID'] ) )
-//  	$post_id = $post_ID = (int) $_POST['post_ID'];
-// else
-//  	$post_id = $post_ID = 0;
-// var_dump($post_id);
-
-
-
-//強制リダイレクト
-// add_action( 'publish_post', 'aaa', 99, 2 );
-function aaa($post_ID, $post) {
-    // die("test");
-    // wp_safe_redirect( 'http://localhost/wordpress/wp-admin/post.php?post=56&action=edit', 301 );
-    // exit;
-}
-
-
-
-//強制的に"下書き"にする
-// add_filter( 'wp_insert_post_data' , 'filter_handler' , 10, 2 );
-function filter_handler( $data , $postarr ) {
-  $data['post_status'] = 'draft';
-  return $data;
-}
-
-
-
-//postboxにメニュー追加
-// add_action( 'post_submitbox_misc_actions', 'check_proofreading_button' );    
-function check_proofreading_button() {  
-    if(get_post_status() == 'publish') {  
-        return;  
-    }  
-        $html  = '<div class="misc-pub-section" style="overflow:hidden">';  
-        $html .= '<div id="publishing-action">';  
-        $html .= '<input type="submit" tabindex="5" value="wixDecideからです" class="button-primary" id="proofreading" name="proofreading">';  
-        $html .= '</div>';  
-        $html .= '</div>';  
-        echo $html;  
-}  
-
-
-
-
-
 //コンソールログに
 add_action("admin_head", 'suffix2console');
 function suffix2console() {
@@ -903,71 +850,6 @@ function my_func(){
 }
 
 
-
-
-//transition_post_statusのテスト
-// add_action( 'transition_post_status', 'post_unpublished', 99, 3 );
-function post_unpublished( $new_status, $old_status, $post ) {
-    if ( $old_status == 'publish'  &&  $new_status != 'publish' ) {
-        // A function to perform actions when a post status changes from publish to any non-public status.
-    	update_option( 'sauksa', 'aaa' );
-    } else {
-    	update_option( 'sakusa', $new_status.'<-'.$old_status );
-    }
-}
-// var_dump( get_option( 'sakusa', 'default' ) );
-
-
-
-
-
-
-
-//remove系のテスト
-// remove_all_actions( 'save_post' );
-// remove_action( 'transition_post_status', '_transition_post_status' );
-
-
-
-
-// add_action('submitpost_box', 'hidden_fields');
-// function hidden_fields(){
-// 	// var_dump('ここにいるよ');
-// }
-
-
-
-
-
-
-
-// 公開する前にアラートを表示する
-// add_action('admin_footer', 'publish_confirm', 10);
-function publish_confirm() {
-
-	$c_message = '記事を公開します。宜しいでしょうか？';
-
-	$post_status = get_post_status( get_the_ID() ); 
-
-	if ( $post_status == ('publish' || 'auto-draft') ) {
-
-		echo '<script type="text/javascript"><!--
-		var publish = document.getElementById("publish");
-		if (publish !== null) publish.onclick = function(){
-			
-			if ( window.confirm("'.$c_message.'") ) {
-
-			} else {
-				alert(\'キャンセルされました\');
-			}
-
-			return confirm("'.$c_message.'");
-		};
-		// --></script>';
-
-	}
-	
-}
 
 
 ?>

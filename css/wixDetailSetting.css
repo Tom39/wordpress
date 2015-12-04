@@ -46,7 +46,14 @@ ul#tab {
     margin: 0 auto;
     padding: 0;
 }
-ul#tab:after { content:"."; display: block; height:0px; clear:both; line-height:0; visibility:hidden; }
+ul#tab:after { 
+    content:"."; 
+    display: block; 
+    height:0px; 
+    clear:both; 
+    line-height:0; 
+    visibility:hidden; 
+}
 ul#tab li {
     float: left;
     text-align: center;
@@ -130,7 +137,22 @@ ul#tab li.active a:hover {
     height: 20vh;
     margin-left: 2.5%;
     margin-top: 1%;
-    border : 1px solid blue;
+    border : 1px dotted #ccc;
+}
+#exisitng_latest_decidefile_top_table {
+    width: 100%;
+}
+#exisitng_latest_decidefile_top_table_thead {
+    width: 100%;
+}
+#exisitng_latest_decidefile_top_table_tbody {
+    width: 100%;
+}
+#exisitng_latest_decidefile_table {
+    width: 100%;
+}
+.default_detail_decideButton {
+    display: none;
 }
 
 
@@ -145,7 +167,14 @@ ul#doc_tab {
     float: left;
     width: 100%;
 }
-ul#doc_tab:after { content:"."; display: block; height:0px; clear:both; line-height:0; visibility:hidden; }
+ul#doc_tab:after { 
+    content:"."; 
+    display: block; 
+    height:0px; 
+    clear:both; 
+    line-height:0; 
+    visibility:hidden; 
+}
 ul#doc_tab li {
     float: left;
     text-align: center;
@@ -201,7 +230,14 @@ ul#decide_entrys_tab {
 
     font-size: 10pt;
 }
-ul#decide_entrys_tab:after { content:"."; display: block; height:0px; clear:both; line-height:0; visibility:hidden; }
+ul#decide_entrys_tab:after { 
+    content:"."; 
+    display: block; 
+    height:0px; 
+    clear:both; 
+    line-height:0; 
+    visibility:hidden; 
+}
 ul#decide_entrys_tab li {
     float: left;
     text-align: center;
@@ -358,7 +394,86 @@ ul#decide_entrys_tab li.active a:hover {
     margin-top: 3%;
 }
 
+
 /* モーダルウィンドウ部分 */
+#add_decidefile_div {
+    width: 100%;
+}
+.add_decidefile_table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.add_decidefile_thead {
+    width: 100%;
+}
+.add_decidefile_thead_tr {
+    width: 100%;
+    border-bottom: double 3px #869198;
+}
+.add_decidefile_thead_docTh {
+    width: 30%;
+}
+.add_decidefile_thead_keywordTh {
+    width: 30%;
+}
+.add_decidefile_thead_targetTh {
+    width: 40%;
+}
+.add_decidefile_tbody {
+    width: 100%;
+}
+.add_decidefile_tr {
+    width: 100%;
+}
+.add_decidefile_td {
+    width: 100%;
+}
+.add_decidefile_inner_table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.add_decidefile_inner_tbody {
+    width: 100%;
+}
+.add_decidefile_inner_table_tr {
+    width: 100%;
+    border-bottom : 1px dotted #ccc;
+}
+.add_decidefile_inner_table_doc_td {
+    width: 30%;
+}
+.add_decidefile_inner_table_entry_td {
+    width: 70%;
+}
+.add_decidefile_type_entry_table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.add_decidefile_type_entry_table_tr {
+    width: 100%;
+    border-bottom : 1px dotted #ccc;
+}
+.add_decidefile_type_entry_table_default_td {
+    width: 25%;
+}
+.add_decidefile_type_entry_table_detail_td {
+    width: 25%;
+}
+.add_decidefile_type_entry_table_entry_td {
+    width: 75%;
+}
+.add_decidefile_entry_table {
+    width: 100%;
+}
+.add_decidefile_entry_table_tr {
+    width: 100%
+}
+.add_decidefile_entry_table_keyword_td {
+    width: 40%;
+}
+.add_decidefile_entry_table_target_td {
+    width: 60%;
+}
 
 
 /* インラインフレーム部分 */
@@ -367,7 +482,7 @@ ul#decide_entrys_tab li.active a:hover {
     height: 60vh;
 }
 #decide_iframe_inline_div #doc_iframe {
-    border : 1px solid black;
+    border : 1px solid green;
     width: 100%;
     height: 100%;
     -webkit-transform: scale(1);
@@ -394,7 +509,6 @@ ul#decide_entrys_tab li.active a:hover {
 #created_DecidefileDoc {
     width: 20%;
     float: left;
-    /*border : 1px solid orange;*/
 }
 .decidefileDoc_tabbox {
     display: none;
@@ -405,7 +519,8 @@ ul#decide_entrys_tab li.active a:hover {
     height: 100%;
     float: left;
     margin-left: 2%;
-    border : 1px solid red;
+    border: 1px solid #DDD;
+
 }
 #decidefile_iframe {
     float: left;
@@ -419,7 +534,7 @@ ul#decide_entrys_tab li.active a:hover {
     height: 30vh;
     margin-left: 2.5%;
     margin-top: 1%;
-    border : 1px solid blue;
+    /*border : 1px dotted #ccc;*/
 }
 
 /* ドキュメントタブ部分*/
@@ -433,7 +548,13 @@ ul#decidefileDoc_tab {
     float: left;
     width: 100%;
 }
-ul#decidefileDoc_tab:after { content:"."; display: block; height:0px; clear:both; line-height:0; visibility:hidden; }
+ul#decidefileDoc_tab:after { 
+    content:"."; 
+    display: block; 
+    height:0px; clear:both; 
+    line-height:0; 
+    visibility:hidden; 
+}
 ul#decidefileDoc_tab li {
     float: left;
     text-align: center;
@@ -521,13 +642,14 @@ ul#decidefileDoc_tab li.active a:hover {
     font-size: 8pt;
 }
 
+
 /* インラインフレーム部分 */
 #decidefile_iframe_inline_div {
     width: 100%;
     height: 48vh;
 }
 #decidefile_iframe_inline_div #decidefileDoc_iframe {
-    border : 1px solid black;
+    border : 1px solid green;
     width: 100%;
     height: 100%;
     -webkit-transform: scale(1);
@@ -551,7 +673,12 @@ ul#decide_history_tab {
     float: left;
     width: 100%;
 }
-ul#decide_history_tab:after { content:"."; display: block; height:0px; clear:both; line-height:0; visibility:hidden; }
+ul#decide_history_tab:after { 
+    content:"."; 
+    display: block; 
+    height:0px; clear:both; 
+    line-height:0; visibility:hidden; 
+}
 ul#decide_history_tab li {
     float: left;
     text-align: center;

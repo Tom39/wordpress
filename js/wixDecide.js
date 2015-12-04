@@ -118,6 +118,11 @@ jQuery(function($) {
 console.log(json['similarity']);
 // console.log(json['returnValue']);
 				if ( json['returnValue'].length != 0 ) {
+					if ( json['returnValue'] == 'no_selection_morphological_analysis' ) {
+						alert('設定画面における【形態素解析】項目を入力してください');
+						return false;
+					}
+
 					var contents = $("<div />", {
 						id: 'wixRecommendDiv'
 					});

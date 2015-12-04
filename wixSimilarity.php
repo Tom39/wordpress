@@ -27,7 +27,6 @@ $doc_simObj = array();
 
 //yahoo形態素解析
 function wix_morphological_analysis($content) {
-	// $yahooID = 'dj0zaiZpPUlGTmRoTElndjRuVCZzPWNvbnN1bWVyc2VjcmV0Jng9Nzk-';
 	$yahooID = get_option( 'yahoo_id' );
 	//HTMLタグを除去しつつ戻り値をパースする
 	$url = "http://jlp.yahooapis.jp/MAService/V1/parse?appid=" . $yahooID .
@@ -49,7 +48,7 @@ function wix_morphological_analysis_mecab($content) {
 }
 
 //形態素解析結果から複合名詞の作成
-function wix_compound_noun_extract($parse){
+function wix_compound_noun_extract($parse) {
 	$tmpArray = array();
 	$returnValue = array();
 
@@ -79,7 +78,7 @@ function wix_compound_noun_extract($parse){
 }
 
 //Mecabを使って、形態素解析結果から複合名詞の作成
-function wix_compound_noun_extract_mecab($parse){
+function wix_compound_noun_extract_mecab($parse) {
 	$tmpString = '';
 	$returnValue = array();
 
@@ -700,36 +699,31 @@ function calc_minhash($targets, $seed) {
 }
 
 //WIXファイルエントリのランキング
-function wix_entry_ranking($doc_id) {
-	global $wpdb;
+// function wix_entry_ranking($doc_id) {
+// 	global $wpdb;
 
-	$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
-	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
-	$wix_document_similarity = $wpdb->prefix . 'wix_document_similarity';
+// 	$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
+// 	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
+// 	$wix_document_similarity = $wpdb->prefix . 'wix_document_similarity';
 
-	// $sql = 'SELECT wp.keyword_id, target FROM ' . 
-	// 			$wixfilemeta_posts . ' wp, ' . $wixfile_targets . 
-	// 			' wt WHERE wp.keyword_id = wt.keyword_id AND doc_id = ' . $doc_id . 
-	// 			' ORDER BY wp.keyword_id, doc_id ASC';
-	// $docInfoObj = $wpdb->get_results($sql);
 
-	$sql = 'SELECT * FROM ' . $wix_document_similarity . ' WHERE doc_id=' . $doc_id . ' OR doc_id2=' . $doc_id;
-	$simObj = $wpdb->get_results($sql);
+// 	$sql = 'SELECT * FROM ' . $wix_document_similarity . ' WHERE doc_id=' . $doc_id . ' OR doc_id2=' . $doc_id;
+// 	$simObj = $wpdb->get_results($sql);
 
-	$simArray = array();
-	foreach ($simObj as $index => $value) {
-		$simArray[$value->doc_id2] = array(
-											'cos_similarity_tfidf' => $value->cos_similarity_tfidf,
-											'cos_similarity_bm25' => $value->cos_similarity_bm25,
-											'jaccard' => $value->jaccard,
-											'minhash' => $value->minhash,
-										);
-	}
+// 	$simArray = array();
+// 	foreach ($simObj as $index => $value) {
+// 		$simArray[$value->doc_id2] = array(
+// 											'cos_similarity_tfidf' => $value->cos_similarity_tfidf,
+// 											'cos_similarity_bm25' => $value->cos_similarity_bm25,
+// 											'jaccard' => $value->jaccard,
+// 											'minhash' => $value->minhash,
+// 										);
+// 	}
 
-	foreach ($simArray as $doc_id2 => $valueArray) {
-		// normalize
-	}
-}
+// 	foreach ($simArray as $doc_id2 => $valueArray) {
+// 		// normalize
+// 	}
+// }
 
 
 

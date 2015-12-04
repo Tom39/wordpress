@@ -27,15 +27,6 @@ function wix_admin_menu() {
 		'wix_detail_settings'
 	);
 
-	// add_submenu_page(
-	// 	'wix-admin-settings',
-	// 	__('WIX Similarity', 'wix-similarity'),
-	// 	__('WIX Similarity', 'wix-similarity'),
-	// 	'administrator',
-	// 	'wix-admin-similarity',
-	// 	'wix_admin_similarity'
-	// );
-
 	add_action( 'admin_enqueue_scripts', 'wix_admin_settings_scripts' );
 	
 	add_action('admin_head-toplevel_page_wix-admin-settings', 'created_wixfile_info');
@@ -66,15 +57,15 @@ function wix_admin_settings(){
 					<div id="init_settings">
 						<strong>初期設定</strong>
 						<fieldset name="init_option" form="init_option1">
-							<legend>[サーバホスト名]</legend>						
+							<legend>サーバホスト名</legend>						
 							<input type="text" name="hostName" value="<?php echo get_option('wix_host_name'); ?>" readonly="readonly">
 						</fieldset>
 						<fieldset name="init_option" form="init_option2">
-							<legend>[オーサ名]</legend>						
+							<legend>オーサ名</legend>						
 							<input type="text" name="authorName" value="<?php echo get_option('wix_author_name'); ?>" readonly="readonly">
 						</fieldset>
 						<fieldset name="init_option" form="init_option3">
-							<legend>[URLパターン : WIXファイル名]</legend>
+							<legend>URLパターン : WIXファイル名</legend>
 							<ol id="pattern_filename">
 								<?php
 									//作成済みWIXファイルのIDとファイル名の関係抽出
@@ -117,7 +108,7 @@ function wix_admin_settings(){
 									class="button button-primary button-small" >
 						</fieldset>
 						<fieldset name="init_option" form="init_option4">
-							<legend>[リンク作成最小文字数]</legend>
+							<legend>リンク作成最小文字数</legend>
 							<label>
 								1<input type="range" name="minLength" min="1" max="5" value="<?php echo get_option( 'minLength' ); ?>" list="exlist">5
 							</label>
@@ -141,15 +132,15 @@ function wix_admin_settings(){
 					<div id="init_settings">
 						<strong>初期設定</strong>
 						<fieldset name="init_option" form="init_option1">
-							<legend>[サーバホスト名]</legend>						
+							<legend>サーバホスト名</legend>						
 							<input type="text" name="hostName" placeholder="<?php echo $hostName ?>">
 						</fieldset>
 						<fieldset name="init_option" form="init_option2">
-							<legend>[オーサ名]</legend>						
+							<legend>オーサ名</legend>						
 							<input type="text" name="authorName" value="">
 						</fieldset>
 						<fieldset name="init_option" form="init_option3">
-							<legend>[URLパターン : WIXファイル名]</legend>
+							<legend>URLパターン : WIXファイル名</legend>
 							<ol id="pattern_filename">
 								<li>
 									<input type="text" name="pattern[0]" placeholder="/*">
@@ -160,7 +151,7 @@ function wix_admin_settings(){
 								value= "<?php echo esc_attr( __( 'Form Add', 'wix_patternFile_adding' ) ); ?>" 
 								class="button button-primary button" >
 						<fieldset name="init_option" form="init_option4">
-							<legend>[リンク作成最小文字数]</legend>
+							<legend>リンク作成最小文字数</legend>
 							<label>
 									1<input type="range" name="minLength" min="1" max="5" value="3" list="exlist">5
 								</label>
@@ -177,9 +168,9 @@ function wix_admin_settings(){
 				
 					<div id="option_settings">
 						<div id="wixfile_option_settings" class="contents_option">
-							<strong>WIXファイル</strong>
+							<strong>WIXファイル設定</strong>
 							<fieldset name="wixfile_option" form="wixfile_option1">
-								<legend>[自動生成]</legend>
+								<legend>自動生成</legend>
 								<?php 
 								if ( get_option('wixfile_autocreate') == 'true' ) {
 								?>
@@ -199,7 +190,7 @@ function wix_admin_settings(){
 								?>
 							</fieldset>
 							<fieldset name="wixfile_option" form="wixfile_option2">
-								<legend>[ページ作成画面における更新操作]</legend>
+								<legend>ページ作成画面における更新操作</legend>
 								<?php 
 								if ( get_option('decidefile_autocreate') == 'true' ) {
 								?>
@@ -220,9 +211,9 @@ function wix_admin_settings(){
 							</fieldset>
 						</div>
 						<div id="decidefile_option_settings" class="contents_option">
-							<strong>Decideファイル</strong>
+							<strong>リンク先詳細設定</strong>
 							<fieldset name="decidefile_option" form="decidefile_option1">
-								<legend>[Decideファイル適用]</legend>
+								<legend>詳細設定適用</legend>
 								<?php 
 								if ( get_option('decidefile_autocreate') == 'true' ) {
 								?>
@@ -242,7 +233,7 @@ function wix_admin_settings(){
 								?>
 							</fieldset>
 							<fieldset name="decidefile_option" form="decidefile_option2">
-								<legend>[自動生成]</legend>
+								<legend>自動詳細設定</legend>
 								<?php 
 								if ( get_option('decidefile_autocreate') == 'true' ) {
 								?>
@@ -262,7 +253,7 @@ function wix_admin_settings(){
 								?>
 							</fieldset>
 							<fieldset name="decidefile_option" form="decidefile_option3">
-								<legend>[ページ作成画面における更新操作]</legend>
+								<legend>ページ作成画面における更新操作</legend>
 								<?php 
 								if ( get_option('manual_decide') == 'true' ) {
 								?>
@@ -285,7 +276,7 @@ function wix_admin_settings(){
 						<div id="other_option_settings" class="contents_option">
 							<strong>その他</strong>
 							<fieldset name="other_option" form="other_option1">
-								<legend>[形態素解析ツール]</legend>
+								<legend>形態素解析ツール</legend>
 								<?php
 								if ( get_option('morphological_analysis') == false ) {
 								?>
@@ -318,7 +309,7 @@ function wix_admin_settings(){
 										class="button button-primary button-small" >
 							</fieldset>
 							<fieldset name="other_option" form="other_option2">
-								<legend>[自動生成・推薦支援]</legend>
+								<legend>自動生成・推薦支援</legend>
 								<?php
 								if ( get_option('recommend_support') == false ) {
 								?>
@@ -357,11 +348,11 @@ function wix_admin_settings(){
 					?>
 					<input type="submit" name="wix_settings" 
 						value= "<?php echo esc_attr( __( 'WIX Settings', 'wix_settings' ) ); ?>" 
-						id="wix_settings_button" class="button button-primary button-large" >
+						id="wix_settings_button" class="button button-primary" >
 					<?php } else { ?>
 					<input type="submit" name="wix_init_settings" 
 						value= "<?php echo esc_attr( __( 'WIX Initial Settings', 'wix_initial_settings' ) ); ?>" 
-						id="wix_init_settings_button" class="button button-primary button-large" >
+						id="wix_init_settings_button" class="button button-primary" >
 					<?php } ?>
 				</form>
 			</div> <!-- #wix_settings -->
@@ -399,8 +390,8 @@ function wix_admin_settings(){
 											echo '<thead>';
 												echo '<tr class="wixfile_table_heading">';
 													echo '<th id="wixfile_table_heading_blank" colspan="3"></th>';
-													echo '<th id="wixfile_table_heading_keyword">キーワード</th>';
-													echo '<th id="wixfile_table_heading_target">ターゲット</th>';
+													echo '<th id="wixfile_table_heading_keyword">単語</th>';
+													echo '<th id="wixfile_table_heading_target">リンク先URL</th>';
 												echo '</tr>';
 											echo '</thead>';
 											echo '<tbody>';
@@ -493,7 +484,7 @@ function wix_admin_settings(){
 											echo '<table id="wixfile_table' . $count . '" class="wixfile_table">';
 												echo '<thead>';
 													echo '<tr class="wixfile_table_heading">';
-														echo '<th colspan="3"></th><th>キーワード</th><th>ターゲット</th>';
+														echo '<th colspan="3"></th><th>単語</th><th>リンク先URL</th>';
 													echo '</tr>';
 												echo '</thead>';
 												echo '<tbody>';
@@ -516,20 +507,20 @@ function wix_admin_settings(){
 															echo '<td id="wixfile_entry_delete' . $tmpIndex . '" class="wixfile_entry_delete">';
 																echo '<span><a>削除</a></span>';
 															echo '</td>';
-															// '<td id="wixfile_keyword' . $tmpIndex . '" class="wixfile_keyword">';
-															// 	echo '<span>' . $entrys[$tmpIndex]->keyword . '</span>';
-															// echo '</td>';
-															// echo '<td id="wixfile_target' . $tmpIndex . '" class="wixfile_target">';
-															// 	echo '<span><a target="target_page" href="' . esc_html($entrys[$tmpCount]->target) . '">'  
-															//			. mb_strimwidth(esc_html($entrys[$tmpCount]->target), 0, 30, '...') . '</a></span>';
-															// echo '</td>';
-														/*----この中削除ok-----*/
-															echo '<td id="wixfile_keyword' . $tmpIndex . '" class="wixfile_keyword">';
-																echo '<span>佐草友也</span>';
+															'<td id="wixfile_keyword' . $tmpIndex . '" class="wixfile_keyword">';
+																echo '<span>' . $entrys[$tmpIndex]->keyword . '</span>';
 															echo '</td>';
 															echo '<td id="wixfile_target' . $tmpIndex . '" class="wixfile_target">';
-															echo '<span><a target="target_page" href="http://www.db.ics.keio.ac.jp">http://www.db.ics.keio.ac.jp</a></span>';
+																echo '<span><a target="target_page" href="' . esc_html($entrys[$tmpCount]->target) . '">'  
+																		. mb_strimwidth(esc_html($entrys[$tmpCount]->target), 0, 30, '...') . '</a></span>';
 															echo '</td>';
+														/*----この中削除ok-----*/
+															// echo '<td id="wixfile_keyword' . $tmpIndex . '" class="wixfile_keyword">';
+															// 	echo '<span>佐草友也</span>';
+															// echo '</td>';
+															// echo '<td id="wixfile_target' . $tmpIndex . '" class="wixfile_target">';
+															// echo '<span><a target="target_page" href="http://www.db.ics.keio.ac.jp">http://www.db.ics.keio.ac.jp</a></span>';
+															// echo '</td>';
 														/*---------*/
 															if ( ($tmpIndex % 2) == 0 )
 															echo '<tr id="wixfile_entry_hidden' . $tmpIndex . '" class="wixfile_even" style="display:none" >';
@@ -539,19 +530,19 @@ function wix_admin_settings(){
 																echo '<td id="wixfile_entry_decide' . $tmpIndex . '" class="wixfile_entry_decide" colspan="2">';
 																	echo '<span><a>決定</a></span>';
 																echo '</td>';
-																// echo '<td id="wixfile_keyword_edit' . $tmpIndex . '" class="wixfile_keyword_edit">';
-																// 	echo '<input type="text" value="' . $entrys[$tmpIndex]->keyword . '">';
-																// echo '</td>';
-																// echo '<td id="wixfile_target_edit' . $tmpCount . '" class="wixfile_target_edit">';
-																// 	echo '<input type="text" value="' . esc_html($entrys[$tmpIndex]->target) . '">';
-																// echo '</td>';
-														/*-----この中削除ok----*/
 																echo '<td id="wixfile_keyword_edit' . $tmpIndex . '" class="wixfile_keyword_edit">';
-																	echo '<input type="text" value="テスト">';
+																	echo '<input type="text" value="' . $entrys[$tmpIndex]->keyword . '">';
 																echo '</td>';
 																echo '<td id="wixfile_target_edit' . $tmpCount . '" class="wixfile_target_edit">';
-																	echo '<input type="text" value="http://www.keio.ac.jp/index-jp.html">';
+																	echo '<input type="text" value="' . esc_html($entrys[$tmpIndex]->target) . '">';
 																echo '</td>';
+														/*-----この中削除ok----*/
+																// echo '<td id="wixfile_keyword_edit' . $tmpIndex . '" class="wixfile_keyword_edit">';
+																// 	echo '<input type="text" value="テスト">';
+																// echo '</td>';
+																// echo '<td id="wixfile_target_edit' . $tmpCount . '" class="wixfile_target_edit">';
+																// 	echo '<input type="text" value="http://www.keio.ac.jp/index-jp.html">';
+																// echo '</td>';
 														/*---------*/
 															echo '</tr>';
 														echo '</tr>';
@@ -602,14 +593,14 @@ function wix_admin_settings(){
 				</div>
 				<div id="newEntry" class="newEntry">
 					<fieldset name="newEntry_form" form="newEntry_form">
-						<legend>New Entry</legend>
+						<legend>新規追加フォーム</legend>
 						<input type="text" id="newKeyword_form" class="newKeyword_form" placeholder="リンクを貼りたい単語">
 						<input type="text" id="newTarget_form" class="newTarget_form" placeholder="リンク先URL">
 					</fieldset>
 					<div id="entry_insert_result"></div>
 					<input type="button" id="add_wixfile_entry" 
 							value="データ追加" 
-							class="button button-primary button-large" >
+							class="button button-primary button-small" >
 				</div>
 			</div> <!-- #wixfile -->
 
@@ -662,7 +653,6 @@ function wix_admin_settings(){
 								}
 							}
 
-
 						}
 					?>
 				</div> <!-- #doc_list -->
@@ -696,8 +686,8 @@ function wix_admin_settings(){
 											echo '<thead>';
 												echo '<tr class="second_wixfile_table_heading">';
 													echo '<th id="wixfile_table_heading_blank" colspan="3"></th>';
-													echo '<th id="wixfile_table_heading_keyword">キーワード</th>';
-													echo '<th id="wixfile_table_heading_target">ターゲット</th>';
+													echo '<th id="wixfile_table_heading_keyword">単語</th>';
+													echo '<th id="wixfile_table_heading_target">リンク先URL</th>';
 												echo '</tr>';
 											echo '</thead>';
 											echo '<tbody>';
@@ -790,7 +780,7 @@ function wix_admin_settings(){
 											echo '<table id="second_wixfile_table' . $count . '" class="second_wixfile_table">';
 												echo '<thead>';
 													echo '<tr class="second_wixfile_table_heading">';
-														echo '<th colspan="3"></th><th>キーワード</th><th>ターゲット</th>';
+														echo '<th colspan="3"></th><th>単語</th><th>リンク先URL</th>';
 													echo '</tr>';
 												echo '</thead>';
 												echo '<tbody>';
@@ -813,20 +803,20 @@ function wix_admin_settings(){
 															echo '<td id="wixfile_entry_delete' . $tmpIndex . '" class="wixfile_entry_delete">';
 																echo '<span><a>削除</a></span>';
 															echo '</td>';
-															// echo '<td id="wixfile_keyword' . $tmpIndex . '" class="wixfile_keyword">';
-															// 	echo '<span>' . $entrys[$tmpIndex]->keyword . '</span>';
-															// echo '</td>';
-															// echo '<td id="wixfile_target' . $tmpIndex . '" class="wixfile_target">';
-															// 	echo '<span><a target="doc_page" href="' . esc_html($entrys[$tmpCount]->target) . '">'  
-															// 			. mb_strimwidth(esc_html($entrys[$tmpCount]->target), 0, 30, '...') . '</a></span>';
-															// echo '</td>';
-															/*----この中削除ok-----*/
 															echo '<td id="wixfile_keyword' . $tmpIndex . '" class="wixfile_keyword">';
-																echo '<span>佐草友也</span>';
+																echo '<span>' . $entrys[$tmpIndex]->keyword . '</span>';
 															echo '</td>';
 															echo '<td id="wixfile_target' . $tmpIndex . '" class="wixfile_target">';
-															echo '<span><a target="doc_page" href="http://www.db.ics.keio.ac.jp">http://www.db.ics.keio.ac.jp</a></span>';
+																echo '<span><a target="doc_page" href="' . esc_html($entrys[$tmpCount]->target) . '">'  
+																		. mb_strimwidth(esc_html($entrys[$tmpCount]->target), 0, 30, '...') . '</a></span>';
 															echo '</td>';
+															/*----この中削除ok-----*/
+															// echo '<td id="wixfile_keyword' . $tmpIndex . '" class="wixfile_keyword">';
+															// 	echo '<span>佐草友也</span>';
+															// echo '</td>';
+															// echo '<td id="wixfile_target' . $tmpIndex . '" class="wixfile_target">';
+															// echo '<span><a target="doc_page" href="http://www.db.ics.keio.ac.jp">http://www.db.ics.keio.ac.jp</a></span>';
+															// echo '</td>';
 															/*---------*/
 															if ( ($tmpIndex % 2) == 0 )
 															echo '<tr id="wixfile_entry_hidden' . $tmpIndex . '" class="wixfile_even" style="display:none" >';
@@ -836,19 +826,19 @@ function wix_admin_settings(){
 																echo '<td id="wixfile_entry_decide' . $tmpIndex . '" class="wixfile_entry_decide" colspan="2">';
 																	echo '<span><a>決定</a></span>';
 																echo '</td>';
-																// echo '<td id="wixfile_keyword_edit' . $tmpIndex . '" class="wixfile_keyword_edit">';
-																// 	echo '<input type="text" value="' . $entrys[$tmpIndex]->keyword . '">';
-																// echo '</td>';
-																// echo '<td id="wixfile_target_edit' . $tmpCount . '" class="wixfile_target_edit">';
-																// 	echo '<input type="text" value="' . esc_html($entrys[$tmpIndex]->target) . '">';
-																// echo '</td>';
-																/*-----この中削除ok----*/
 																echo '<td id="wixfile_keyword_edit' . $tmpIndex . '" class="wixfile_keyword_edit">';
-																	echo '<input type="text" value="テスト">';
+																	echo '<input type="text" value="' . $entrys[$tmpIndex]->keyword . '">';
 																echo '</td>';
 																echo '<td id="wixfile_target_edit' . $tmpCount . '" class="wixfile_target_edit">';
-																	echo '<input type="text" value="http://www.keio.ac.jp/index-jp.html">';
+																	echo '<input type="text" value="' . esc_html($entrys[$tmpIndex]->target) . '">';
 																echo '</td>';
+																/*-----この中削除ok----*/
+																// echo '<td id="wixfile_keyword_edit' . $tmpIndex . '" class="wixfile_keyword_edit">';
+																// 	echo '<input type="text" value="テスト">';
+																// echo '</td>';
+																// echo '<td id="wixfile_target_edit' . $tmpCount . '" class="wixfile_target_edit">';
+																// 	echo '<input type="text" value="http://www.keio.ac.jp/index-jp.html">';
+																// echo '</td>';
 																/*---------*/
 															echo '</tr>';
 														echo '</tr>';
@@ -911,14 +901,14 @@ function wix_admin_settings(){
 
 			<div id="second_newEntry" class="newEntry">
 				<fieldset name="newEntry_form" form="newEntry_form">
-					<legend>New Entry</legend>
+					<legend>新規追加フォーム</legend>
 					<input type="text" id="second_newKeyword_form" class="newKeyword_form" placeholder="リンクを貼りたい単語">
 					<input type="text" id="second_newTarget_form" class="newTarget_form" placeholder="リンク先URL(入力してEnキー押すと↑に出力)">
 				</fieldset>
 				<div id="second_entry_insert_result"></div>
 				<input type="button" id="second_add_wixfile_entry" 
 						value="データ追加" 
-						class="button button-primary button-large" >
+						class="button button-primary button-small" >
 			</div>
 
 
@@ -972,7 +962,6 @@ function wix_admin_settings(){
 								}
 							}
 
-
 						}
 					?>
 				</div> <!-- #third_doc_list -->
@@ -980,7 +969,7 @@ function wix_admin_settings(){
 			
 			<div id="recommend_contents">
 				<ul id="recommend_entrys_tab">
-					<li class="selected"><a href="#recommend_entrys_tab1">特徴語</a></li>
+					<li class="selected"><a href="#recommend_entrys_tab1">特徴的単語</a></li>
 					<li><a href="#recommend_entrys_tab2">頻出順(ページ)</a></li>
 					<li><a href="#recommend_entrys_tab3">頻出順(サイト)</a></li>
 					<li><a href="#recommend_entrys_tab4">サイト内頻出語</a></li>
@@ -989,8 +978,8 @@ function wix_admin_settings(){
 					<table id="recommend_entrys_table">
 						<thead>
 							<tr>
-								<th id="thead_keywords">Keyword</th>
-								<th id="thead_targets">リンク先URL候補</th>
+								<th id="thead_keywords">単語</th>
+								<th id="thead_targets">リンク先URL【推薦ランキング】</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -1039,13 +1028,6 @@ function wix_admin_settings(){
 </div> <!-- .wrap -->
 <?php
 }
-
-
-
-
-
-
-
 
 function wix_detail_settings() {
 ?>
@@ -1118,7 +1100,7 @@ function wix_detail_settings() {
 											<thead>
 												<tr class="thead_tr">
 													<th class="thead_keywords">単語</th>
-													<th class="thead_targets">リンク先URL選択</th>
+													<th class="thead_targets">Defaultリンク先URL選択</th>
 												</tr>
 											</thead>
 
@@ -1130,7 +1112,7 @@ function wix_detail_settings() {
 											<thead>
 												<tr class="thead_tr">
 													<th class="thead_keywords">単語</th>
-													<th class="thead_targets">リンク先URL選択</th>
+													<th class="thead_targets">詳細リンク先URL選択</th>
 												</tr>
 											</thead>
 
@@ -1157,6 +1139,11 @@ function wix_detail_settings() {
 			<div id="existing_latest_decidefile">
 
 			</div> <!-- #existing_latest_decidefile -->
+
+			<form id="default_detail_decideForm" class="default_detail_settings_form" method="post" action="">
+				<?php wp_nonce_field( 'my-nonce-key', 'nonce_default_detail_settings' ); ?>
+				<input type="submit" name="default_detail_settings" class="default_detail_decideButton" value="Default・詳細設定保存">
+			</form>
 
 		</div> <!-- #tab1 -->
 
@@ -1413,130 +1400,6 @@ function wix_admin_wixfile_settings() {
 		</form>
 	</div>
 	
-</div>
-<?php
-}
-
-
-function wix_admin_similarity() {
-?>
-<div class="wrap">
-<?php 
-	global $wpdb;
-	echo '<h2>' . __( 'WIX Similarity', 'wix_similarity' ) . '</h2>'; 
-?>
-
-<!-- ---------- -->
-	<div class="left">
-		<form id="wix_similarity_form" method="post" action="">
-
-			<?php wp_nonce_field( 'my-nonce-key', 'nonce_wix_similarity' ); ?>
-
-			<table id="document_list">
-				<tr>
-					<th>Document Type</th>
-					<th>Document Title</th>
-				</tr>
-				<?php
-					$sql = 'SELECT ID, post_title, post_type, guid FROM ' . $wpdb->posts .
-					 ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" order by post_type, ID asc';
-					$documentsInfo = $wpdb->get_results($sql);
-
-					$post_type_page_flag = false;
-					$post_type_post_flag = false;
-
-					foreach ($documentsInfo as $key => $value) {
-						$post_title = $value->post_title;
-						$post_type = $value->post_type;
-						$url = $value->guid;
-						$id = $value->ID;
-
-						if ( $post_type == 'page' ) {
-							echo '<tr>';
-							if ( $post_type_page_flag === false ) {
-								echo '<th>' . $post_type . '</th>';
-								$post_type_page_flag = true;
-							} else {
-								echo '<th></th>';
-							}
-							echo '<td><a id= '. $id . ' class="wix_similarity_entry" target="target_page" href="' . $url . '">' . $post_title . '</a></td>';
-							echo '</tr>';
-						} else {
-							if ( $post_type_post_flag === false ) {
-								if ( $post_type_page_flag === true  ) echo '</tr>';
-								echo '<tr>';
-								echo '<th>' . $post_type . '</th>';
-								$post_type_post_flag = true;
-							} else {
-								echo '<tr>';
-								echo '<th></th>';
-							}
-							echo '<td><a id= '. $id . ' class="wix_similarity_entry" target="target_page" href="' . $url . '">' . $post_title . '</a></td>';
-							echo '</tr>';
-						}
-
-						// echo '<tr>';
-						// echo '<th>' . $post_type . '</th>';
-						// echo '<td>' . $post_title . '</td>';
-						// echo '</tr>';
-					}
-				?>
-			</table>
-
-		</form>
-	</div>
-	<div class="top">
-		<div id="frame-box">
-			<iframe id="frame-page" name="target_page"></iframe>
-		</div>
-	</div>
-	<div class="bottom">
-		<div id="bottom_contents">
-			<div id="similarity_info">
-				<table id="similarity_entrys">
-					<tr>
-						<th>Keyword in Doc</th>
-						<th>Document Title</th>
-					</tr>
-				</table>
-			</div>
-
-			<div id="wixfile_info">
-				<table id="wixfile_contents">
-					<tr>
-						<th>Keyword</th>
-						<th>Targets</th>
-					</tr>
-				<?php 
-					$table_name = $wpdb->prefix . 'wixfilemeta';
-					$sql = 'SELECT COUNT(*) FROM ' . $table_name;
-					if ( $wpdb->get_var($sql) != 0 ) {
-						$sql = 'SELECT keyword, target FROM wp_wixfilemeta wm, wp_wixfile_targets wt WHERE wm.id = wt.keyword_id';
-						$results = $wpdb->get_results($sql);
-						$count = 0;
-						foreach ($results as $value) {
-							// $keyword = '<input type="text" name="keywords[' . $count . ']" value="' . esc_html($value->keyword) . '">';
-							// $target = '<input type="text" name="targets[' . $count . ']" value="' . esc_html($value->target) . '">';
-							$keyword = esc_html($value->keyword);
-							$target = mb_strimwidth(esc_html($value->target), 0, 30, '...');
-							echo '<tr>';
-							echo '<th width="100">' . $keyword . '</th>';
-							echo '<th width="100">' . $target . '</th>';
-							echo '</tr>';
-							$count++;
-						}
-					} 
-				?>
-				</table>
-			</div>
-		</div>
-	</div>
-
-
-<!-- ---------- -->
-
-
-
 </div>
 <?php
 }

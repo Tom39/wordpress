@@ -11,7 +11,7 @@ html, body {
     margin: 0;
 }
 
-a, button {
+a, button, input[type="submit"] {
     cursor: pointer;
 }
 
@@ -216,6 +216,23 @@ ul#tab li.active a:hover {
 }
 
 /* 初期設定項目部分 */
+#wix_settings input[type="text"] {
+    border:0;
+    border:solid 1px #ccc;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    -moz-box-shadow: inset 1px 4px 9px -6px rgba(0,0,0,0.5);
+    -webkit-box-shadow: inset 1px 4px 9px -6px rgba(0, 0, 0, 0.5);
+    box-shadow: inset 1px 4px 9px -6px rgba(0,0,0,0.5); 
+}
+#wix_settings legend {
+    color: #6f514c;
+    font-weight: bold;
+}
+#wix_settings input[type="text"]:focus {
+    border:solid 1px #00a0d2;
+}
 #init_settings {
     width: 100%;
     height: 30vh;
@@ -228,7 +245,7 @@ ul#tab li.active a:hover {
     width: 50%;
 }
 #init_settings strong {
-    font-size: 13pt;
+    font-size: 14pt;
 }
 #init_settings #pattern_filename li {
     width: 100%;
@@ -333,6 +350,9 @@ input[type=range]:focus::-ms-fill-upper {
     overflow: auto;
     margin-top: 9%;
 }
+#option_settings strong {
+    font-size: 14pt;
+}
 .contents_option {
     width: 100%;
     margin-bottom: 10%;
@@ -374,12 +394,27 @@ input[type=range]:focus::-ms-fill-upper {
     background-color: #e67168;
     color: #fff;
 }
+#other_option_settings input[type="text"] {
+    width: 80%;
+    font-size: 9pt;
+}
+#other_option_settings label {
+    vertical-align: top;
+    color: #634950;
+    font-weight: 600;
+}
 
 #wix_settings_button, #wix_init_settings_button {
     float: right;
     margin-right: 25px;
     margin-top: 2%;
+/*    font-size: 8pt;
+    font-weight: bold;
+    background-color: #ff0038;
+    color: #fff;
+    border-style: none;*/
 }
+
 
 /* WIXファイル タブ部分*/
 .wixfile_table {
@@ -529,7 +564,7 @@ ul#wixfile_tab li.active a:hover {
     overflow: auto;
 }
 #createdDoc {
-    width: 22%;
+    width: 20%;
     /*height: 74vh;*/
     float: left;
 }
@@ -797,7 +832,7 @@ ul#second_wixfile_tab li.active a:hover {
     height: 20vh;
     margin-left: 2.5%;
     margin-top: 1%;
-    border : 1px solid blue;
+    border : 1px dotted #ccc;
 }
 
 /* ドキュメントタブ部分*/
@@ -901,10 +936,6 @@ ul#recommend_entrys_tab li.active a:hover {
     height: 71vh;
     overflow: auto;
 }
-/*.third_doc_tabbox .doc_table {
-    width: 100%;
-    table-layout:fixed;
-}*/
 #recommend_entrys_table {
     width: 100%;
 }
@@ -975,7 +1006,7 @@ ul#recommend_entrys_tab li.active a:hover {
     height: 60vh;
 }
 #third_doc_list_iframe_inline_div #third_doc_iframe {
-    border : 1px solid orange;
+    border : 1px solid green;
     width: 100%;
     height: 100%;
     -webkit-transform: scale(1);

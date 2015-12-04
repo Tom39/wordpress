@@ -147,6 +147,7 @@ console.log(json['innerLinkArray']);
 															.find('.decide_entrys_tab2_table_targets_tr');
 									$.each(subject_el, function(index, el) {
 										var e = $(this).find('.decide_entrys_tab2_table_target_a');
+										var title;
 
 										if ( typeof e.attr('href') === 'undefined' ) {
 											if ( e.attr('no_attach') == target ) {
@@ -154,6 +155,9 @@ console.log(json['innerLinkArray']);
 													.next()
 													.children()
 													.prop('checked', true); 
+												title = e.text();
+												decideLinkArray[doc_id][start]['title'] = title;
+												decideLinkArray[doc_id][start]['doc_title'] = doc_title;
 											}
 
 										} else {
@@ -162,13 +166,11 @@ console.log(json['innerLinkArray']);
 													.next()
 													.children()
 													.prop('checked', true); 
+												title = e.text();
+												decideLinkArray[doc_id][start]['title'] = title;
+												decideLinkArray[doc_id][start]['doc_title'] = doc_title;
 											}
 										}
-
-										var title = e.text();
-										decideLinkArray[doc_id][start]['title'] = title;
-										decideLinkArray[doc_id][start]['doc_title'] = doc_title;
-
 										
 									});
 
@@ -209,16 +211,29 @@ console.log(json['innerLinkArray']);
 // console.log(json['latest_decideinfo']);
 							$('#existing_latest_decidefile').empty();
 
+							var top_table = $("<TABLE />",{
+								id: 'exisitng_latest_decidefile_top_table',
+							});
+							var top_thead = $("<THEAD />", {
+								id: 'exisitng_latest_decidefile_top_table_thead',
+							}).appendTo(top_table);
+							$("<TH />", {
+								text: '最新設定情報'
+							}).css({'white-space': 'nowrap'})
+							.appendTo(top_thead);
+							var top_tbody = $("<TBODY />", {
+								id: 'exisitng_latest_decidefile_top_table_tbody',
+							}).appendTo(top_table);
+							var top_tr = $("<TR />", {}).appendTo(top_tbody);
+							var top_td = $("<TD />", {}).appendTo(top_tr);
 							var table = $("<TABLE />",{
 								id: 'exisitng_latest_decidefile_table'
-							}).css({
-								'width': '100%',
-							});
+							}).appendTo(top_td);
 
 							if ( json['latest_decideinfo'].length != 0 ) {
 								var th = $("<TH />", {
 									class: 'exisitng_latest_decidefile_th',
-									text: 'Keyword'
+									text: '単語'
 								}).css({
 									'width': '20%',
 								}).appendTo(table);
@@ -343,8 +358,7 @@ console.log(json['innerLinkArray']);
 								}).appendTo(table);
 							}
 
-
-							$('#existing_latest_decidefile').append(table);
+							$('#existing_latest_decidefile').append(top_table);
 						},
 
 						error: function(xhr, textStatus, errorThrown){
@@ -470,6 +484,19 @@ console.log(json['innerLinkArray']);
 				success: function(json) {
 // console.log(json['entrys']);
 					if ( json['entrys'].length != 0 ) {
+						if ( json['no_selection_option'].length != 0 ) {
+							if ( json['no_selection_option'] == 'no_selection_morphological_analysis' ) {
+								alert('設定画面における【形態素解析】項目を入力してください');
+							
+							} else if ( json['no_selection_option'] == 'no_selection_recommend_support' ) {
+								alert('設定画面における【自動生成・推薦支援】項目を入力することを勧めます');
+
+							} else {
+								alert('設定画面における【形態素解析】と【自動生成・推薦支援】の2項目を入力してください');
+
+							}
+						}
+
 						//Default設定
 						var tbody = $("<TBODY />",{});
 
@@ -540,7 +567,7 @@ console.log(json['innerLinkArray']);
 											type: 'radio',
 											id: 'decide_entrys_tab1_table_target_radio_input' + index,
 											class: 'decide_entrys_tab1_table_target_radio_input',
-											name: 'decide_entry[' + count + ']',
+											name: 'default_decide_entry[' + count + ']',
 											value: count+':'+index,
 										}).appendTo(td);
 										
@@ -572,7 +599,7 @@ console.log(json['innerLinkArray']);
 										type: 'radio',
 										id: 'decide_entrys_tab1_table_target_radio_input' + no_attach_index,
 										class: 'decide_entrys_tab1_table_target_radio_input',
-										name: 'decide_entry[' + count + ']',
+										name: 'default_decide_entry[' + count + ']',
 										value: count + ':' + no_attach_index,
 									}).appendTo(td);
 
@@ -659,7 +686,7 @@ console.log(json['innerLinkArray']);
 											type: 'radio',
 											id: 'decide_entrys_tab2_table_target_radio_input' + index,
 											class: 'decide_entrys_tab2_table_target_radio_input',
-											name: 'decide_entry[' + count + ']',
+											name: 'detail_decide_entry[' + count + ']',
 											value: count+':'+index,
 										}).appendTo(td);
 										
@@ -691,7 +718,7 @@ console.log(json['innerLinkArray']);
 										type: 'radio',
 										id: 'decide_entrys_tab2_table_target_radio_input' + no_attach_index,
 										class: 'decide_entrys_tab2_table_target_radio_input',
-										name: 'decide_entry[' + count + ']',
+										name: 'detail_decide_entry[' + count + ']',
 										value: count + ':' + no_attach_index,
 									}).appendTo(td);
 								}
@@ -969,37 +996,46 @@ console.log(decideLinkArray);
 		if ( Object.keys(defaultLinkArray).length > 0 || Object.keys(decideLinkArray).length > 0 ) {
 			//モーダル要素作成
 			var content = $("<div />", {
-				id: 'insert_popTableDiv'
+				id: 'add_decidefile_div'
 			});
 			var table = $("<TABLE />",{
-				class: 'insert_popTable'
+				class: 'add_decidefile_table'
 			}).appendTo(content);
-			var tr = $("<TR />", {
-				class: 'insert_popTr'
+			var thead = $("<THEAD />", {
+				class: 'add_decidefile_thead'
 			}).appendTo(table);
+			var thead_tr = $("<TR />", {
+				class: 'add_decidefile_thead_tr'
+			}).appendTo(table);
+			$("<TH />", {
+				class: 'add_decidefile_thead_docTh',
+				text: 'ドキュメント'
+			}).css({'white-space': 'nowrap'}).appendTo(thead_tr);
+			$("<TH />", {
+				class: 'add_decidefile_thead_keywordTh',
+				text: '単語'
+			}).css({'white-space': 'nowrap'}).appendTo(thead_tr);
+			$("<TH />", {
+				class: 'add_decidefile_thead_targetTh',
+				text: 'リンク先URL'
+			}).css({'white-space': 'nowrap'}).appendTo(thead_tr);
+			var tbody = $("<TBODY />", {
+				class: 'add_decidefile_tbody'
+			}).appendTo(table);
+			var tr = $("<TR />", {
+				class: 'add_decidefile_tr'
+			}).appendTo(tbody);
 			var td = $("<TD />", {
-				class: 'insert_popTd'
+				class: 'add_decidefile_td',
+				colspan: '3'
 			}).appendTo(tr);
 			var inner_table = $("<TABLE />",{
-				class: 'insert_innerTable'
+				class: 'add_decidefile_inner_table'
 			}).appendTo(td);
-			var thead = $("<THEAD />", {
-				class: 'insert_innerThead'
+			var inner_tbody = $("<TBODY />", {
+				class: 'add_decidefile_inner_tbody'
 			}).appendTo(inner_table);
-			var tbody = $("<TBODY />", {
-				class: 'insert_innerTbody'
-			}).appendTo(inner_table);
-			$("<TH />", {
-				text: 'ドキュメント'
-			}).css({'white-space': 'nowrap'}).appendTo(thead);
-			$("<TH />", {
-				text: '単語'
-			}).css({'white-space': 'nowrap'}).appendTo(thead);
-			$("<TH />", {
-				text: 'リンク先URL'
-			}).css({'white-space': 'nowrap'}).appendTo(thead);
-
-
+			
 			if ( Object.keys(defaultLinkArray).length > 0 ) {
 				var doc_td;
 				var keyword_td;
@@ -1018,71 +1054,49 @@ console.log(decideLinkArray);
 
 				$.each(defaultLinkArray, function(document_id, elm) {
 					var inner_table_tr = $("<TR />", {
-						class: 'insert_elmTr'
-					}).appendTo(tbody);
+						class: 'add_decidefile_inner_table_tr'
+					}).appendTo(inner_tbody);
+					var inner_table_doc_td = $("<TD />", {
+						class: 'add_decidefile_inner_table_doc_td',
+					}).appendTo(inner_table_tr);
+					var inner_table_entry_td = $("<TD />", {
+						class: 'add_decidefile_inner_table_entry_td',
+						colspan: '2'
+					}).appendTo(inner_table_tr);
 
+					var type_entry_table = $("<TABLE />",{
+						class: 'add_decidefile_type_entry_table'
+					}).appendTo(inner_table_entry_td);
+					var type_entry_table_tr = $("<TR />", {
+						class: 'add_decidefile_type_entry_table_tr'
+					}).appendTo(type_entry_table);
+					var type_entry_table_default_td = $("<TD />", {
+						class: 'add_decidefile_type_entry_table_default_td',
+						text: 'Default設定'
+					}).appendTo(type_entry_table_tr);
+					var type_entry_table_entry_td = $("<TD />", {
+						class: 'add_decidefile_type_entry_table_entry_td',
+					}).appendTo(type_entry_table_tr);
+
+					var entry_table = $("<TABLE />",{
+						class: 'add_decidefile_entry_table'
+					}).appendTo(type_entry_table_entry_td);
 					var count = 0;
 					$.each(elm, function(keyword_id, el) {
 						if ( count == 0 ) {
-							doc_td = $("<TD />", {
-								class: 'insert_elm_docTd',
-								text: el['doc_title']
-							}).appendTo(inner_table_tr);
-							keyword_td = $("<TD />", {
-								class: 'insert_elm_keywordTd'
-							}).appendTo(inner_table_tr);
-							target_td = $("<TD />", {
-								class: 'insert_elm_targetTd'
-							}).appendTo(inner_table_tr);
-
-							//keyword
-							keyword_table = $("<TABLE />",{
-								class: 'insert_keywordTd_table'
-							}).appendTo(keyword_td);
-							keyword_table_tr = $("<TR />", {
-								class: 'insert_keywordTd_table_tr'
-							}).appendTo(keyword_table);
-							keyword_table_setting_td = $("<TD />", {
-								text: 'Default設定'
-							}).appendTo(keyword_table_tr);
-							keyword_table_keyword_td = $("<TD />", {
-								class: 'insert_keywordTd_table_td',
-							}).appendTo(keyword_table_tr);
-							keyword_table_inner_table = $("<TABLE />",{
-								class: 'insert_keywordTd_table_td_table'
-							}).appendTo(keyword_table_keyword_td);
-
-							//target
-							target_table = $("<TABLE />",{
-								class: 'insert_targetTd_table'
-							}).appendTo(target_td);
-							target_table_tr = $("<TR />", {
-								class: 'insert_targetTd_table_tr'
-							}).appendTo(target_table);
-							target_table_td = $("<TD />", {
-								class: 'insert_targetTd_table_td',
-							}).appendTo(target_table_tr);
-							target_table_inner_table = $("<TABLE />",{
-								class: 'insert_targetTd_table_td_table'
-							}).appendTo(target_table_td);
+							inner_table_doc_td.text(el['doc_title']);
 						}
-						//keyword
-						var keyword_table_inner_table_tr = $("<TR />", {
-							class: 'insert_keywordTd_table_td_table_tr'
-						}).appendTo(keyword_table_inner_table);
-						var keyword_table_inner_table_td = $("<TD />", {
-							class: 'insert_keywordTd_table_td_table_td',
+						var entry_table_tr = $("<TR />", {
+							class: 'add_decidefile_entry_table_tr'
+						}).appendTo(entry_table);
+						var entry_table_keyword_td = $("<TD />", {
+							class: 'add_decidefile_entry_table_keyword_td',
 							text: el['keyword']
-						}).appendTo(keyword_table_inner_table_tr);
-
-						//target
-						var target_table_inner_table_tr = $("<TR />", {
-							class: 'insert_targetTd_table_td_table_tr'
-						}).appendTo(target_table_inner_table);
-						var target_table_inner_table_td = $("<TD />", {
-							class: 'insert_targetTd_table_td_table_td',
+						}).appendTo(entry_table_tr);
+						var entry_table_target_td = $("<TD />", {
+							class: 'add_decidefile_entry_table_target_td',
 							text: el['title']
-						}).appendTo(target_table_inner_table_tr);
+						}).appendTo(entry_table_tr);
 
 						count++;
 					});
@@ -1090,60 +1104,34 @@ console.log(decideLinkArray);
 					if ( Object.keys(decideLinkArray).length > 0 ) {
 						$.each(decideLinkArray, function(doc_id, elm) {
 							if ( document_id == doc_id ) {
-								var count = 0;
+								var type_entry_table_tr = $("<TR />", {
+									class: 'add_decidefile_type_entry_table_tr'
+								}).appendTo(type_entry_table);
+								var type_entry_table_detail_td = $("<TD />", {
+									class: 'add_decidefile_type_entry_table_detail_td',
+									text: '詳細設定'
+								}).appendTo(type_entry_table_tr);
+								var type_entry_table_entry_td = $("<TD />", {
+									class: 'add_decidefile_type_entry_table_entry_td',
+								}).appendTo(type_entry_table_tr);
+
+								var entry_table = $("<TABLE />",{
+									class: 'add_decidefile_entry_table'
+								}).appendTo(type_entry_table_entry_td);
+
 								$.each(elm, function(start, el) {
-									if ( count == 0 ) {
-										//keyword
-										keyword_table_tr = $("<TR />", {
-											class: 'insert_keywordTd_table_tr'
-										}).appendTo(keyword_table);
-										keyword_table_setting_td = $("<TD />", {
-											text: '詳細設定'
-										}).appendTo(keyword_table_tr);
-										keyword_table_keyword_td = $("<TD />", {
-											class: 'insert_keywordTd_table_td',
-										}).appendTo(keyword_table_tr);
-										keyword_table_inner_table = $("<TABLE />",{
-											class: 'insert_keywordTd_table_td_table'
-										}).appendTo(keyword_table_keyword_td);
-
-										//target
-										target_table = $("<TABLE />",{
-											class: 'insert_targetTd_table'
-										}).appendTo(target_td);
-										target_table_tr = $("<TR />", {
-											class: 'insert_targetTd_table_tr'
-										}).appendTo(target_table);
-										target_table_td = $("<TD />", {
-											class: 'insert_targetTd_table_td',
-										}).appendTo(target_table_tr);
-										target_table_inner_table = $("<TABLE />",{
-											class: 'insert_targetTd_table_td_table'
-										}).appendTo(target_table_td);
-									}
-
-									//keyword
-									var keyword_table_inner_table_tr = $("<TR />", {
-										class: 'insert_keywordTd_table_td_table_tr'
-									}).appendTo(keyword_table_inner_table);
-									var keyword_table_inner_table_td = $("<TD />", {
-										class: 'insert_keywordTd_table_td_table_td',
-										text: start + '~' + el['end'] + '文字目の ' + el['keyword']
-									}).appendTo(keyword_table_inner_table_tr);
-
-									//target
-									var target_table_inner_table_tr = $("<TR />", {
-										class: 'insert_targetTd_table_td_table_tr'
-									}).appendTo(target_table_inner_table);
-									var target_table_inner_table_td = $("<TD />", {
-										class: 'insert_targetTd_table_td_table_td',
+									var entry_table_tr = $("<TR />", {
+										class: 'add_decidefile_entry_table_tr'
+									}).appendTo(entry_table);
+									var entry_table_keyword_td = $("<TD />", {
+										class: 'add_decidefile_entry_table_keyword_td',
+										html: start + '~' + el['end'] + '文字目の<br>' + el['keyword']
+									}).appendTo(entry_table_tr);
+									var entry_table_target_td = $("<TD />", {
+										class: 'add_decidefile_entry_table_target_td',
 										text: el['title']
-									}).appendTo(target_table_inner_table_tr);
-
-									count++;
-
+									}).appendTo(entry_table_tr);
 								});
-
 							}
 							
 						});
@@ -1169,78 +1157,51 @@ console.log(decideLinkArray);
 
 				$.each(decideLinkArray, function(doc_id, elm) {
 					var inner_table_tr = $("<TR />", {
-						class: 'insert_elmTr'
-					}).appendTo(tbody);
+						class: 'add_decidefile_inner_table_tr'
+					}).appendTo(inner_tbody);
+					var inner_table_doc_td = $("<TD />", {
+						class: 'add_decidefile_inner_table_doc_td',
+					}).appendTo(inner_table_tr);
+					var inner_table_entry_td = $("<TD />", {
+						class: 'add_decidefile_inner_table_entry_td',
+						colspan: '2'
+					}).appendTo(inner_table_tr);
 
+					var type_entry_table = $("<TABLE />",{
+						class: 'add_decidefile_type_entry_table'
+					}).appendTo(inner_table_entry_td);
+					var type_entry_table_tr = $("<TR />", {
+						class: 'add_decidefile_type_entry_table_tr'
+					}).appendTo(type_entry_table);
+					var type_entry_table_detail_td = $("<TD />", {
+						class: 'add_decidefile_type_entry_table_detail_td',
+						text: '詳細設定'
+					}).appendTo(type_entry_table_tr);
+					var type_entry_table_entry_td = $("<TD />", {
+						class: 'add_decidefile_type_entry_table_entry_td',
+					}).appendTo(type_entry_table_tr);
+
+					var entry_table = $("<TABLE />",{
+						class: 'add_decidefile_entry_table'
+					}).appendTo(type_entry_table_entry_td);
 					var count = 0;
 					$.each(elm, function(start, el) {
 						if ( count == 0 ) {
-							doc_td = $("<TD />", {
-								class: 'insert_elm_docTd',
-								text: el['doc_title']
-							}).appendTo(inner_table_tr);
-							keyword_td = $("<TD />", {
-								class: 'insert_elm_keywordTd'
-							}).appendTo(inner_table_tr);
-							target_td = $("<TD />", {
-								class: 'insert_elm_targetTd'
-							}).appendTo(inner_table_tr);
-
-							//keyword
-							keyword_table = $("<TABLE />",{
-								class: 'insert_keywordTd_table'
-							}).appendTo(keyword_td);
-							keyword_table_tr = $("<TR />", {
-								class: 'insert_keywordTd_table_tr'
-							}).appendTo(keyword_table);
-							keyword_table_tr = $("<TR />", {
-								class: 'insert_keywordTd_table_tr'
-							}).appendTo(keyword_table);
-							keyword_table_setting_td = $("<TD />", {
-								text: '詳細設定'
-							}).appendTo(keyword_table_tr);
-							keyword_table_keyword_td = $("<TD />", {
-								class: 'insert_keywordTd_table_td',
-							}).appendTo(keyword_table_tr);
-							keyword_table_inner_table = $("<TABLE />",{
-								class: 'insert_keywordTd_table_td_table'
-							}).appendTo(keyword_table_keyword_td);
-
-							//target
-							target_table = $("<TABLE />",{
-								class: 'insert_targetTd_table'
-							}).appendTo(target_td);
-							target_table_tr = $("<TR />", {
-								class: 'insert_targetTd_table_tr'
-							}).appendTo(target_table);
-							target_table_td = $("<TD />", {
-								class: 'insert_targetTd_table_td',
-							}).appendTo(target_table_tr);
-							target_table_inner_table = $("<TABLE />",{
-								class: 'insert_targetTd_table_td_table'
-							}).appendTo(target_table_td);
+							inner_table_doc_td.text(el['doc_title']);
 						}
-
-						//keyword
-						var keyword_table_inner_table_tr = $("<TR />", {
-							class: 'insert_keywordTd_table_td_table_tr'
-						}).appendTo(keyword_table_inner_table);
-						var keyword_table_inner_table_td = $("<TD />", {
-							class: 'insert_keywordTd_table_td_table_td',
-							text: start + '~' + el['end'] + '文字目の ' + el['keyword']
-						}).appendTo(keyword_table_inner_table_tr);
-
-						//target
-						var target_table_inner_table_tr = $("<TR />", {
-							class: 'insert_targetTd_table_td_table_tr'
-						}).appendTo(target_table_inner_table);
-						var target_table_inner_table_td = $("<TD />", {
-							class: 'insert_targetTd_table_td_table_td',
+						var entry_table_tr = $("<TR />", {
+							class: 'add_decidefile_entry_table_tr'
+						}).appendTo(entry_table);
+						var entry_table_keyword_td = $("<TD />", {
+							class: 'add_decidefile_entry_table_keyword_td',
+							html: start + '~' + el['end'] + '文字目の<br>' + el['keyword']
+						}).appendTo(entry_table_tr);
+						var entry_table_target_td = $("<TD />", {
+							class: 'add_decidefile_entry_table_target_td',
 							text: el['title']
-						}).appendTo(target_table_inner_table_tr);
+						}).appendTo(entry_table_tr);
 
 						count++;
-
 					});
 					
 				});
@@ -1251,7 +1212,7 @@ console.log(decideLinkArray);
 			var pop = new $pop(content, {
 				type: 'inline',
 				title: 'リンク先詳細設定',
-				width: 600,
+				width: 800,
 				modal: true,
 				windowmode: false,
 				close: true
@@ -1286,10 +1247,21 @@ console.log(decideLinkArray);
 						data: data,
 
 						success: function(json) {
-console.log(json['test']);
+// console.log(json['test']);
 							
 							pop.close();
-							location.reload();
+
+							var form = $('#default_detail_decideForm');
+							var input = $("<input />", {
+								type: 'text',
+								class: 'default_detail_decideInfo',
+								name: 'default_detail_decideInfo[0]',
+								value: 'success',
+							}).css({
+								'display': 'none'
+							}).appendTo(form);	
+							$('.default_detail_decideButton').click();
+
 						},
 
 						error: function(xhr, textStatus, errorThrown){
@@ -1344,7 +1316,7 @@ console.log(json['latest_decideinfo']);
 					class: 'latest_decide_thead'
 				}).appendTo(table);
 				$("<TH />", {
-					text: 'Keyword'
+					text: '単語'
 				}).css({'white-space': 'nowrap'}).appendTo(thead);
 				$("<TH />", {
 					text: 'リンク先URL情報'
@@ -1491,7 +1463,7 @@ console.log(json['decideinfo']);
 								class: 'decide_history_thead'
 							}).appendTo(table);
 							$("<TH />", {
-								text: 'Keyword'
+								text: '単語'
 							}).css({'white-space': 'nowrap'}).appendTo(thead);
 							$("<TH />", {
 								text: 'リンク先URL情報'
