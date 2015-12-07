@@ -1,4 +1,5 @@
 <?php
+//形態素解析や推薦に使う要素が設定画面で設定されているか
 $no_selection_morphological_analysis = false;
 $no_selection_recommend_support = false;
 

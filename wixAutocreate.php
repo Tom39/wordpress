@@ -80,10 +80,13 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 			$sql = 'SELECT COUNT(*) FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft"';
 			if ( $wpdb->get_var($sql) == 1 ) {
 				//ドキュメント数2になるなら、まだ計算してない１つ目のドキュメントに対する計算
-				//DBに挿入・更新
+				//DBに単語特徴量挿入・更新
 				wix_keyword_similarity_score_inserts_updates($doc_id);
 
 			} else {
+				//DBに単語特徴量挿入・更新
+				wix_keyword_similarity_score_inserts_updates($doc_id);
+
 				if ( $wpdb->get_var($sql) == 2 ) {
 					$sql = 'SELECT ID FROM' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft"';
 					$first_doc_idObj = $wpdb->get_results($sql);
@@ -95,8 +98,7 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 					wix_minhash($first_docId);
 					//Jaccard類似度計算
 					wix_jaccard($first_docId);
-					//DBに挿入・更新
-					wix_keyword_similarity_score_inserts_updates($doc_id);
+					//DBにドキュメント類似度挿入・更新
 					wix_document_similarity_score_inserts_updates($doc_id);
 
 					$doc_simObj = array();
@@ -106,14 +108,13 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 				wix_cosSimilarity($doc_id);
 				// dump('dump.txt', $doc_simObj);
 
-				//MinHash値計算
-				wix_minhash($doc_id);
-
 				//Jaccard類似度計算
 				wix_jaccard($doc_id);
 
-				//DBに挿入・更新
-				wix_keyword_similarity_score_inserts_updates($doc_id);
+				//MinHash値計算
+				wix_minhash($doc_id);
+
+				//DBにドキュメント類似度挿入・更新
 				wix_document_similarity_score_inserts_updates($doc_id);
 
 			}
@@ -165,6 +166,7 @@ function wix_keyword_similarity_score_inserts_updates($doc_id) {
 			}
 			$sql = $sql . ') VALUES ' . $insertEntry;
 			$wpdb->query( $sql );
+			// dump('dump.txt', $sql);
 
 		//UPDATE
 		} else {
@@ -252,7 +254,10 @@ function wix_document_similarity_score_inserts_updates($doc_id) {
 			$insertEntry = '';
 			$methodArray = array();
 			$methodFlag = false;
+
 			foreach ($doc_simObj as $doc_id2 => $array) {
+				if ( empty($doc_id2) ) break;
+
 				$tmpEntry = '';
 				foreach ($array as $method => $value) {
 					if ( $methodFlag == false )
@@ -276,6 +281,7 @@ function wix_document_similarity_score_inserts_updates($doc_id) {
 			}
 			$sql = $sql . ') VALUES ' . $insertEntry;
 			$wpdb->query( $sql );
+			// dump('dump.txt', $sql);
 
 		//UPDATE
 		} else {
@@ -481,6 +487,7 @@ function wix_textrank_update() {
 
 	$tmpId = '';
 	$tmpArray = array();
+	$term_featureObj = array();
 	foreach ($docObj as $index => $value) {
 		$keyword = $value->keyword;
 
@@ -489,6 +496,7 @@ function wix_textrank_update() {
 			array_push($tmpArray, $keyword);
 		} else {
 			wix_textrank($tmpArray);
+
 			foreach ($term_featureObj as $keyword => $method_scoreArray) {
 				$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET textrank=' . $method_scoreArray['textrank'] . ' WHERE doc_id=' . $tmpId . ' AND keyword="' . $keyword . '"';
 				$wpdb->query( $sql );

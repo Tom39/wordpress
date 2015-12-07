@@ -433,27 +433,6 @@ console.log(json['innerLinkArray']);
 									});
 								}
 							});
-							// $.each($('.decide_entrys_tab2_table_target_a'), function(index, el) {
-							// 	if ( typeof $(this).attr('href') === 'undefined' ) {
-							// 		if ( $(this).attr('no_attach') == elm['target'] ) {
-							// 			$(this)
-							// 				.parent()
-							// 				.next()
-							// 				.children()
-							// 				.prop('checked', true);
-							// 		}
-
-							// 	} else {
-							// 		if ( $(this).attr('href') == elm['target'] ) {
-							// 			$(this)
-							// 				.parent()
-							// 				.next()
-							// 				.children()
-							// 				.prop('checked', true);
-							// 		}
-
-							// 	}
-							// });
 						});
 					}
 				});

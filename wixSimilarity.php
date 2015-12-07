@@ -563,7 +563,7 @@ function wix_jaccard($doc_id) {
 
 		$docInfoArray = array();
 		foreach ($docInfoObj as $index => $value) {
-			$doc_id2 = $value->ID;
+			$doc_id2 = $value->doc_id;
 			$keyword = $value->keyword;
 
 			if ( array_key_exists($doc_id2, $docInfoArray) ) {
