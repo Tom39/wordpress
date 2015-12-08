@@ -461,7 +461,9 @@ console.log(json['innerLinkArray']);
 				data: data2,
 
 				success: function(json) {
-// console.log(json['entrys']);
+console.log(json['entrys']);
+console.log(json['no_selection_option']);
+
 					if ( json['entrys'].length != 0 ) {
 						if ( json['no_selection_option'].length != 0 ) {
 							if ( json['no_selection_option'] == 'no_selection_morphological_analysis' ) {
@@ -1074,8 +1076,13 @@ console.log(decideLinkArray);
 						}).appendTo(entry_table_tr);
 						var entry_table_target_td = $("<TD />", {
 							class: 'add_decidefile_entry_table_target_td',
-							text: el['title']
 						}).appendTo(entry_table_tr);
+						var entry_table_target_td_a = $("<A />", {
+							class: 'add_decidefile_entry_table_target_td_a',
+							text: el['title'],
+							href: el['target'],
+							target: 'blank'
+						}).appendTo(entry_table_target_td);
 
 						count++;
 					});
@@ -1108,8 +1115,13 @@ console.log(decideLinkArray);
 									}).appendTo(entry_table_tr);
 									var entry_table_target_td = $("<TD />", {
 										class: 'add_decidefile_entry_table_target_td',
-										text: el['title']
 									}).appendTo(entry_table_tr);
+									var entry_table_target_td_a = $("<A />", {
+										class: 'add_decidefile_entry_table_target_td_a',
+										text: el['title'],
+										href: el['target'],
+										target: 'blank'
+									}).appendTo(entry_table_target_td);
 								});
 							}
 							
@@ -1177,8 +1189,13 @@ console.log(decideLinkArray);
 						}).appendTo(entry_table_tr);
 						var entry_table_target_td = $("<TD />", {
 							class: 'add_decidefile_entry_table_target_td',
-							text: el['title']
 						}).appendTo(entry_table_tr);
+						var entry_table_target_td_a = $("<A />", {
+							class: 'add_decidefile_entry_table_target_td_a',
+							text: el['title'],
+							href: el['target'],
+							target: 'blank'
+						}).appendTo(entry_table_target_td);
 
 						count++;
 					});
@@ -1252,6 +1269,8 @@ console.log(decideLinkArray);
 				}
 			}).appendTo(buttonDiv);
 
+		} else {
+			alert('選択してください');
 		}
 
 	});

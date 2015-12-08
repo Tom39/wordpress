@@ -1,7 +1,7 @@
 <?php
 //形態素解析や推薦に使う要素が設定画面で設定されているか
-$no_selection_morphological_analysis = false;
-$no_selection_recommend_support = false;
+$no_selection_morphological_analysis = 'false';
+$no_selection_recommend_support = 'false';
 
 /* 設定部分 */
 add_action( 'admin_init', 'wix_settings_core' );
@@ -68,6 +68,13 @@ function wix_settings_core() {
 							add_option( 'wixfile_autocreate', 'true' );
 						else
 							add_option( 'wixfile_autocreate', 'false' );
+
+						if ( isset( $_POST['wixfile_autocreate_wordtype'] ) && $_POST['wixfile_autocreate_wordtype'] ) {
+							if ( $_POST['wixfile_autocreate_wordtype'] == 'feature_word' )
+								add_option( 'wixfile_autocreate_wordtype', 'feature_word' );
+							else
+								add_option( 'wixfile_autocreate_wordtype', 'freq_word' );
+						}
 					}
 					if ( isset( $_POST['wixfile_manualupdate'] ) && $_POST['wixfile_manualupdate'] ) {
 						if ( $_POST['wixfile_manualupdate'] == 'true' )
@@ -194,6 +201,18 @@ function wix_settings_core() {
 						if ( get_option('wixfile_autocreate') == false ) 
 							add_option( 'wixfile_autocreate', 'false' );
 						update_option( 'wixfile_autocreate', 'false' );
+					}
+
+					if ( isset( $_POST['wixfile_autocreate_wordtype'] ) && $_POST['wixfile_autocreate_wordtype'] ) {
+						if ( $_POST['wixfile_autocreate_wordtype'] == 'feature_word' ) {
+							if ( get_option('wixfile_autocreate_wordtype') == false ) 
+								add_option( 'wixfile_autocreate_wordtype', 'feature_word' );
+							update_option( 'wixfile_autocreate_wordtype', 'feature_word' );
+						} else {
+							if ( get_option('wixfile_autocreate_wordtype') == false ) 
+								add_option( 'wixfile_autocreate_wordtype', 'freq_word' );
+							update_option( 'wixfile_autocreate_wordtype', 'freq_word' );
+						}
 					}
 				}
 				if ( isset( $_POST['wixfile_manualupdate'] ) && $_POST['wixfile_manualupdate'] ) {
@@ -904,7 +923,7 @@ function wixfilemeta_posts_insert( $array ) {
 		$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
 
 		//まだDBに１つもドキュメントがなかったら計算しない.(でも基本的にemptyにならないみたい)
-		$sql = 'SELECT id, post_content FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" ORDER BY id ASC';
+		$sql = 'SELECT ID, post_content FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" ORDER BY id ASC';
 		$doc_Obj = $wpdb->get_results($sql);
 		if ( !empty($doc_Obj) ) {
 
@@ -961,7 +980,7 @@ function wixfilemeta_posts_insert( $array ) {
 	↓２つの関数を別のファイルに移動したい。ここにあるのはキモチワルイ
 **/
 //ドキュメントの投稿ステータスが変わったら、WIXファイル内のどのキーワードが出現するかを算出
-add_action( 'transition_post_status', 'wix_keyword_appearance_in_doc', 10, 3 );
+// add_action( 'transition_post_status', 'wix_keyword_appearance_in_doc', 10, 3 );
 function wix_keyword_appearance_in_doc( $new_status, $old_status, $post ) {
 	global $wpdb;
 	$doc_id = $post->ID;
@@ -1034,13 +1053,14 @@ function wix_correspond_keywords( $body ) {
 //推薦エントリを提示
 add_action( 'wp_ajax_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );
 add_action( 'wp_ajax_nopriv_wix_similarity_entry_recommend', 'wix_similarity_entry_recommend' );
-function wix_similarity_entry_recommend() {
+function wix_similarity_entry_recommend($doc_id = 0, $type = 'js') {
 	global $wpdb;
 
 	header("Access-Control-Allow-Origin: *");
 	header('Content-type: application/javascript; charset=utf-8');
 
-	$doc_id = $_POST['doc_id'];
+	if ( $doc_id == 0 )
+		$doc_id = $_POST['doc_id'];
 
 	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
 	$wix_document_similarity = $wpdb->prefix . 'wix_document_similarity';
@@ -1089,7 +1109,7 @@ function wix_similarity_entry_recommend() {
 		$returnValue['page_freq_words_in_site'] = $idf_sortArray;
 
 		//特徴語
-		$featureArray = feature_words_sort( $tfidf_sortArray, $bm25_sortArray, $textrank_sortArray );
+		$featureArray = wix_feature_words_sort( $tfidf_sortArray, $bm25_sortArray, $textrank_sortArray );
 		$returnValue['feature_words'] = $featureArray;
 
 		//サイト内頻出語(上位10件)
@@ -1100,7 +1120,7 @@ function wix_similarity_entry_recommend() {
 
 		//ランキング済みターゲット
 		$selectQuery = '';
-		$similar_documentsArray = candidate_targets_sort( $similar_documents, $doc_id );
+		$similar_documentsArray = wix_candidate_targets_sort( $similar_documents, $doc_id );
 		foreach ($similar_documentsArray as $doc_id2 => $score) {
 			if ( empty($selectQuery) )
 				$selectQuery = 'ID=' . $doc_id2 . ' ';
@@ -1123,22 +1143,27 @@ function wix_similarity_entry_recommend() {
 		$returnValue['candidate_targets'] = $candidate_targetsArray;
 	}
 
+	if ( $type == 'js' ) {
+		$json = array(
+			"entrys" => $returnValue,
+			// "test" => $candidate_targetsArray,
+		);
 
-	$json = array(
-		"entrys" => $returnValue,
-		// "test" => $candidate_targetsArray,
-	);
+		echo json_encode( $json );
 
-	echo json_encode( $json );
+		
+	    die();
 
-	
-    die();
+	} else if ( $type == 'php' ) {
+
+		return $returnValue;
+	}
 }
 
 /**
 		↓重みよりも、閾値をどうやって一意に定めるか。
 */
-function feature_words_sort( $array1, $array2, $array3 ) {
+function wix_feature_words_sort( $array1, $array2, $array3 ) {
 	$sumArray = array();
 	//重み
 	$w1=0.3; $w2=0.3; $w3=0.4;
@@ -1155,7 +1180,7 @@ function feature_words_sort( $array1, $array2, $array3 ) {
 /**
 	↓類似ドキュメントの重み、閾値をどうするか？
 */
-function candidate_targets_sort( $similar_documents, $doc_id ) {
+function wix_candidate_targets_sort( $similar_documents, $doc_id ) {
 	$similar_documentsArray = array();
 	//重み
 	$w1=0.3; $w2=0.3; $w3=0; $w4=0.4;
@@ -1773,37 +1798,28 @@ function wix_disambiguation_recommend() {
 		$returnValue[$keyword]['targets'] = $tmpArray;
 	}
 
-	if ( $no_selection_morphological_analysis == false && $no_selection_recommend_support == false ) {
-		$json = array(
-			"entrys" => $returnValue,
-		);
+	if ( $no_selection_morphological_analysis == 'false' && $no_selection_recommend_support == 'false' ) {
+		$message = '';
 
 	} else {
 		$tmp = 0;
-		if ( $no_selection_morphological_analysis == true )
+		if ( $no_selection_morphological_analysis == 'true' )
 			$tmp += 1;
-		if ( $no_selection_recommend_support == true )
+		if ( $no_selection_recommend_support == 'true' )
 			$tmp += 2;
 
-		if ( $tmp == 1 ) {
-			$json = array(
-				"entrys" => $returnValue,
-				"no_selection_option" => 'no_selection_morphological_analysis'
-			);
-
-		} else if ( $tmp == 2 ) {
-			$json = array(
-				"entrys" => $returnValue,
-				"no_selection_option" => 'no_selection_recommend_support'
-			);
-
-		} else {
-			$json = array(
-				"entrys" => $returnValue,
-				"no_selection_option" => 'double'
-			);
-		}
+		if ( $tmp == 1 )
+			$message = 'no_selection_morphological_analysis';
+		else if ( $tmp == 2 )
+			$message = 'no_selection_recommend_support';
+		else
+			$message = 'double';
 	}
+
+	$json = array(
+		"entrys" => $returnValue,
+		"no_selection_option" => $message
+	);
 
 	echo json_encode( $json );
 
@@ -1824,18 +1840,22 @@ function wix_entry_disambiuation_with_docSim($doc_id, $doc_idArray, $keyword_inn
 		// $keyword_innerlinkArray = wix_calc_disambiguation_score_hard($keyword_innerlinkArray, $entrysArray);
 		// $keyword_innerlinkArray = wix_calc_disambiguation_score_veryhard($keyword_innerlinkArray, $entrysArray);
 
-
 		//Ranking
 		foreach ($keyword_innerlinkArray as $keyword => $valueArray) {
 			if ( count($valueArray) > 1 ) {
 				$tmpArray = array();
+				$tmp_simscoreArray = array();
 
 				foreach ($valueArray as $doc_id2 => $array) {
+					$tmp_simscoreArray[$doc_id2] = $doc_simArray[$doc_id2];
 					$tmpArray[$doc_id2] = $array['disambiguatoin_score'] * $doc_simArray[$doc_id2];
 					unset($keyword_innerlinkArray[$keyword][$doc_id2]);
 				}
 				arsort($tmpArray);
 				foreach ($tmpArray as $doc_id2 => $finalScore) {
+					$valueArray[$doc_id2]['sim_score'] = $tmp_simscoreArray[$doc_id2];
+					$valueArray[$doc_id2]['final_score'] = $tmpArray[$doc_id2];
+
 					$keyword_innerlinkArray[$keyword][$doc_id2] = $valueArray[$doc_id2];
 				}
 			}
@@ -2011,10 +2031,10 @@ function wix_entry_disambiuation_with_googleSearch($doc_id, $doc_idArray, $keywo
 							$context_info = wix_get_contextInfo($keyword, $wordsArray);
 
 							if ( $context_info == 'no_selection_morphological_analysis' ) {
-								$no_selection_morphological_analysis = true;
+								$no_selection_morphological_analysis = 'true';
 
 							} else if ( $context_info == 'no_selection_recommend_support' ) {
-								$no_selection_recommend_support = true;
+								$no_selection_recommend_support = 'true';
 
 							} else {
 								//Context情報をDBに登録(挿入 or 更新)
@@ -2087,10 +2107,10 @@ function wix_entry_disambiuation_with_googleSearch($doc_id, $doc_idArray, $keywo
 						$context_info = wix_get_contextInfo($keyword, $wordsArray);
 
 						if ( $context_info == 'no_selection_morphological_analysis' ) {
-							$no_selection_morphological_analysis = true;
+							$no_selection_morphological_analysis = 'true';
 
 						} else if ( $context_info == 'no_selection_recommend_support' ) {
-							$no_selection_recommend_support = true;
+							$no_selection_recommend_support = 'true';
 
 						} else {
 							//Context情報をDBに登録(挿入 or 更新)
@@ -2221,11 +2241,11 @@ function wix_get_contextInfo($keyword, $wordsArray) {
 			}
 
 		} else {
-			$context_info = '';
+			$context_info = 'no_selection_morphological_analysis';
 		}
 
 	} else {
-		$context_info = '';
+		$context_info = 'no_selection_recommend_support';
 	}
 
 	return $context_info;

@@ -30,6 +30,7 @@ require_once( dirname( __FILE__ ) . '/wixSetting.php' );
 require_once( dirname( __FILE__ ) . '/wixDecide.php' );
 require_once( dirname( __FILE__ ) . '/wixSimilarity.php' );
 require_once( dirname( __FILE__ ) . '/wixAutocreate.php' );
+require_once( dirname( __FILE__ ) . '/wixEvaluation.php' );
 
 add_action( 'admin_init', 'wix_admin_init' );
 function wix_admin_init() {
@@ -117,9 +118,7 @@ function dump( $filename, $obj ) {
 
     ob_start();
 
-    echo "<pre>";
     print_r($obj);
-    echo "</pre>";
 
     $out = ob_get_contents();
     ob_end_clean();
@@ -299,6 +298,31 @@ function wix_table_create() {
     $table_name = $wpdb->prefix . 'posts';
     if ( $is_db_exists == $table_name ) return;
     $sql = "ALTER TABLE " . $table_name . " ADD COLUMN words_obj text NOT NULL;";
+    dbDelta($sql);
+
+    $table_name = $wpdb->prefix . 'posts';
+    if ( $is_db_exists == $table_name ) return;
+    $sql = "ALTER TABLE " . $table_name . " ADD COLUMN eval_words text DEFAULT NULL;";
+    dbDelta($sql);
+
+    /**
+        以下、評価実験用テーブル
+    */
+    $table_name = $wpdb->prefix . 'wix_eval_keyword_similarity';
+    $is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+    if ( $is_db_exists == $table_name ) return;
+    $sql = "CREATE TABLE " . $table_name . " (
+             doc_id bigint(20) UNSIGNED,
+             keyword tinytext NOT NULL,
+             tf float NOT NULL DEFAULT 0,
+             idf float NOT NULL DEFAULT 0,
+             tf_idf float NOT NULL DEFAULT 0,
+             bm25 float NOT NULL DEFAULT 0,
+             textrank float NOT NULL DEFAULT 0,
+             PRIMARY KEY(doc_id,keyword(255)),
+             FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
+             ON UPDATE CASCADE ON DELETE CASCADE
+            );";
     dbDelta($sql);
 
 }

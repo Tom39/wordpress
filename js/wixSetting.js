@@ -126,6 +126,21 @@ jQuery(function($) {
 		new_form.insertAfter('#pattern_filename li:last');
 	});
 
+	$('input[name=wixfile_autocreate]').on('change', function(event) {
+		event.preventDefault();
+		
+		if ( $(this).attr('id') == 'wixfile_autocreate_on' ) {
+			$('#wixfile_autocreate_setting').show('slow/400/fast', function() {});
+
+		} else {
+			$('#wixfile_autocreate_setting').hide();
+			$.each($('#wixfile_autocreate_setting').find('input'), function(index, el) {
+				$(this).prop('checked', false);
+			});
+		}
+
+	});
+
 	$('#other_option_settings').find('input').on('change', function(event) {
 		event.preventDefault();
 		if ( $(this).attr('id') == 'morphological_analysis_yahoo' ) {
@@ -2157,6 +2172,33 @@ jQuery(function($) {
 					});
 
 					//"単語"に関するマウスイベント
+					//単語が選択されてなかったらalert
+					$('.candidate_targets_inner_checkbox').click(function(event) {
+						var checkbox = $(this);
+						$.each($('.recommend_entrys_tabbox'), function(index, el) {
+							if ( $(this).css('display') == 'block' ) {
+								var subjectTrs = $(this).find('tr');
+								var flag = false;
+
+								$.each(subjectTrs, function(index, el) {
+									if ( index != 0 ) {
+										if ( $(this).children('td').css('background-color') == 'rgb(0, 255, 255)' )
+											flag = true;
+									}
+
+									if ( flag == false ) {
+										alert('単語を選択してください');
+										return false;
+									}
+								});
+
+								checkbox.prop('checked', false);
+							}
+						});
+					});
+
+
+
 					$('.page_freq_words_inner_td, .page_freq_words_in_site_inner_td, .feature_words_inner_td, .site_freq_words_inner_td').on({
 						'mouseover': function() {
 							event.preventDefault();

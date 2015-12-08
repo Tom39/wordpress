@@ -1,7 +1,7 @@
 <?php
 
 //ドキュメント長の計算
-add_action( 'transition_post_status', 'wix_documnt_length', 10, 3 );
+// add_action( 'transition_post_status', 'wix_documnt_length', 10, 3 );
 function wix_documnt_length( $new_status, $old_status, $post ) {
 	global $wpdb;
 	if ( $new_status != 'trash' && $new_status != 'inherit' && $new_status != 'auto-draft' ) {
@@ -28,7 +28,7 @@ function words_for_entry_disambiguation($wordsArray, $doc_id) {
 }
 
 //ドキュメントの投稿ステータスが変わったら、類似度計算
-add_action( 'transition_post_status', 'wix_similarity_func', 10, 3 );
+// add_action( 'transition_post_status', 'wix_similarity_func', 10, 3 );
 function wix_similarity_func( $new_status, $old_status, $post ) {
 	global $wpdb, $term_featureObj, $doc_simObj;
 
@@ -123,9 +123,6 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 
 }
 
-/**
-固定ページは固定ページのみ、投稿は投稿のみを対象として計算したほうがいい？？（2015/09/25）
-**/
 //TF-IDF値などをDBに保存・更新
 function wix_keyword_similarity_score_inserts_updates($doc_id) {
 	global $wpdb, $term_featureObj;
@@ -359,7 +356,7 @@ function wix_similarity_score_deletes($doc_id, $table) {
 
 
 //IDF値の更新
-add_action( 'transition_post_status', 'wix_status_update_idf_update', 19, 3 );
+// add_action( 'transition_post_status', 'wix_status_update_idf_update', 19, 3 );
 function wix_status_update_idf_update( $new_status, $old_status, $post ) {
 	global $wpdb;
 	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
@@ -622,6 +619,41 @@ function wix_cosSimilarity_update() {
 	}
 }
 
+//IDF値などの一括更新
+/**
+		wixSettingのページで一括更新ボタンを１つ用意する予定
+*/
+// function wix_update_idf() {
+// 	global $wpdb;
+// 	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
+
+// 	$sql = 'SELECT COUNT(*) FROM ' . $wix_keyword_similarity;
+// 	if ( $wpdb->get_var($sql) == 0 ) return;
+
+// 	$updateArray = array();
+// 	$document_num = (int) $wpdb->get_var('SELECT COUNT(*) FROM $wpdb->posts WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft"');
+	
+// 	//1回以上ドキュメントに出現したキーワードと、その回数(つまりidfの分母)
+// 	$sql = 'SELECT keyword, COUNT(DISTINCT doc_id) AS num FROM ' . $wix_keyword_similarity . ' GROUP BY keyword';
+// 	$keywords_in_alldocuments = $wpdb->get_results($sql);
+// 	foreach ($keywords_in_alldocuments as $index => $value) {
+// 		$keyword = $value->keyword;
+// 		$occurences = $value->num;
+
+// 		$updateArray[$keyword] = log($document_num / $occurences);
+// 	}
+	
+// 	foreach ($updateArray as $keyword => $value) {
+// 		$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET idf=' . $value . ' WHERE keyword="' . $keyword . '"';
+// 		$wpdb->query( $sql );
+// 	}
+
+// 	wix_word_features_update();
+// 	wix_textrank_update();
+// 	wix_cosSimilarity_update();
+
+// }
+
 //postsテーブルのwords_obj列一括更新
 function wix_words_obj_update(){
 	global $wpdb;
@@ -656,6 +688,40 @@ function wix_words_obj_update(){
 		}
 	}
 
+}
+
+//WIXファイルの自動生成設定がされている場合、動作
+// add_action( 'transition_post_status', 'wix_entry_autocreate', 20, 3 );
+function wix_entry_autocreate( $new_status, $old_status, $post ) {
+	global $wpdb;
+	if ( $new_status != 'trash' && $new_status != 'inherit' && $new_status != 'auto-draft' ) {
+		if ( get_option('wixfile_autocreate') == 'true' ) {
+			$doc_id = $post->ID;
+
+			/**
+				重み、閾値は
+				wix_feature_words_sort
+				wix_candidate_targets_sort
+											で定める
+			*/
+			$candidate_entrys = wix_similarity_entry_recommend($doc_id, 'php');
+
+			//ランキング済みのターゲット候補
+			$ranked_targets = $candidate_entrys['candidate_targets'];
+
+			//閾値で削り、残ったものを新規エントリとする
+			if ( get_option('wixfile_autocreate_wordtype') == 'feature_word' ) {
+				foreach ($candidate_entrys['feature_words'] as $keyword => $score) {
+					
+				}
+
+			} else if ( get_option('wixfile_autocreate_wordtype') == 'freq_word' ) {
+				foreach ($candidate_entrys['page_freq_words'] as $keyword => $score) {
+					
+				}
+			}
+		}
+	}
 }
 
 

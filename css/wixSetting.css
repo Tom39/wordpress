@@ -253,6 +253,9 @@ ul#tab li.active a:hover {
 #init_settings #pattern_filename li input[type="text"] {
     width: 40%;
 }
+#init_settings fieldset {
+    margin-top: 2%;
+}
 input[type=range] {
   -webkit-appearance: none;
   margin: 4px 0;
@@ -363,10 +366,27 @@ input[type=range]:focus::-ms-fill-upper {
 .contents_option fieldset{
     margin-top: 3%;
 }
-#wixfile_option_settings input, #decidefile_option_settings input{
+input[name=wixfile_autocreate], input[name=wixfile_manualupdate] {
     display: none;
 }
-#wixfile_option_settings label, #decidefile_option_settings label {
+input[name=decidefile_apply], input[name=decidefile_autocreate], input[name=decidefile_manualupdate] {
+    display: none;
+}
+#wixfile_option_settings .switch-on, #wixfile_option_settings .switch-off {
+    display: block;
+    float: left;
+    cursor: pointer;
+    width: 20%;
+    margin: 0;
+    padding: 10px;
+    background: #bdc3c7;
+    color: #869198;
+    font-size: 13px;
+    text-align: center;
+    line-height: 1;
+    transition: .2s;
+}
+#decidefile_option_settings .switch-on, #decidefile_option_settings .switch-off {
     display: block;
     float: left;
     cursor: pointer;
@@ -394,6 +414,12 @@ input[type=range]:focus::-ms-fill-upper {
     background-color: #e67168;
     color: #fff;
 }
+fieldset[name=other_option] input[type="text"] {
+    margin-top: 2%;
+}
+#yahoo_id {
+    margin-bottom: 2%;
+}
 #other_option_settings input[type="text"] {
     width: 80%;
     font-size: 9pt;
@@ -402,6 +428,9 @@ input[type=range]:focus::-ms-fill-upper {
     vertical-align: top;
     color: #634950;
     font-weight: 600;
+}
+#morphological_analysis_reset, #recommend_support_reset {
+    margin-top: 2%;
 }
 
 #wix_settings_button, #wix_init_settings_button {

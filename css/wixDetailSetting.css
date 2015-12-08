@@ -288,6 +288,7 @@ ul#decide_entrys_tab li.active a:hover {
 }
 #decide_entrys_tab1_table {
     width: 100%;
+    border-collapse: collapse;
     /*table-layout: fixed;*/
 }
 #decide_entrys_tab1_table thead {
@@ -304,6 +305,7 @@ ul#decide_entrys_tab li.active a:hover {
 }
 .decide_entrys_tab1_table_tr {
     width: 100%;
+    border-bottom: dotted 1px #b0c4de;
 }
 .decide_entrys_tab1_table_keyword_td {
     width: 35%;
@@ -342,12 +344,14 @@ ul#decide_entrys_tab li.active a:hover {
 }
 #decide_entrys_tab2_table {
     width: 100%;
+    border-collapse: collapse;
 }
 #decide_entrys_tab2_table thead {
     width: 100%;
 }
 .decide_entrys_tab2_table_tr {
     width: 100%;
+    border-bottom: dotted 1px #b0c4de;
 }
 .decide_entrys_tab2_table_keyword_td {
     width: 35%;
@@ -380,7 +384,7 @@ ul#decide_entrys_tab li.active a:hover {
     float: right;
 }
 #decide_entrys_tab1_button, #decide_entrys_tab2_button {
-    width: 33%;
+    width: 34%;
     float: right;
     margin-top: 5%;
     font-size: 8pt;
@@ -473,6 +477,9 @@ ul#decide_entrys_tab li.active a:hover {
 }
 .add_decidefile_entry_table_target_td {
     width: 60%;
+}
+.add_decidefile_entry_table_target_td_a {
+    width: 100%;
 }
 
 

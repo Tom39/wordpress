@@ -87,11 +87,11 @@
 		//エントリ候補をオーサーに提示
 		//Ajax
 
-	feature_words_sort( $array1, $array2, $array3 )
+	wix_feature_words_sort( $array1, $array2, $array3 )
 		//"特徴語"を重み付計算に基づいたランキング
 			//$array1: TF-IDF, $array2: BM25, $array3: TextRank
 
-	candidate_targets_sort( $similar_documents, $doc_id )
+	wix_candidate_targets_sort( $similar_documents, $doc_id )
 		//ターゲット候補(内部リンク)の、ドキュメント間類似度に基づいたランキング
 			//$similar_documents: 候補ターゲット群
 			//$doc_id: 計算対象ドキュメントID
@@ -162,7 +162,6 @@
 
 	wix_contents_option()
 		//YahooIDとかGoogle IDが既にDBにあったら返り値へ。
-
 
 	created_wixfile_info()
 		//Library登録済みWIXファイル情報
@@ -335,8 +334,6 @@
 		//今使ってない
 
 
-
-
 [newBody.php]
 	new_body( $content, $decideFileArray = '', $decideFlag = false ) 
 		//WIXによるnewBodyの作成
@@ -349,6 +346,7 @@
 
 	wixFileInfo( $body )
 		//リクエストHTMLに対して、適用可能なWIXファイルエントリ情報を抽出し、連想配列に整形
+
 
 [patternMatching.php]
 	returnWixID()

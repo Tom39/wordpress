@@ -178,6 +178,45 @@ function wix_admin_settings(){
 								<label for="wixfile_autocreate_on" class="switch-on">YES</label>
 								<input type="radio" name="wixfile_autocreate" id="wixfile_autocreate_off" value="false">
 								<label for="wixfile_autocreate_off" class="switch-off">No</label>
+									<?php
+									if ( get_option('wixfile_autocreate_wordtype') == 'feature_word' ) {
+									?>
+									<div id="wixfile_autocreate_setting">
+										<br><br>
+										<fieldset name="wixfile_autocreate_option" form="wixfile_autocreate_option1">
+											<input type="radio" name="wixfile_autocreate_wordtype" id="wixfile_autocreate_wordtype_feature" value="feature_word" checked>
+											<label for="wixfile_autocreate_wordtype_feature" class="wixfile_autocreate_option">特徴語</label>
+											<input type="radio" name="wixfile_autocreate_wordtype" id="wixfile_autocreate_wordtype_freq" value="freq_word">
+											<label for="wixfile_autocreate_wordtype_freq" class="wixfile_autocreate_option">ページ内頻出語</label>
+										</fieldset>
+									</div>
+									<?php
+									} else if ( get_option('wixfile_autocreate_wordtype') == 'freq_word' ) {
+									?>
+									<div id="wixfile_autocreate_setting">
+										<br><br>
+										<fieldset name="wixfile_autocreate_option" form="wixfile_autocreate_option1">
+											<input type="radio" name="wixfile_autocreate_wordtype" id="wixfile_autocreate_wordtype_feature" value="feature_word">
+											<label for="wixfile_autocreate_wordtype_feature" class="wixfile_autocreate_option">特徴語</label>
+											<input type="radio" name="wixfile_autocreate_wordtype" id="wixfile_autocreate_wordtype_freq" value="freq_word" checked>
+											<label for="wixfile_autocreate_wordtype_freq" class="wixfile_autocreate_option">ページ内頻出語</label>
+										</fieldset>
+									</div>
+									<?php
+									} else {
+									?>
+									<div id="wixfile_autocreate_setting">
+										<br><br>
+										<fieldset name="wixfile_autocreate_option" form="wixfile_autocreate_option1">
+											<input type="radio" name="wixfile_autocreate_wordtype" id="wixfile_autocreate_wordtype_feature" value="feature_word">
+											<label for="wixfile_autocreate_wordtype_feature" class="wixfile_autocreate_option">特徴語</label>
+											<input type="radio" name="wixfile_autocreate_wordtype" id="wixfile_autocreate_wordtype_freq" value="freq_word">
+											<label for="wixfile_autocreate_wordtype_freq" class="wixfile_autocreate_option">ページ内頻出語</label>
+										</fieldset>
+									</div>
+									<?php
+									}
+									?>
 								<?php
 								} else {
 								?>
@@ -185,6 +224,15 @@ function wix_admin_settings(){
 								<label for="wixfile_autocreate_on" class="switch-on">YES</label>
 								<input type="radio" name="wixfile_autocreate" id="wixfile_autocreate_off" value="false" checked>
 								<label for="wixfile_autocreate_off" class="switch-off">No</label>
+								<div id="wixfile_autocreate_setting" style="display: none">
+									<br><br>
+									<fieldset name="wixfile_autocreate_option" form="wixfile_autocreate_option1">
+										<input type="radio" name="wixfile_autocreate_wordtype" id="wixfile_autocreate_wordtype_feature" value="feature_word">
+										<label for="wixfile_autocreate_wordtype_feature" class="wixfile_autocreate_option">特徴語</label>
+										<input type="radio" name="wixfile_autocreate_wordtype" id="wixfile_autocreate_wordtype_freq" value="freq_word">
+										<label for="wixfile_autocreate_wordtype_freq" class="wixfile_autocreate_option">ページ内頻出語</label>
+									</fieldset>
+								</div>
 								<?php
 								}
 								?>
@@ -192,7 +240,7 @@ function wix_admin_settings(){
 							<fieldset name="wixfile_option" form="wixfile_option2">
 								<legend>ページ作成画面における更新操作</legend>
 								<?php 
-								if ( get_option('decidefile_autocreate') == 'true' ) {
+								if ( get_option('wixfile_manualupdate') == 'true' ) {
 								?>
 								<input type="radio" name="wixfile_manualupdate" id="wixfile_manualupdate_on" value="true" checked>
 								<label for="wixfile_manualupdate_on" class="switch-on">YES</label>
@@ -215,7 +263,7 @@ function wix_admin_settings(){
 							<fieldset name="decidefile_option" form="decidefile_option1">
 								<legend>詳細設定適用</legend>
 								<?php 
-								if ( get_option('decidefile_autocreate') == 'true' ) {
+								if ( get_option('decidefile_apply') == 'true' ) {
 								?>
 								<input type="radio" name="decidefile_apply" id="decidefile_apply_on" value="true" checked>
 								<label for="decidefile_apply_on" class="switch-on">YES</label>

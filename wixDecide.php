@@ -20,8 +20,10 @@ function wix_meta_box() {
 	add_meta_box( 'WIX Decide Link', 'WIX Decide Link', 'wix_decide_link', 'post', 'side', 'high' );
 	add_meta_box( 'WIX Decide Link', 'WIX Decide Link', 'wix_decide_link', 'page', 'side', 'high' );
 
+	if ( get_option('wixfile_manualupdate') == 'true' ) {
 	add_meta_box( 'WIX New Entry', 'WIX New Entry', 'wix_new_entry', 'post', 'side', 'high' );
 	add_meta_box( 'WIX New Entry', 'WIX New Entry', 'wix_new_entry', 'page', 'side', 'high' );
+	}
 }
 function wix_decide_link() {
 	echo '<table><tr>';

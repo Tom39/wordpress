@@ -199,3 +199,171 @@
 <pre>0</pre>
 
 
+
+<pre>Array
+(
+    [page_freq_words] => Array
+        (
+            [無線通信] => 0.1
+            [研究分野] => 0.1
+            [研究室HP] => 0.1
+            [研究者プロフィール] => 0.1
+            [慶應義塾大学] => 0.1
+            [情報工学科] => 0.1
+            [佐草友也] => 0.1
+            [大槻研究室] => 0.1
+            [情報工学専修] => 0.1
+            [セキュリティ] => 0.1
+        )
+
+    [page_freq_words_in_site] => Array
+        (
+            [慶應義塾大学] => 0.336472
+            [情報工学科] => 0.336472
+            [佐草友也] => 0.559616
+            [研究室HP] => 1.25276
+            [研究者プロフィール] => 1.25276
+            [研究分野] => 1.25276
+            [無線通信] => 1.25276
+            [セキュリティ] => 1.25276
+            [大槻研究室] => 1.25276
+            [情報工学専修] => 1.25276
+        )
+
+    [feature_words] => Array
+        (
+            [セキュリティ] => 0.1809851
+            [無線通信] => 0.1793187
+            [大槻研究室] => 0.1787855
+            [情報工学専修] => 0.15609842
+            [研究分野] => 0.15551238
+            [研究室HP] => 0.15423674
+            [研究者プロフィール] => 0.1518933
+            [情報工学科] => 0.10638456
+            [佐草友也] => 0.10371358
+            [慶應義塾大学] => 0.05935576
+        )
+
+    [site_freq_words] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [keyword] => 慶應義塾大学
+                    [idf] => 0.336472
+                )
+
+            [1] => stdClass Object
+                (
+                    [keyword] => 情報工学科
+                    [idf] => 0.336472
+                )
+
+            [2] => stdClass Object
+                (
+                    [keyword] => 遠山研究室
+                    [idf] => 0.559616
+                )
+
+            [3] => stdClass Object
+                (
+                    [keyword] => 佐草友也
+                    [idf] => 0.559616
+                )
+
+            [4] => stdClass Object
+                (
+                    [keyword] => データベースシステム
+                    [idf] => 0.847298
+                )
+
+            [5] => stdClass Object
+                (
+                    [keyword] => 所属
+                    [idf] => 1.25276
+                )
+
+            [6] => stdClass Object
+                (
+                    [keyword] => 発表
+                    [idf] => 1.25276
+                )
+
+            [7] => stdClass Object
+                (
+                    [keyword] => 研究者プロフィール
+                    [idf] => 1.25276
+                )
+
+            [8] => stdClass Object
+                (
+                    [keyword] => 情報工学専修
+                    [idf] => 1.25276
+                )
+
+            [9] => stdClass Object
+                (
+                    [keyword] => 研究分野
+                    [idf] => 1.25276
+                )
+
+        )
+
+    [candidate_targets] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [ID] => 484
+                    [post_title] => 遠山研究室
+                    [guid] => http://localhost/wordpress/?page_id=484
+                )
+
+            [1] => stdClass Object
+                (
+                    [ID] => 415
+                    [post_title] => デモ
+                    [guid] => http://localhost/wordpress/?page_id=415
+                )
+
+            [2] => stdClass Object
+                (
+                    [ID] => 687
+                    [post_title] => tfidfテスト
+                    [guid] => http://localhost/wordpress/?page_id=687
+                )
+
+            [3] => stdClass Object
+                (
+                    [ID] => 368
+                    [post_title] => 情報工学科 研究室紹介
+                    [guid] => http://localhost/wordpress/?page_id=368
+                )
+
+            [4] => stdClass Object
+                (
+                    [ID] => 19
+                    [post_title] => 情報工学科 教員
+                    [guid] => http://localhost/wordpress/?page_id=19
+                )
+
+            [5] => stdClass Object
+                (
+                    [ID] => 501
+                    [post_title] => 外部リンクテスト
+                    [guid] => http://localhost/wordpress/?p=501
+                )
+
+        )
+
+)
+</pre>
+
+
+
+
+
+
+
+
+
+
+0.38109707832336 sec

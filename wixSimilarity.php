@@ -107,6 +107,7 @@ function wix_blank_remove($array) {
 
 	foreach ($array as $key => $word) {
 		$word = trim($word);
+		// $word = preg_replace('/(\s|　)/','', $word);
 
 		if ( !empty($word) ) {
 			array_push($returnValue, $word);
