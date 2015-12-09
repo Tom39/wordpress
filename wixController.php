@@ -325,6 +325,36 @@ function wix_table_create() {
             );";
     dbDelta($sql);
 
+    $table_name = $wpdb->prefix . 'wix_eval_document_similarity';
+    $is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+    if ( $is_db_exists == $table_name ) return;
+    $sql = "CREATE TABLE " . $table_name . " (
+             doc_id bigint(20) UNSIGNED,
+             doc_id2 bigint(20) UNSIGNED,
+             cos_similarity_tfidf float NOT NULL DEFAULT 0,
+             cos_similarity_bm25 float NOT NULL DEFAULT 0,
+             jaccard float NOT NULL DEFAULT 0,
+             minhash float NOT NULL DEFAULT 0,
+             PRIMARY KEY(doc_id,doc_id2),
+             FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
+              ON UPDATE CASCADE ON DELETE CASCADE,
+             FOREIGN KEY (doc_id2) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
+              ON UPDATE CASCADE ON DELETE CASCADE
+            );";
+    dbDelta($sql);
+
+    $table_name = $wpdb->prefix . 'wix_eval_minhash';
+    $is_db_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+    if ( $is_db_exists == $table_name ) return;
+    $sql = "CREATE TABLE " . $table_name . " (
+            doc_id bigint(20) UNSIGNED NOT NULL, 
+            minhash TEXT NOT NULL, 
+            PRIMARY KEY(doc_id), 
+            FOREIGN KEY (doc_id) REFERENCES wp_posts(ID)
+             ON UPDATE CASCADE ON DELETE CASCADE
+            );";
+    dbDelta($sql);
+
 }
 
 //--------------------------------------------------------------------------

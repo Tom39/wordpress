@@ -978,7 +978,7 @@ function wixfilemeta_posts_insert( $array ) {
 	↓２つの関数を別のファイルに移動したい。ここにあるのはキモチワルイ
 **/
 //ドキュメントの投稿ステータスが変わったら、WIXファイル内のどのキーワードが出現するかを算出
-// add_action( 'transition_post_status', 'wix_keyword_appearance_in_doc', 10, 3 );
+add_action( 'transition_post_status', 'wix_keyword_appearance_in_doc', 10, 3 );
 function wix_keyword_appearance_in_doc( $new_status, $old_status, $post ) {
 	global $wpdb;
 	$doc_id = $post->ID;

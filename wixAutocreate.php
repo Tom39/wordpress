@@ -1,7 +1,7 @@
 <?php
 
 //ドキュメント長の計算
-// add_action( 'transition_post_status', 'wix_documnt_length', 10, 3 );
+add_action( 'transition_post_status', 'wix_documnt_length', 10, 3 );
 function wix_documnt_length( $new_status, $old_status, $post ) {
 	global $wpdb;
 	if ( $new_status != 'trash' && $new_status != 'inherit' && $new_status != 'auto-draft' ) {
@@ -28,7 +28,7 @@ function words_for_entry_disambiguation($wordsArray, $doc_id) {
 }
 
 //ドキュメントの投稿ステータスが変わったら、類似度計算
-// add_action( 'transition_post_status', 'wix_similarity_func', 10, 3 );
+add_action( 'transition_post_status', 'wix_similarity_func', 10, 3 );
 function wix_similarity_func( $new_status, $old_status, $post ) {
 	global $wpdb, $term_featureObj, $doc_simObj;
 
@@ -394,7 +394,7 @@ function wix_entry_delets() {
 
 
 //IDF値の更新
-// add_action( 'transition_post_status', 'wix_status_update_idf_update', 19, 3 );
+add_action( 'transition_post_status', 'wix_status_update_idf_update', 19, 3 );
 function wix_status_update_idf_update( $new_status, $old_status, $post ) {
 	global $wpdb;
 	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
@@ -729,7 +729,7 @@ function wix_words_obj_update(){
 }
 
 //WIXファイルの自動生成設定がされている場合、動作
-// add_action( 'transition_post_status', 'wix_entry_autocreate', 20, 3 );
+add_action( 'transition_post_status', 'wix_entry_autocreate', 20, 3 );
 function wix_entry_autocreate( $new_status, $old_status, $post ) {
 	global $wpdb;
 	if ( $new_status != 'trash' && $new_status != 'inherit' && $new_status != 'auto-draft' ) {

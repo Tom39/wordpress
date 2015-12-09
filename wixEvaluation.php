@@ -25,9 +25,8 @@
 // }
 
 /*******************************************単語特徴量**********************************************************/
-//ドキュメントの投稿ステータスが変わったら、類似度計算
-add_action( 'transition_post_status', 'wix_eval_similarity_func', 10, 3 );
-function wix_eval_similarity_func( $new_status, $old_status, $post ) {
+add_action( 'transition_post_status', 'wix_eval_similarity_func_word', 10, 3 );
+function wix_eval_similarity_func_word( $new_status, $old_status, $post ) {
 	global $wpdb, $term_featureObj, $doc_simObj;
 
 	//ゴミ箱行きだったらDELTE.次にリビジョンに対するエントリを作らないように.
@@ -657,10 +656,419 @@ function wix_eval_textrank_update() {
 }
 
 /*******************************************ドキュメント類似度計算**********************************************************/
+add_action( 'transition_post_status', 'wix_eval_similarity_func_doc', 10, 3 );
+function wix_eval_similarity_func_doc( $new_status, $old_status, $post ) {
+	global $wpdb, $term_featureObj, $doc_simObj;
+
+	//ゴミ箱行きだったらDELTE.次にリビジョンに対するエントリを作らないように.
+	if ( $new_status == 'trash' ) {
+
+		// wix_similarity_score_deletes($post->ID, 'wix_keyword_similarity');
+		// wix_similarity_score_deletes($post->ID, 'wix_document_similarity');
+		// wix_similarity_score_deletes($post->ID, 'wix_minhash');
+
+	} else if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
+
+		$doc_id = $post->ID;
+
+		$wix_eval_keyword_similarity = $wpdb->prefix . 'wix_eval_keyword_similarity';
+		$wix_eval_document_similarity = $wpdb->prefix . 'wix_eval_document_similarity';
+
+		$sql = 'SELECT DISTINCT doc_id FROM ' . $wix_eval_keyword_similarity;
+		$doc_idObj = $wpdb->get_results($sql);
+		$evalArray = array();
+
+		$time_start = microtime(true);
+		foreach ($doc_idObj as $index => $value) {
+			$doc_id = $value->doc_id;
+
+			//コサイン類似度計算
+			wix_eval_cosSimilarity( $doc_id );
+
+			//Jaccard類似度計算
+			// wix_eval_jaccard( $doc_id );
+
+			//MinHash値計算
+			// wix_eval_minhash( $doc_id );
+
+			$evalArray[$doc_id] = $doc_simObj;
+
+			$doc_simObj = array();
+		}
+		$timelimit = microtime(true) - $time_start;
+		dump('dump.txt', $timelimit . ' sec');
+
+		//DBにドキュメント類似度挿入・更新
+		foreach ($evalArray as $doc_id => $valueArray) {
+			//DBに単語特徴量挿入・更新
+			$doc_simObj = $valueArray;
+			wix_eval_document_similarity_score_inserts_updates( $doc_id );
+		}
+		
+	}
+
+}
 
 
+//Cos類似度の計算
+function wix_eval_cosSimilarity($doc_id) {
+	global $wpdb, $doc_simObj;
 
+	$wix_eval_keyword_similarity = $wpdb->prefix . 'wix_eval_keyword_similarity';
+	$wix_eval_document_similarity = $wpdb->prefix . 'wix_eval_document_similarity';
 
+	//計算対象ドキュメント群(= doc_id以外)の単語特徴量など
+	$sql = 'SELECT ID, keyword, tf_idf AS tfidf, bm25 FROM ' . 
+			$wpdb->posts . ', ' . $wix_eval_keyword_similarity . 
+			' WHERE ID=doc_id AND id!=' . $doc_id . 
+			' GROUP BY ID, keyword, tf_idf, bm25 ORDER BY ID ASC';
+	$docInfoObj = $wpdb->get_results($sql);
+
+	//doc_idの単語特徴量Objectを配列に整形
+	$sql = 'SELECT keyword, tf_idf AS tfidf, bm25 
+			FROM ' . $wpdb->posts . ', ' . $wix_eval_keyword_similarity . 
+			' WHERE ID = doc_id AND ID = ' . $doc_id;
+	$subjectDocInfoObj = $wpdb->get_results($sql);
+
+	$subjectDocInfoArray = array();
+	$bunbo2Array = array();
+
+	foreach ($subjectDocInfoObj as $index => $value) {
+		$subjectDocInfoArray[$value->keyword] = array(
+														'tfidf' => $value->tfidf,
+														'bm25' => $value->bm25,
+														);
+
+		if ( empty($bunbo2Array) ) {
+			$bunbo2Array['tfidf'] = $value->tfidf * $value->tfidf;
+			$bunbo2Array['bm25'] = $value->bm25 * $value->bm25;
+		} else {
+			foreach ($bunbo2Array as $key => $val) {
+				if ( $key == 'tfidf' ) 
+					$bunbo2Array[$key] += $value->tfidf * $value->tfidf;
+				else if ( $key == 'bm25' )
+					$bunbo2Array[$key] += $value->bm25 * $value->bm25;
+			}
+		}
+	}
+
+	$tmpId = '';
+	$bunsiArray = array(); $bunbo1Array = array(); $cos_similarityArray = array();
+	foreach ($docInfoObj as $key => $value) {
+		$doc_id2 = $value->ID;
+		$keyword = $value->keyword;
+		$tfidf = $value->tfidf;
+		$bm25 = $value->bm25;
+		
+		if ( $tmpId == '' ) $tmpId = $doc_id2;
+
+		if ( $tmpId != $doc_id2 ) {
+			foreach ($bunbo1Array as $method => $value) {
+				if ( $value != 0 ) {
+					if ( $bunsiArray[$method] == 0 ) 
+						$cos_similarityArray[$method] = 0;
+					else
+						$cos_similarityArray[$method] = $bunsiArray[$method] / (sqrt($value) * sqrt($bunbo2Array[$method]));
+				} else { 
+					$cos_similarityArray[$method] = 0;
+				}
+			}
+			
+			if ( array_key_exists($tmpId, $doc_simObj) ) {
+				$tmpArray = $doc_simObj[$tmpId];
+				$tmpArray['cos_similarity_tfidf'] = $cos_similarityArray['tfidf'];
+				$tmpArray['cos_similarity_bm25'] = $cos_similarityArray['bm25'];
+				$doc_simObj[$tmpId] = $tmpArray;
+			} else {
+				$doc_simObj[$tmpId] = array(
+										'cos_similarity_tfidf' => $cos_similarityArray['tfidf'],
+										'cos_similarity_bm25' => $cos_similarityArray['bm25'],
+									);
+			}
+
+			$tmpId = $doc_id2; 
+			$bunsiArray = array(); $bunbo1Array = array(); $cos_similarityArray = array();
+		}
+
+		if ( array_key_exists($keyword, $subjectDocInfoArray) ) {
+			if ( empty($bunsiArray) ){
+				$bunsiArray['tfidf'] = $tfidf * $subjectDocInfoArray[$keyword]['tfidf'];
+				$bunsiArray['bm25'] = $bm25 * $subjectDocInfoArray[$keyword]['bm25'];
+			} else {
+				$bunsiArray['tfidf'] += $tfidf * $subjectDocInfoArray[$keyword]['tfidf'];
+				$bunsiArray['bm25'] += $bm25 * $subjectDocInfoArray[$keyword]['bm25'];
+			}
+		} else {
+			if ( empty($bunsiArray) ){
+				$bunsiArray['tfidf'] = 0;
+				$bunsiArray['bm25'] = 0;
+			} else {
+				$bunsiArray['tfidf'] += 0;
+				$bunsiArray['bm25'] += 0;
+			}
+		}
+		if ( empty($bunbo1Array) ) {
+			$bunbo1Array['tfidf'] = $tfidf * $tfidf;
+			$bunbo1Array['bm25'] = $bm25 * $bm25;
+		} else {
+			$bunbo1Array['tfidf'] += $tfidf * $tfidf;
+			$bunbo1Array['bm25'] += $bm25 * $bm25;
+		}
+	}
+	//最後のドキュメント分
+	foreach ($bunbo1Array as $method => $value) {
+		if ( $value != 0 )
+			if ( $bunsiArray[$method] == 0 ) 
+				$cos_similarityArray[$method] = 0;
+			else
+				$cos_similarityArray[$method] = $bunsiArray[$method] / (sqrt($value) * sqrt($bunbo2Array[$method]));
+		else 
+			$cos_similarityArray[$method] = 0;
+	}
+	
+	if ( array_key_exists($tmpId, $doc_simObj) ) {
+		$tmpArray = $doc_simObj[$tmpId];
+		$tmpArray['cos_similarity_tfidf'] = $cos_similarityArray['tfidf'];
+		$tmpArray['cos_similarity_bm25'] = $cos_similarityArray['bm25'];
+		$doc_simObj[$tmpId] = $tmpArray;
+	} else {
+		$doc_simObj[$tmpId] = array(
+								'cos_similarity_tfidf' => $cos_similarityArray['tfidf'],
+								'cos_similarity_bm25' => $cos_similarityArray['bm25'],
+							);
+	}
+
+}
+
+//Jaccard類似度計算
+function wix_eval_jaccard($doc_id) {
+	global $wpdb, $doc_simObj;
+	
+	$wix_eval_keyword_similarity = $wpdb->prefix . 'wix_eval_keyword_similarity';
+
+	$sql = 'SELECT doc_id, keyword FROM ' . $wix_eval_keyword_similarity . ' WHERE doc_id!=' . $doc_id . ' ORDER BY doc_id ASC';
+	$docInfoObj = $wpdb->get_results($sql);
+
+	if ( !empty($docInfoObj) ) {
+
+		$docInfoArray = array();
+		foreach ($docInfoObj as $index => $value) {
+			$doc_id2 = $value->doc_id;
+			$keyword = $value->keyword;
+
+			if ( array_key_exists($doc_id2, $docInfoArray) ) {
+				$tmpArray = $docInfoArray[$doc_id2];
+				array_push($tmpArray, $keyword);
+				$docInfoArray[$doc_id2] = $tmpArray;
+			} else {
+				$docInfoArray[$doc_id2] = array($keyword);
+			}
+		}
+
+		$sql = 'SELECT doc_id, keyword FROM ' . $wix_eval_keyword_similarity . ' WHERE doc_id=' . $doc_id;
+		$subjectDocInfoObj = $wpdb->get_results($sql);
+
+		$subjectDocInfoArray = array();
+		foreach ($subjectDocInfoObj as $index => $value) {
+			array_push($subjectDocInfoArray, $value->keyword);
+		}
+
+		//Jaccard類似度計算
+		foreach ($docInfoArray as $doc_id2 => $valueArray) {
+			$intersect = array_intersect($subjectDocInfoArray, $valueArray);
+
+			if ( array_key_exists($doc_id2, $doc_simObj) ) {
+				$tmpArray = $doc_simObj[$doc_id2];
+				$tmpArray['jaccard'] = count($intersect)/(count($valueArray) + count($subjectDocInfoArray) - count($intersect));
+				$doc_simObj[$doc_id2] = $tmpArray;
+			} else {
+				$doc_simObj[$doc_id2] = array( 'jaccard' => count($intersect)/(count($valueArray) + count($subjectDocInfoArray) - count($intersect)) );
+			}
+		}
+
+	}
+}
+
+//MinHash値計算
+function wix_eval_minhash($doc_id) {
+	global $wpdb, $doc_simObj;
+	$k = 128;
+
+	$wix_eval_keyword_similarity = $wpdb->prefix . 'wix_eval_keyword_similarity';
+	$wix_eval_minhash =  $wpdb->prefix . 'wix_eval_minhash';
+
+	//doc_idのハッシュ値をDBに登録
+	$minhash1 = eval_regist_hashscore($doc_id);
+
+	$sql = 'SELECT * FROM ' . $wix_eval_minhash . ' WHERE doc_id!=' . $doc_id;
+	$docInfoObj = $wpdb->get_results($sql);
+	if ( !empty($docInfoObj) ) {
+		foreach ($docInfoObj as $key => $value) {
+			$doc_id2 = $value->doc_id;
+			$minhash2_str = $value->minhash;
+			$minhash2 = explode(',', $minhash2_str);
+			$count = 0;
+
+			foreach ($minhash1 as $index => $value) {
+				if ( $value == $minhash2[$index] ) $count++; 
+			}
+			
+			if ( array_key_exists($doc_id2, $doc_simObj) ) {
+				$tmpArray = $doc_simObj[$doc_id2];
+				$tmpArray['minhash'] = $count/$k;
+				$doc_simObj[$doc_id2] = $tmpArray;
+			} else {
+				$doc_simObj[$doc_id2] = array('minhash' => $count/$k);
+			}
+		}
+	}
+}
+//ハッシュ値のDB登録
+function eval_regist_hashscore($doc_id) {
+	global $wpdb;
+
+	$wix_eval_keyword_similarity = $wpdb->prefix . 'wix_eval_keyword_similarity';
+	$wix_eval_minhash =  $wpdb->prefix . 'wix_eval_minhash';
+
+	//doc_idのキーワード配列をDBから持ってくる
+	$sql = 'SELECT keyword FROM ' . $wpdb->posts . ', ' . $wix_eval_keyword_similarity . 
+			' WHERE ID = doc_id AND ID = ' . $doc_id;
+	$subjectDocInfoObj = $wpdb->get_results($sql);
+
+	$subjectDocInfoArray = array();
+	foreach ($subjectDocInfoObj as $key => $value) {
+		array_push($subjectDocInfoArray, $value->keyword);
+	}
+
+	//doc_idのハッシュ値計算
+	$hashArray = array();
+	if ( get_option('wix_seeds') == false ) {
+		$k = 128;
+		$seeds = random_number($k);
+		add_option( 'wix_seeds', $seeds );
+	} else {
+		$seeds = get_option('wix_seeds');
+	}
+
+	foreach ($seeds as $key => $seed) {
+    	array_push($hashArray, calc_minhash($subjectDocInfoArray, $seed));
+    }
+    //$hashArrayをカンマ区切りの文字列に
+    $hashArray_str = implode(',', $hashArray);
+
+    //DBに登録(挿入 or 更新)
+    $sql = 'INSERT INTO ' . $wix_eval_minhash . '(doc_id, minhash) VALUES (' . $doc_id . ', "' . $hashArray_str . '") ON DUPLICATE KEY UPDATE minhash="' . $hashArray_str . '"';
+    $wpdb->query( $sql );
+
+    return $hashArray;
+}
+
+//DBに追加
+function wix_eval_document_similarity_score_inserts_updates() {
+	global $wpdb, $doc_simObj;
+
+	$wix_eval_document_similarity = $wpdb->prefix . 'wix_eval_document_similarity';
+
+	if ( !empty($doc_simObj) ) {
+		$sql = 'SELECT COUNT(*) FROM ' . $wix_document_similarity . ' WHERE doc_id = ' . $doc_id . ' OR doc_id2 = ' . $doc_id;
+		$entry_check_flag = $wpdb->get_var($sql);
+
+		//INSERT(初期登録)
+		if ( $entry_check_flag == 0 ) {
+
+			$insertEntry = '';
+			$methodArray = array();
+			$methodFlag = false;
+
+			foreach ($doc_simObj as $doc_id2 => $array) {
+				if ( empty($doc_id2) ) break;
+
+				$tmpEntry = '';
+				foreach ($array as $method => $value) {
+					if ( $methodFlag == false )
+						array_push($methodArray, $method);
+
+					if ( $tmpEntry != '' ) 
+						$tmpEntry = $tmpEntry . ', '; 
+
+					$tmpEntry = $tmpEntry . $value;
+				}
+				if ( empty($insertEntry) ) 
+					$insertEntry = '(' . $doc_id . ', ' . $doc_id2 .', ' . $tmpEntry . ')';
+				else
+					$insertEntry = $insertEntry . ', (' . $doc_id . ', ' . $doc_id2 .', ' . $tmpEntry . ')';
+				$methodFlag = true;
+			}
+
+			$sql = 'INSERT INTO ' . $wix_document_similarity . '(doc_id, doc_id2';
+			foreach ($methodArray as $index => $method) {
+				$sql = $sql . ', ' . $method;
+			}
+			$sql = $sql . ') VALUES ' . $insertEntry;
+			$wpdb->query( $sql );
+			// dump('dump.txt', $sql);
+
+		//UPDATE
+		} else {
+			$sql = 'SELECT doc_id, doc_id2 FROM ' . $wix_document_similarity . ' WHERE doc_id=' . $doc_id. ' OR doc_id2=' . $doc_id;
+			$existing_docObj = $wpdb->get_results($sql);
+
+			$existing_docList = array();
+			foreach ($existing_docObj as $key => $value) {
+				if ( $value->doc_id == $doc_id ) $existing_docList[$value->doc_id2] = '';
+				else $existing_docList[$value->doc_id] = '';
+			}
+
+			$methodArray = array();
+			$methodFlag = false;
+			foreach ($doc_simObj as $doc_id2 => $array) {
+				if ( array_key_exists($doc_id2, $existing_docList) ) {
+
+					$valueArray = array();
+					foreach ($array as $method => $value) {
+						if ( $methodFlag == false )
+							array_push($methodArray, $method);
+						
+						array_push($valueArray, $value);
+					}
+
+					$sql = 'UPDATE ' . $wix_document_similarity . ' SET ';
+					foreach ($methodArray as $index => $method) {
+						if ( $index != count($methodArray)-1 ) 
+							$sql = $sql . $method . '=' . $valueArray[$index] . ', ';
+						else 
+							$sql = $sql . $method . '=' . $valueArray[$index];
+					}
+					$sql = $sql . ' WHERE (doc_id=' . $doc_id . ' AND doc_id2=' . $doc_id2 . ') OR (doc_id=' . $doc_id2 . ' AND doc_id2=' . $doc_id . ')';
+
+				} else {
+
+					$insertEntry = '';
+					$tmpEntry = '';
+					foreach ($array as $method => $value) {
+						if ( $methodFlag == false )
+							array_push($methodArray, $method);
+
+						if ( !empty($tmpEntry) ) 
+							$tmpEntry = $tmpEntry . ', '; 
+
+						$tmpEntry = $tmpEntry . $value;
+					}
+					$insertEntry = '(' . $doc_id . ', ' . $doc_id2 .', ' . $tmpEntry . ')';
+
+					$sql = 'INSERT INTO ' . $wix_document_similarity . '(doc_id, doc_id2';
+					foreach ($methodArray as $index => $method) {
+						$sql = $sql . ', ' . $method;
+					}
+					$sql = $sql . ') VALUES ' . $insertEntry;
+				}
+				$wpdb->query( $sql );
+				// dump('dump.txt', $sql);
+				$methodFlag = true;
+			}
+		}
+	}
+}
 
 
 
