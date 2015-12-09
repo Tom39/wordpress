@@ -38,6 +38,7 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 		wix_similarity_score_deletes($post->ID, 'wix_keyword_similarity');
 		wix_similarity_score_deletes($post->ID, 'wix_document_similarity');
 		wix_similarity_score_deletes($post->ID, 'wix_minhash');
+		wix_entry_deletes();
 		// wix_similarity_score_deletes($post->ID, 'wix_entry_ranking');
 
 	} else if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
@@ -352,6 +353,43 @@ function wix_similarity_score_deletes($doc_id, $table) {
 		$sql = 'DELETE FROM ' . $wpdb->prefix . $table . ' WHERE doc_id = ' . $doc_id . ' OR doc_id2 = ' . $doc_id;
 	}
 	$wpdb->query( $sql );
+}
+
+//エントリの自動削除
+function wix_entry_delets() {
+	global $wpdb;
+
+	$wixfilemeta = $wpdb->prefix . 'wixfilemeta';
+	$wixfile_targets = $wpdb->prefix . 'wixfile_targets';
+
+	$sql = 'SELECT wf.id, wf.keyword, wt.target FROM ' . $wixfilemeta . ' wf, ' . $wixfile_targets . ' wt WHERE wf.id=wt.keyword_id AND wt.target LIKE "' . get_option('siteurl') . '%"';
+	$innerURLEntry_Obj = $wpdb->get_results($sql);
+	if ( !empty($innerURLEntry_Obj) ) {
+		foreach ($innerURLEntry_Obj as $index => $value) {
+			$target = $value->target;
+
+			$search_len = strlen( get_option('siteurl') );
+			$search = substr($target, $search_len);
+
+			$sql = 'SELECT ID FROM ' . $wpdb->posts . ' WHERE guid LIKE "%' . $search . '%" OR post_title LIKE "%' . $search . '%"';
+			$entry_checkObj = $wpdb->get_results($sql);
+			if ( empty($entry_checkObj) ) {
+				$keyword_id = $value->id;
+				$sql = 'DELETE FROM ' . $wixfile_targets . ' WHERE keyword_id=' . $keyword_id . ' AND target="' . $target . '"';
+			}
+		}
+
+		//ターゲット候補の内キーワードは削除
+		$sql = 'SELECT id FROM ' . $wixfilemeta . ' WHERE id NOT IN (SELECT keyword_id FROM ' . $wixfile_targets . ')';
+		$delete_keywordObj = $wpdb->get_results($sql);
+		if ( !empty($delete_keywordObj) ) {
+			foreach ($delete_keywordObj as $index => $value) {
+				$id = $value->id;
+				$sql = 'DELETE FROM ' . $wixfilemeta . ' WHERE id=' . $id;
+				$wpdb->query( $sql );
+			}
+		}
+	}
 }
 
 

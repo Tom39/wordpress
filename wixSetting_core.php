@@ -453,8 +453,8 @@ function wixfile_settings_core() {
 
 						$sql = 'INSERT INTO ' . $wixfilemeta . '(id, keyword) VALUES ' . $insertKeyword;
 						$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
-						// $result = $wpdb->query( $sql );	
-						var_dump($sql);
+						$result = $wpdb->query( $sql );	
+						// var_dump($sql);
 
 						if ( $result != 0 ) set_transient( 'wix_settings', 'WIX FILE 更新しました', 1 );
 						else set_transient( 'wix_settings', 'WIX FILE 更新に失敗しました', 1 );
@@ -478,8 +478,8 @@ function wixfile_settings_core() {
 
 						$sql = 'INSERT INTO ' . $wixfile_targets . '(keyword_id, target) VALUES ' . $insertTarget;
 						$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
-						// $result = $wpdb->query( $sql );					
-						var_dump($sql);
+						$result = $wpdb->query( $sql );					
+						// var_dump($sql);
 
 						if ( $result != 0 ) set_transient( 'wix_settings', 'WIX FILE 更新しました', 1 );
 						else set_transient( 'wix_settings', 'WIX FILE 更新に失敗しました', 1 );
@@ -713,14 +713,14 @@ function wixfile_settings_core() {
 
 							if ( $keyword_flag == false ) {
 								$sql = 'INSERT INTO ' . $wixfilemeta . '(id, keyword) VALUES ' . '(' . $new_keyword_id . ', "' . $new_keyword .'")';
-								var_dump($sql);
-								// $wpdb->query( $sql );
+								// var_dump($sql);
+								$wpdb->query( $sql );
 							}
 
 							$sql = 'UPDATE ' . $wixfile_targets . ' SET keyword_id=' . $new_keyword_id . ', target="' .
 								 $new_target . '" WHERE keyword_id=' . $org_keyword_id . ' AND target="' . $org_target . '"';
-							var_dump($sql);
-							// $wpdb->query( $sql );
+							// var_dump($sql);
+							$wpdb->query( $sql );
 						}
 					}
 
@@ -733,8 +733,8 @@ function wixfile_settings_core() {
 
 							$sql = 'UPDATE ' . $wixfile_targets . ' SET keyword_id=' . $new_keyword_id . ', target="' .
 								 $new_target . '" WHERE keyword_id=' . $org_keyword_id . ' AND target="' . $org_target . '"';
-							var_dump($sql);
-							// $wpdb->query( $sql );
+							// var_dump($sql);
+							$wpdb->query( $sql );
 						}
 					}
 
@@ -744,16 +744,16 @@ function wixfile_settings_core() {
 							$org_target = $valueArray['org_target'];
 
 							$sql = 'DELETE FROM ' . $wixfile_targets . ' WHERE keyword_id = ' . $org_keyword_id . ' AND target = "' . $org_target . '"';
-							var_dump($sql);
-							// $wpdb->query( $sql );
+							// var_dump($sql);
+							$wpdb->query( $sql );
 						}
 					} 
 
 					if ( !empty($delete_metaArray) ) {
 						foreach ($delete_metaArray as $index => $org_keyword_id) {
 							$sql = 'DELETE FROM ' . $wixfilemeta . ' WHERE id=' . $org_keyword_id;
-							var_dump($sql);
-							// $wpdb->query( $sql );
+							// var_dump($sql);
+							$wpdb->query( $sql );
 							/**
 								この時、wixfilemeta_postsの行はカスケードDELETEされる
 							**/
@@ -776,8 +776,8 @@ function wixfile_settings_core() {
 							$keyword_id = (int)$keyword_idObj[0]->id;
 
 							$sql = 'DELETE FROM ' . $wixfile_targets . ' WHERE keyword_id = ' . $keyword_id . ' AND target = "' . $target . '"';
-							var_dump($sql);
-							// $wpdb->query( $sql );
+							// var_dump($sql);
+							$wpdb->query( $sql );
 						}
 
 					}
@@ -789,8 +789,8 @@ function wixfile_settings_core() {
 							$id = $value->id;
 							$keyword = $value->keyword;
 							$sql = 'DELETE FROM ' . $wixfilemeta . ' WHERE id=' . $id;
-							var_dump($sql);
-							// $wpdb->query( $sql );
+							// var_dump($sql);
+							$wpdb->query( $sql );
 							/**
 								この時、wixfilemeta_postsの行はカスケードDELETEされる
 							**/
@@ -899,8 +899,6 @@ function wix_default_detailDecide_core() {
 
 			if ( isset( $_POST['default_detail_decideInfo'] ) && $_POST['default_detail_decideInfo'] ) {
 
-				
-
 				set_transient( 'default_detail_decide_settings', 'Default・詳細設定保存しました', 10 );
 
 			}
@@ -968,8 +966,8 @@ function wixfilemeta_posts_insert( $array ) {
 
 				$sql = 'INSERT INTO ' . $wixfilemeta_posts . '(keyword_id, doc_id) VALUES ' . $insertTuple;
 				$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
-				var_dump($sql);
-				// $wpdb->query( $sql );
+				// var_dump($sql);
+				$wpdb->query( $sql );
 			}
 		}
 
