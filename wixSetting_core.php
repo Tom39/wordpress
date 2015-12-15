@@ -1086,35 +1086,43 @@ function wix_similarity_entry_recommend($doc_id = 0, $type = 'js') {
 
 	if ( !empty($candidate_keywords) && !empty($similar_documents) ) {
 		$tf_sortArray = array(); 
-		$idf_sortArray = array(); 
+		$df_sortArray = array(); 
 		$tfidf_sortArray = array(); 
+		$tfdf_sortArray = array();
 		$bm25_sortArray = array();
 		$textrank_sortArray = array();
 
 		foreach ($candidate_keywords as $index => $value) {
 			$tf_sortArray[$value->keyword] = $value->tf;
-			$idf_sortArray[$value->keyword] = $value->idf;
+			$df_sortArray[$value->keyword] = $value->df;
 			$tfidf_sortArray[$value->keyword] = $value->tf_idf;
+			$tfdf_sortArray[$value->keyword] = $value->tf_df;
 			$bm25_sortArray[$value->keyword] = $value->bm25;
 			$textrank_sortArray[$value->keyword] = $value->textrank;
 		}
+
+		// //サイト内頻出語(上位10件)
+		// $sql = 'SELECT keyword, idf FROM ' . $wix_keyword_similarity . 
+		// 		' GROUP BY keyword ORDER BY idf ASC, bm25 DESC LIMIT 10';
+		// $site_freq_words = $wpdb->get_results($sql);
+		// $returnValue['site_freq_words'] = $site_freq_words;
+
+		//頻出語
+		asort($tfdf_sortArray, SORT_NUMERIC);
+		$returnValue['site_freq_words'] = $tfdf_sortArray;
+
 		//ページ内頻出順
 		arsort($tf_sortArray, SORT_NUMERIC);
 		$returnValue['page_freq_words'] = $tf_sortArray;
 
 		//サイト内頻出順
-		asort($idf_sortArray, SORT_NUMERIC);
-		$returnValue['page_freq_words_in_site'] = $idf_sortArray;
+		asort($df_sortArray, SORT_NUMERIC);
+		$returnValue['page_freq_words_in_site'] = $df_sortArray;
 
 		//特徴語
 		$featureArray = wix_feature_words_sort( $tfidf_sortArray, $bm25_sortArray, $textrank_sortArray );
 		$returnValue['feature_words'] = $featureArray;
 
-		//サイト内頻出語(上位10件)
-		$sql = 'SELECT keyword, idf FROM ' . $wix_keyword_similarity . 
-				' GROUP BY keyword ORDER BY idf ASC, bm25 DESC LIMIT 10';
-		$site_freq_words = $wpdb->get_results($sql);
-		$returnValue['site_freq_words'] = $site_freq_words;
 
 		//ランキング済みターゲット
 		$selectQuery = '';
@@ -2179,7 +2187,7 @@ function wix_entry_disambiuation_with_googleSearch($doc_id, $doc_idArray, $keywo
 
 //Context情報の取得
 function wix_get_contextInfo($keyword, $wordsArray) {
-	$M = 5; //上位M件をContext情報とする
+	$M = 10; //上位M件をContext情報とする
 
 	//対象ドキュメントの対象キーワードの周辺N単語取得
 	$surwordsArray = wix_surrounding_words($keyword, $wordsArray);

@@ -49,18 +49,6 @@ function wix_new_entry() {
 					<td><input type="text" /></td>
 				</tr>
 			</table>
-			<div class="detailSettings" id="detail_show">
-				<a style:"display: inline;">詳細設定</a>
-			</div>
-			<span class="detailSettings" id="detailSettings" style="display: none;">
-				<input type=checkbox id=firstonly name=firstonly value="1" /><label for=firstonly>First Match Only</label>
-				<input type=checkbox id=case name=case value="1" /><label for=case>Case Sensitivity</label>
-				<input type=checkbox id=filter name=filter value="1" /><label for=filter>Filter in comments?</label>
-				<span class="detailSettings" id="detail_hide">
-					<a style:"display: inline;">閉じる</a>
-				</span>
-			</span>
-			<br><br>
 			<table>
 				<tr>
 					<td><input type="button" class="button button-primary button-large" id="new_entry_insert" value="New Entry" /></td>
@@ -68,6 +56,36 @@ function wix_new_entry() {
 				</tr>
 			</table>
 		</div>';
+	// echo '<div id="newWIXFiles">
+	// 		<table class="newEntry" id="newEntry">
+	// 			<tr>
+	// 				<td><label for=keyword>Keyword</label></td>
+	// 				<td><input type="text" /></td>
+	// 			</tr>
+	// 			<tr>
+	// 				<td><label for=target>Target</label></td>
+	// 				<td><input type="text" /></td>
+	// 			</tr>
+	// 		</table>
+	// 		<div class="detailSettings" id="detail_show">
+	// 			<a style:"display: inline;">詳細設定</a>
+	// 		</div>
+	// 		<span class="detailSettings" id="detailSettings" style="display: none;">
+	// 			<input type=checkbox id=firstonly name=firstonly value="1" /><label for=firstonly>First Match Only</label>
+	// 			<input type=checkbox id=case name=case value="1" /><label for=case>Case Sensitivity</label>
+	// 			<input type=checkbox id=filter name=filter value="1" /><label for=filter>Filter in comments?</label>
+	// 			<span class="detailSettings" id="detail_hide">
+	// 				<a style:"display: inline;">閉じる</a>
+	// 			</span>
+	// 		</span>
+	// 		<br><br>
+	// 		<table>
+	// 			<tr>
+	// 				<td><input type="button" class="button button-primary button-large" id="new_entry_insert" value="New Entry" /></td>
+	// 				<td><span id="insert_success" style="display: none;">成功しました</span></td>
+	// 			</tr>
+	// 		</table>
+	// 	</div>';
 }
 
 
@@ -423,6 +441,7 @@ function wix_new_entry_inserts() {
 		}
 	}
 
+	$result = '';
 	if ( !empty($insertKeywordArray) ) {
 		$insertKeyword = '';
 
@@ -440,8 +459,8 @@ function wix_new_entry_inserts() {
 		$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
 		$result = $wpdb->query( $sql );					
 
-		if ( $result != 0 ) $test = 'SUCESS';
-		else $test = 'FAIL';
+		if ( $result != 0 ) $result = 'SUCESS';
+		else $result = 'FAIL';
 	}
 
 	if ( !empty($insertTargetArray) ) {
@@ -461,19 +480,87 @@ function wix_new_entry_inserts() {
 		$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
 		$result = $wpdb->query( $sql );					
 
-		if ( $result != 0 ) $test = 'SUCESS 2';
-		else $test = 'FAIL 2';
+		if ( $result != 0 ) $result = 'SUCESS 2';
+		else $result = 'FAIL 2';
 	}
 
 	$json = array(
-		"test" => $test,
-		// "entry" => $entry,
+		"result" => $result,
+		"insertKeywordArray" => $insertKeywordArray,
 	);
 	echo json_encode( $json );
 
 	die();
 }
 
+//エントリの推薦からDBに挿入された時、「WIXファイル内キーワードが出現するドキュメント」を表すテーブルをupdate
+add_action( 'wp_ajax_wix_recommentd_wixfilemeta_posts_insert', 'wix_recommentd_wixfilemeta_posts_insert' );
+add_action( 'wp_ajax_nopriv_wix_recommentd_wixfilemeta_posts_insert', 'wix_recommentd_wixfilemeta_posts_insert' );
+function wix_recommentd_wixfilemeta_posts_insert() {
+	global $wpdb;
+
+	header("Access-Control-Allow-Origin: *");
+	header('Content-type: application/javascript; charset=utf-8');
+
+	$wixfilemeta_posts = $wpdb->prefix . 'wixfilemeta_posts';
+	$insert_wixfilemeta_postsArray = array();
+
+	//まだDBに１つもドキュメントがなかったら計算しない.(でも基本的にemptyにならないみたい)
+	$sql = 'SELECT id, post_content FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" ORDER BY id ASC';
+	$doc_Obj = $wpdb->get_results($sql);
+	if ( !empty($doc_Obj) ) {
+		$insertKeywordArray = $_POST['insertKeywordArray'];
+
+		foreach ($insertKeywordArray as $i => $valueArray) {
+			foreach ($valueArray as $j => $array) {
+				$keyword_id = $array['id'];
+				$keyword = $array['keyword'];
+
+				foreach ($doc_Obj as $index => $value) {
+					$body = $value->post_content;
+					$doc_id = $value->id;
+
+					if ( strpos($body, $keyword) !== false )
+						array_push( $insert_wixfilemeta_postsArray, 
+										array(
+												'keyword_id' => $keyword_id,
+												'doc_id' => $doc_id
+											)
+									 );
+				}
+
+				//DB挿入
+				if ( !empty($insert_wixfilemeta_postsArray) ) {
+					$insertTuple = '';
+
+					foreach ($insert_wixfilemeta_postsArray as $index => $valueArray) {
+						$keyword_id = $valueArray['keyword_id'];
+						$doc_id = $valueArray['doc_id'];
+						if ( $index == 0 ) {
+							$insertTuple = '(' . $keyword_id . ', ' . $doc_id .'), ';
+						} else {
+							$insertTuple = $insertTuple . '(' . $keyword_id . ', ' . $doc_id .'), ';
+						}
+					}
+
+					$sql = 'INSERT INTO ' . $wixfilemeta_posts . '(keyword_id, doc_id) VALUES ' . $insertTuple;
+					$sql = mb_substr($sql, 0, (mb_strlen($sql)-2));
+					$result = $wpdb->query( $sql );
+
+					if ( $result != 0 ) $result = 'SUCCESS';
+					else $result = 'FAIL';
+				}
+			}
+		}
+	}
+
+	$json = array(
+		"result" => $result,
+	);
+	echo json_encode( $json );
+
+	die();
+}
 
 //Manula Decideプレビュー画面のBody
 add_action( 'wp_ajax_wix_decide_preview', 'wix_decide_preview' );

@@ -63,6 +63,9 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 				$words_countArray = array_word_count($wordsArray);
 
 			}
+			$wordsArray = wix_blank_remove($wordsArray);
+			$wordsArray = wix_stopwords_remove($wordsArray);
+
 			//Entry Disambiguation用
 			words_for_entry_disambiguation($wordsArray, $doc_id);
 
@@ -70,7 +73,7 @@ function wix_similarity_func( $new_status, $old_status, $post ) {
 			//TextRank計算
 			wix_textrank( $wordsArray );
 
-			//TF-IDF計算
+			//TF-IDF, TF-DF計算
 			wix_tfidf( $words_countArray );
 
 			//BM25計算
@@ -393,7 +396,7 @@ function wix_entry_delets() {
 }
 
 
-//IDF値の更新
+//IDF値, DF値の更新
 add_action( 'transition_post_status', 'wix_status_update_idf_update', 19, 3 );
 function wix_status_update_idf_update( $new_status, $old_status, $post ) {
 	global $wpdb;
@@ -406,6 +409,7 @@ function wix_status_update_idf_update( $new_status, $old_status, $post ) {
 		wix_similarity_score_deletes($post->ID, 'wix_minhash');
 
 	} else if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
+
 		$sql = 'SELECT COUNT(*) FROM ' . $wix_keyword_similarity;
 		if ( $wpdb->get_var($sql) == 0 ) return;
 
@@ -420,11 +424,13 @@ function wix_status_update_idf_update( $new_status, $old_status, $post ) {
 			$occurences = $value->num;
 			// dump('dump.txt', $keyword . ' : ' . $occurences);
 
-			$updateArray[$keyword] = log($document_num / $occurences);
+			$updateArray[$keyword] = array('idf' => log($document_num / $occurences), 'df' => $occurences / $document_num );
 		}
 		
-		foreach ($updateArray as $keyword => $value) {
-			$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET idf=' . $value . ' WHERE keyword="' . $keyword . '"';
+		foreach ($updateArray as $keyword => $valueArray) {
+			$sql = 'UPDATE ' . $wix_keyword_similarity . 
+					' SET idf=' . $valueArray['idf'] . ', df=' . $valueArray['df'] . 
+					' WHERE keyword="' . $keyword . '"';
 			$wpdb->query( $sql );
 			// dump('dump.txt', $sql);
 		}
@@ -436,12 +442,12 @@ function wix_status_update_idf_update( $new_status, $old_status, $post ) {
 	}
 }
 
-//単語ベクトル(TF-IDF, BM25)の更新
+//単語ベクトル(TF-IDF, TF-DF, BM25)の更新
 function wix_word_features_update() {
 	global $wpdb;
 	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
 
-	$sql = 'SELECT doc_id, keyword, tf, idf, doc_length FROM ' . $wix_keyword_similarity . ', ' . $wpdb->posts . ' WHERE doc_id=ID';
+	$sql = 'SELECT doc_id, keyword, tf, idf, df, doc_length FROM ' . $wix_keyword_similarity . ', ' . $wpdb->posts . ' WHERE doc_id=ID';
 	$keyword_similarityObj = $wpdb->get_results($sql);
 
 	//平均ドキュメント長(bm25用)
@@ -458,27 +464,29 @@ function wix_word_features_update() {
 		$doc_id = $value->doc_id;
 		$keyword = $value->keyword;
 		$tf_idf = $value->tf * $value->idf;
+		$tf_df = $value->tf * $value->df;
 		$doc_length = $value->doc_length;
 		$bm25 = ($value->tf * $value->idf * ($k1 + 1)) / ($value->tf + $k1 * ((1 - $b + $b * ($doc_length / $avg_doc_length))));
 
-		$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET tf_idf=' . $tf_idf . ', bm25=' . $bm25 . ' WHERE doc_id=' . $doc_id . ' AND keyword="' . $keyword . '"';
+		$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET tf_idf=' . $tf_idf . ', tf_df=' . $tf_df . ', bm25=' . $bm25 . ' WHERE doc_id=' . $doc_id . ' AND keyword="' . $keyword . '"';
 		$wpdb->query( $sql );
 	}
 }
 
-//TF-IDF値の更新
+//TF-IDF値, TF-DF値の更新
 function wix_tfidf_update() {
 	global $wpdb;
 	$wix_keyword_similarity = $wpdb->prefix . 'wix_keyword_similarity';
 
-	$sql = 'SELECT doc_id, keyword, tf, idf FROM ' . $wix_keyword_similarity;
+	$sql = 'SELECT doc_id, keyword, tf, idf, df FROM ' . $wix_keyword_similarity;
 	$keyword_similarityObj = $wpdb->get_results($sql);
 	foreach ($keyword_similarityObj as $index => $value) {
 		$doc_id = $value->doc_id;
 		$keyword = $value->keyword;
 		$tf_idf = $value->tf * $value->idf;
+		$tf_df = $value->tf * $value->df;
 
-		$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET tf_idf=' . $tf_idf . ' WHERE doc_id=' . $doc_id . ' AND keyword="' . $keyword . '"';
+		$sql = 'UPDATE ' . $wix_keyword_similarity . ' SET tf_idf=' . $tf_idf . ', tf_df=' . $tf_df . ' WHERE doc_id=' . $doc_id . ' AND keyword="' . $keyword . '"';
 		$wpdb->query( $sql );
 	}
 }

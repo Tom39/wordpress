@@ -25,18 +25,11 @@
 // }
 
 /*******************************************単語特徴量**********************************************************/
-add_action( 'transition_post_status', 'wix_eval_similarity_func_word', 10, 3 );
+// add_action( 'transition_post_status', 'wix_eval_similarity_func_word', 10, 3 );
 function wix_eval_similarity_func_word( $new_status, $old_status, $post ) {
 	global $wpdb, $term_featureObj, $doc_simObj;
 
-	//ゴミ箱行きだったらDELTE.次にリビジョンに対するエントリを作らないように.
-	if ( $new_status == 'trash' ) {
-
-		// wix_similarity_score_deletes($post->ID, 'wix_keyword_similarity');
-		// wix_similarity_score_deletes($post->ID, 'wix_document_similarity');
-		// wix_similarity_score_deletes($post->ID, 'wix_minhash');
-
-	} else if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
+	if ( $new_status != 'inherit' && $new_status != 'auto-draft' ) {
 
 		$doc_id = $post->ID;
 
@@ -49,53 +42,56 @@ function wix_eval_similarity_func_word( $new_status, $old_status, $post ) {
 		// 	wix_wordext_preprocess_getfile($doc_id, $content);
 		// }
 
-		// wix_wordext_preprocess_getfile($doc_id, $post->post_content);
+		wix_wordext_preprocess_getfile($doc_id, $post->post_content);
 		// wix_wordext_preprocess_insertDB();
 		/*****************************************************************************/
 
 
 
 		/***********************Process*********************************************/
-		$sql = 'SELECT ID FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" and post_status!="trash" and post_status!="auto-save" and post_status!="auto-draft" ORDER BY id ASC';
-		$doc_Obj = $wpdb->get_results($sql);
-		$evalArray = array();
+		// for ($i = 0; $i < 10; $i++ ) {
+		// 	$sql = 'SELECT ID, post_content FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft" AND eval_words IS NOT NULL ORDER BY id ASC';
+		// 	$doc_Obj = $wpdb->get_results($sql);
+		// 	$evalArray = array();
 
-		$time_start = microtime(true);
-		foreach ($doc_Obj as $index => $value) {
-			$doc_id = $value->ID;
-			
-			$sql = 'SELECT eval_words FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
-			$eval_wordsObj = $wpdb->get_results($sql);
-			$eval_wordsArray = explode(',', $eval_wordsObj[0]->eval_words);
-			$words_countArray = wix_eval_array_word_count($eval_wordsArray);
+		// 	$time_start = microtime(true);
+		// 	foreach ($doc_Obj as $index => $value) {
+		// 		$doc_id = $value->ID;
+		// 		$content = $value->post_content;
+				
+		// 		$sql = 'SELECT eval_words FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
+		// 		$eval_wordsObj = $wpdb->get_results($sql);
+		// 		$eval_wordsArray = explode(',', $eval_wordsObj[0]->eval_words);
+		// 		$words_countArray = wix_eval_array_word_count($eval_wordsArray);
 
-			//TF-IDF計算
-			wix_eval_tfidf( $words_countArray );
+		// 		//TF-IDF計算
+		// 		wix_eval_tfidf( $words_countArray );
 
-			//BM25計算
-			// wix_eval_bm25( $words_countArray, $doc_id );
+		// 		//BM25計算
+		// 		// wix_eval_bm25( $words_countArray, $doc_id, $content );
 
-			//TextRank計算
-			// wix_eval_textrank( $wordsArray );
+		// 		//TextRank計算
+		// 		// wix_eval_textrank( $eval_wordsArray );
 
-			$evalArray[$doc_id] = $term_featureObj;
+		// 		$evalArray[$doc_id] = $term_featureObj;
 
-			$term_featureObj = array();
-		}
+		// 		$term_featureObj = array();
+		// 	}
 
-		$timelimit = microtime(true) - $time_start;
-		dump('dump.txt', $timelimit . ' sec');
-		/* 上記部分の計算時間を計測 ↓のDB挿入は別にしないと。*/
+		// 	$timelimit = microtime(true) - $time_start;
+		// 	dump('dump.txt', $timelimit);
+		// }
 
-		//DBに挿入
-		foreach ($evalArray as $doc_id => $valueArray) {
-			//DBに単語特徴量挿入・更新
-			$term_featureObj = $valueArray;
-			wix_eval_keyword_similarity_score_inserts_updates($doc_id);
-		}
-		//IDF, TF-IDF, BM25の更新
-		wix_eval_idf_update();
-		wix_eval_tfidf_update();
+
+		// //DBに挿入
+		// foreach ($evalArray as $doc_id => $valueArray) {
+		// 	//DBに単語特徴量挿入・更新
+		// 	$term_featureObj = $valueArray;
+		// 	wix_eval_keyword_similarity_score_inserts_updates($doc_id);
+		// }
+		// //IDF, TF-IDF, BM25の更新
+		// wix_eval_idf_update();
+		// wix_eval_tfidf_update();
 		// wix_eval_bm25_update();
 		// wix_eval_textrank_update();
 		/*****************************************************************************/
@@ -113,18 +109,20 @@ function wix_wordext_preprocess_getfile($doc_id, $content) {
 	$wordsArray = wix_eval_blank_remove($wordsArray);
 	$wordsArray = wix_eval_stopwords_remove($wordsArray);
 
-	$tmpArray = array();
-	foreach ($wordsArray as $index => $word) {
-		if ( !empty($word) )
-			array_push($tmpArray, $word); 
+	if ( !empty($wordsArray) ) {
+		$tmpArray = array();
+		foreach ($wordsArray as $index => $word) {
+			if ( !empty($word) )
+				array_push($tmpArray, $word); 
+		}
+		$wordsArray_toString = implode(',', $tmpArray);
+
+		$filename = dirname( __FILE__ ) . '/eval/wordext/' . $doc_id . '.txt';
+		if ( file_exists($filename) )
+			unlink($filename);
+
+		file_put_contents( $filename, $wordsArray_toString, FILE_APPEND | LOCK_EX );
 	}
-	$wordsArray_toString = implode(',', $tmpArray);
-
-	$filename = dirname( __FILE__ ) . '/eval/wordext/' . $doc_id . '.txt';
-	if ( file_exists($filename) )
-		unlink($filename);
-
-	file_put_contents( $filename, $wordsArray_toString, FILE_APPEND | LOCK_EX );
 }
 
 function wix_wordext_preprocess_insertDB() {
@@ -170,6 +168,8 @@ function wix_eval_morphological_analysis_mecab($content) {
 //Mecabを使って、形態素解析結果から複合名詞の作成
 function wix_eval_compound_noun_extract_mecab($parse) {
 	$tmpString = '';
+	$before_type = '';
+	$before_detail_type = '';
 	$returnValue = array();
 
 	foreach ($parse as $node => $value) {
@@ -177,16 +177,79 @@ function wix_eval_compound_noun_extract_mecab($parse) {
 
 		if ( !empty($str) ) {
 			$array = explode(',', $value->getFeature());
-			if ( $array[0] == '名詞' ) {
+
+			if ( $array[0] == '接頭詞' ) {
 				$tmpString = $tmpString . $str;
+
+			} else if ( $array[0] == '名詞' ) {
+				if ( $array[1] == '非自立' || $array[1] == '副詞可能' || $array[1] == '代名詞' ) {
+
+				} else if ( $array[1] == '接尾' ) {
+					$tmpString = $tmpString . $str;
+
+					if ( mb_strlen($tmpString) > 1 ) {
+						array_push($returnValue, $tmpString);
+						$tmpString = '';
+					}
+
+				} else {
+					$tmpString = $tmpString . $str;
+
+					if ( $before_type == '接頭詞' ) {
+						if ( mb_strlen($tmpString) > 1 ) {
+							array_push($returnValue, $tmpString);
+						}
+						$tmpString = '';
+					}
+
+				}
+
+			} else if ( $array[0] == '記号' ) {
+				if ( $array[1] == '空白' ) {
+					if ( $before_detail_type == '一般' ) {
+						if ( mb_strlen($tmpString) > 1 ) {
+							array_push($returnValue, $tmpString);
+						}
+						$tmpString = '';
+
+					} else if ( $before__detail_type == '固有名詞' ) {
+
+					}
+
+				} else if ( $array[1] == '読点' || $array[1] == '句点' ) {
+					if ( mb_strlen($tmpString) > 1 ) {
+						array_push($returnValue, $tmpString);
+					}
+					$tmpString = '';
+
+				} else if ( $array[1] == '一般' || $array[1] == 'アルファベット' ) {
+					$tmpString = $tmpString . $str;
+
+				} else if ( $before_type == '名詞' ) {
+					if ( mb_strlen($tmpString) > 1 ) {
+						array_push($returnValue, $tmpString);
+					}
+					$tmpString = '';
+				}
+
 			} else {
-				array_push($returnValue, $tmpString);
-				$tmpString = '';
+				if ( !empty($tmpString) ) {
+					if ( mb_strlen($tmpString) > 1 ) {
+						array_push($returnValue, $tmpString);
+					}
+					$tmpString = '';
+				}
 			}
+
+
+			$before_type = $array[0];
+			$before_detail_type = $array[1];
 		}
 	}
-	if ( !empty($tmpString) )
-		array_push($returnValue, $tmpString);
+	if ( !empty($tmpString) ) {
+		if ( mb_strlen($tmpString) > 1 )
+			array_push($returnValue, $tmpString);
+	}
 
 	return $returnValue;
 }
@@ -271,7 +334,7 @@ function wix_eval_tfidf( $words_countArray ) {
 }
 
 //BM25の計算
-function wix_eval_bm25( $words_countArray, $doc_id ) {
+function wix_eval_bm25( $words_countArray, $doc_id, $content ) {
 	global $wpdb, $term_featureObj;
 	
 	//tf, idfの計算
@@ -289,11 +352,12 @@ function wix_eval_bm25( $words_countArray, $doc_id ) {
 	}
 
 	//ドキュメント長など
-	$sql = 'SELECT doc_length FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
-	$doc_lengthObj = $wpdb->get_results($sql);
-	$doc_length = $doc_lengthObj[0]->doc_length;
+	$doc_length = mb_strlen( strip_tags($content), 'UTF-8');
+	// $sql = 'SELECT doc_length FROM ' . $wpdb->posts . ' WHERE ID=' . $doc_id;
+	// $doc_lengthObj = $wpdb->get_results($sql);
+	// $doc_length = $doc_lengthObj[0]->doc_length;
 
-	$sql = 'SELECT COUNT(ID) AS doc_num, SUM(doc_length) AS all_doc_length FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft"';
+	$sql = 'SELECT COUNT(ID) AS doc_num, SUM(doc_length) AS all_doc_length FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft" AND eval_words IS NOT NULL';
 	$docObj = $wpdb->get_results($sql);
 	$doc_num = $docObj[0]->doc_num;
 	$avg_doc_length = ($docObj[0]->all_doc_length) / $doc_num;
@@ -336,7 +400,7 @@ function wix_eval_tf($array) {
 function wix_eval_idf() {
 	global $wpdb, $post, $term_featureObj;
 
-	$document_num = (int) $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->posts WHERE post_status!=\"inherit\" and post_status!=\"trash\" and post_status!=\"auto-save\" and post_status!=\"auto-draft\"");
+	$document_num = (int) $wpdb->get_var("SELECT COUNT(*) FROM $wpdb->posts WHERE post_status!=\"inherit\" and post_status!=\"trash\" and post_status!=\"auto-save\" and post_status!=\"auto-draft\" and eval_words IS NOT NULL");
 	$table_name = $wpdb->prefix . 'wix_eval_keyword_similarity';
 
 	foreach ($term_featureObj as $keyword => $obj) {
@@ -553,7 +617,7 @@ function wix_eval_idf_update() {
 	$wix_eval_keyword_similarity = $wpdb->prefix . 'wix_eval_keyword_similarity';
 
 	$updateArray = array();
-	$document_num = (int) $wpdb->get_var('SELECT COUNT(*) FROM $wpdb->posts WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft"');
+	$document_num = (int) $wpdb->get_var('SELECT COUNT(*) FROM $wpdb->posts WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft" AND eval_words IS NOT NULL');
 	
 	//1回以上ドキュメントに出現したキーワードと、その回数(つまりidfの分母)
 	$sql = 'SELECT keyword, COUNT(DISTINCT doc_id) AS num FROM ' . $wix_eval_keyword_similarity . ' GROUP BY keyword';
@@ -597,7 +661,7 @@ function wix_eval_bm25_update() {
 	$keyword_similarityObj = $wpdb->get_results($sql);
 
 	//平均ドキュメント長
-	$sql = 'SELECT COUNT(ID) AS doc_num, SUM(doc_length) AS all_doc_length FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft"';
+	$sql = 'SELECT COUNT(ID) AS doc_num, SUM(doc_length) AS all_doc_length FROM ' . $wpdb->posts . ' WHERE post_status!="inherit" AND post_status!="trash" AND post_status!="auto-save" AND post_status!="auto-draft" AND eval_words IS NOT NULL';
 	$docObj = $wpdb->get_results($sql);
 	$doc_num = $docObj[0]->doc_num;
 	$avg_doc_length = ($docObj[0]->all_doc_length) / $doc_num;
@@ -656,7 +720,7 @@ function wix_eval_textrank_update() {
 }
 
 /*******************************************ドキュメント類似度計算**********************************************************/
-add_action( 'transition_post_status', 'wix_eval_similarity_func_doc', 10, 3 );
+// add_action( 'transition_post_status', 'wix_eval_similarity_func_doc', 10, 3 );
 function wix_eval_similarity_func_doc( $new_status, $old_status, $post ) {
 	global $wpdb, $term_featureObj, $doc_simObj;
 

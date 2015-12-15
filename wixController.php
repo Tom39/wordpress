@@ -154,13 +154,15 @@ function wix_table_create() {
              keyword tinytext NOT NULL,
              tf float NOT NULL DEFAULT 0,
              idf float NOT NULL DEFAULT 0,
+             df float NOT NULL DEFAULT 0,
              tf_idf float NOT NULL DEFAULT 0,
+             tf_df float NOT NULL DEFAULT 0,
              bm25 float NOT NULL DEFAULT 0,
              textrank float NOT NULL DEFAULT 0,
              PRIMARY KEY(doc_id,keyword(255)),
              FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
              ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
 
@@ -179,7 +181,7 @@ function wix_table_create() {
               ON UPDATE CASCADE ON DELETE CASCADE,
              FOREIGN KEY (doc_id2) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
               ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
 
@@ -192,7 +194,7 @@ function wix_table_create() {
             target_num mediumint(9) NOT NULL, 
             doc_num mediumint(9) NOT NULL, 
             PRIMARY KEY id (id)
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
 
@@ -204,7 +206,7 @@ function wix_table_create() {
             target tinytext NOT NULL, 
             PRIMARY KEY(keyword_id, target(255)), 
             FOREIGN KEY (keyword_id) REFERENCES wp_wixfilemeta(id) ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
 
@@ -221,7 +223,7 @@ function wix_table_create() {
                 ON UPDATE CASCADE ON DELETE CASCADE, 
             FOREIGN KEY (doc_id) REFERENCES wp_posts(ID) 
                 ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
 
@@ -234,7 +236,7 @@ function wix_table_create() {
             PRIMARY KEY(doc_id), 
             FOREIGN KEY (doc_id) REFERENCES wp_posts(ID)
              ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
 
@@ -249,7 +251,7 @@ function wix_table_create() {
             PRIMARY KEY(dfile_id), 
             FOREIGN KEY(doc_id) REFERENCES wp_posts(ID) 
                 ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
 
@@ -268,7 +270,7 @@ function wix_table_create() {
                 ON UPDATE CASCADE ON DELETE CASCADE, 
             FOREIGN KEY(keyword_id) REFERENCES wp_wixfilemeta(id) 
                 ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
 
@@ -285,23 +287,20 @@ function wix_table_create() {
              ON UPDATE CASCADE ON DELETE CASCADE, 
             FOREIGN KEY (keyword_id) REFERENCES wp_wixfilemeta(id)
              ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
 
 
     $table_name = $wpdb->prefix . 'posts';
-    if ( $is_db_exists == $table_name ) return;
     $sql = "ALTER TABLE " . $table_name . " ADD COLUMN doc_length bigint DEFAULT 0 NOT NULL;";
     dbDelta($sql);
 
     $table_name = $wpdb->prefix . 'posts';
-    if ( $is_db_exists == $table_name ) return;
     $sql = "ALTER TABLE " . $table_name . " ADD COLUMN words_obj text NOT NULL;";
     dbDelta($sql);
 
     $table_name = $wpdb->prefix . 'posts';
-    if ( $is_db_exists == $table_name ) return;
     $sql = "ALTER TABLE " . $table_name . " ADD COLUMN eval_words text DEFAULT NULL;";
     dbDelta($sql);
 
@@ -316,13 +315,15 @@ function wix_table_create() {
              keyword tinytext NOT NULL,
              tf float NOT NULL DEFAULT 0,
              idf float NOT NULL DEFAULT 0,
+             df float NOT NULL DEFAULT 0,
              tf_idf float NOT NULL DEFAULT 0,
+             tf_df float NOT NULL DEFAULT 0,
              bm25 float NOT NULL DEFAULT 0,
              textrank float NOT NULL DEFAULT 0,
              PRIMARY KEY(doc_id,keyword(255)),
              FOREIGN KEY (doc_id) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
              ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
     $table_name = $wpdb->prefix . 'wix_eval_document_similarity';
@@ -340,7 +341,7 @@ function wix_table_create() {
               ON UPDATE CASCADE ON DELETE CASCADE,
              FOREIGN KEY (doc_id2) REFERENCES " . $wpdb->prefix . 'posts' . "(ID)
               ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
     $table_name = $wpdb->prefix . 'wix_eval_minhash';
@@ -352,7 +353,7 @@ function wix_table_create() {
             PRIMARY KEY(doc_id), 
             FOREIGN KEY (doc_id) REFERENCES wp_posts(ID)
              ON UPDATE CASCADE ON DELETE CASCADE
-            );";
+            ) CHARACTER SET utf8 COLLATE = utf8_general_ci;";
     dbDelta($sql);
 
 }

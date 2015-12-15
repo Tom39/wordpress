@@ -2091,20 +2091,21 @@ jQuery(function($) {
 							id: word_type + '_td'
 						}).appendTo(tr);
 
-						if ( word_type == 'site_freq_words' ) {
-							$.each(obj, function(index, el) {
-								var tr2 = $("<TR />", {
-									class: word_type + '_inner_tr'
-								}).appendTo(td);
-								var td2 = $("<TD />", {
-									id: word_type + '_inner_td' + count,
-									class: word_type + '_inner_td',
-									text: el['keyword']
-								}).appendTo(tr2);
+						// if ( word_type == 'site_freq_words' ) {
+						// 	$.each(obj, function(index, el) {
+						// 		var tr2 = $("<TR />", {
+						// 			class: word_type + '_inner_tr'
+						// 		}).appendTo(td);
+						// 		var td2 = $("<TD />", {
+						// 			id: word_type + '_inner_td' + count,
+						// 			class: word_type + '_inner_td',
+						// 			text: el['keyword']
+						// 		}).appendTo(tr2);
 
-								count++;
-							});
-						} else if ( word_type == 'candidate_targets' ) {
+						// 		count++;
+						// 	});
+						// } else if ( word_type == 'candidate_targets' ) {
+						if ( word_type == 'candidate_targets' ) {
 							$.each(obj, function(index, el) {
 								var tr2 = $("<TR />", {
 									class: word_type + '_inner_tr'

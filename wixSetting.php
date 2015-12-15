@@ -1017,10 +1017,10 @@ function wix_admin_settings(){
 			
 			<div id="recommend_contents">
 				<ul id="recommend_entrys_tab">
-					<li class="selected"><a href="#recommend_entrys_tab1">特徴的単語</a></li>
-					<li><a href="#recommend_entrys_tab2">頻出順(ページ)</a></li>
-					<li><a href="#recommend_entrys_tab3">頻出順(サイト)</a></li>
-					<li><a href="#recommend_entrys_tab4">サイト内頻出語</a></li>
+					<li class="selected"><a href="#recommend_entrys_tab1">頻出語</a></li>
+					<li><a href="#recommend_entrys_tab2">ページ内頻出順</a></li>
+					<li><a href="#recommend_entrys_tab3">サイト内頻出順</a></li>
+					<li><a href="#recommend_entrys_tab4">特徴的単語</a></li>
 				</ul>
 				<div id="recommend_entrys">
 					<table id="recommend_entrys_table">

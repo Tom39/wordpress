@@ -80,6 +80,8 @@ function wix_compound_noun_extract($parse) {
 //Mecabを使って、形態素解析結果から複合名詞の作成
 function wix_compound_noun_extract_mecab($parse) {
 	$tmpString = '';
+	$before_type = '';
+	$before_detail_type = '';
 	$returnValue = array();
 
 	foreach ($parse as $node => $value) {
@@ -87,19 +89,104 @@ function wix_compound_noun_extract_mecab($parse) {
 
 		if ( !empty($str) ) {
 			$array = explode(',', $value->getFeature());
-			if ( $array[0] == '名詞' ) {
+
+			if ( $array[0] == '接頭詞' ) {
 				$tmpString = $tmpString . $str;
+
+			} else if ( $array[0] == '名詞' ) {
+				if ( $array[1] == '非自立' || $array[1] == '副詞可能' || $array[1] == '代名詞' ) {
+
+				} else if ( $array[1] == '接尾' ) {
+					$tmpString = $tmpString . $str;
+
+					if ( mb_strlen($tmpString) > 1 ) {
+						array_push($returnValue, $tmpString);
+						$tmpString = '';
+					}
+
+				} else {
+					$tmpString = $tmpString . $str;
+
+					if ( $before_type == '接頭詞' ) {
+						if ( mb_strlen($tmpString) > 1 ) {
+							array_push($returnValue, $tmpString);
+						}
+						$tmpString = '';
+					}
+
+				}
+
+			} else if ( $array[0] == '記号' ) {
+				if ( $array[1] == '空白' ) {
+					if ( $before_detail_type == '一般' ) {
+						if ( mb_strlen($tmpString) > 1 ) {
+							array_push($returnValue, $tmpString);
+						}
+						$tmpString = '';
+
+					} else if ( $before__detail_type == '固有名詞' ) {
+
+					}
+
+				} else if ( $array[1] == '読点' || $array[1] == '句点' ) {
+					if ( mb_strlen($tmpString) > 1 ) {
+						array_push($returnValue, $tmpString);
+					}
+					$tmpString = '';
+
+				} else if ( $array[1] == '一般' || $array[1] == 'アルファベット' ) {
+					$tmpString = $tmpString . $str;
+
+				} else if ( $before_type == '名詞' ) {
+					if ( mb_strlen($tmpString) > 1 ) {
+						array_push($returnValue, $tmpString);
+					}
+					$tmpString = '';
+				}
+
 			} else {
-				array_push($returnValue, $tmpString);
-				$tmpString = '';
+				if ( !empty($tmpString) ) {
+					if ( mb_strlen($tmpString) > 1 ) {
+						array_push($returnValue, $tmpString);
+					}
+					$tmpString = '';
+				}
 			}
+
+
+			$before_type = $array[0];
+			$before_detail_type = $array[1];
 		}
 	}
-	if ( !empty($tmpString) )
-		array_push($returnValue, $tmpString);
+	if ( !empty($tmpString) ) {
+		if ( mb_strlen($tmpString) > 1 )
+			array_push($returnValue, $tmpString);
+	}
 
 	return $returnValue;
 }
+// function wix_compound_noun_extract_mecab($parse) {
+// 	$tmpString = '';
+// 	$returnValue = array();
+
+// 	foreach ($parse as $node => $value) {
+// 		$str = $value->getSurface();
+
+// 		if ( !empty($str) ) {
+// 			$array = explode(',', $value->getFeature());
+// 			if ( $array[0] == '名詞' ) {
+// 				$tmpString = $tmpString . $str;
+// 			} else {
+// 				array_push($returnValue, $tmpString);
+// 				$tmpString = '';
+// 			}
+// 		}
+// 	}
+// 	if ( !empty($tmpString) )
+// 		array_push($returnValue, $tmpString);
+
+// 	return $returnValue;
+// }
 
 //複合名詞を持つ配列から空白要素の削除
 function wix_blank_remove($array) {
@@ -160,7 +247,7 @@ function array_word_count($array) {
 	return $returnValue;
 }
 
-//TF-IDFの計算
+//TF-IDF, TF-DF値の計算
 function wix_tfidf( $words_countArray ) {
 	global $term_featureObj;
 
@@ -178,10 +265,13 @@ function wix_tfidf( $words_countArray ) {
 		}
 	}
 
-	//tf-idf計算
+	//tf-idf, tf-df計算
 	foreach ($term_featureObj as $key => $value) {
 		$tf_idf = $value['tf'] * $value['idf'];
+		$tf_df = $value['tf'] * $value['df'];
 		$value['tf_idf'] = $tf_idf;
+		$value['tf_df'] = $tf_df;
+
 		$term_featureObj[$key] = $value;
 	}
 }
@@ -273,7 +363,7 @@ function wix_tf_ranking($array, $words_num) {
 	return $returnValue;
 }
 
-//IDF値の計算
+//IDF値とDF値の計算
 function wix_idf() {
 	global $wpdb, $post, $term_featureObj;
 
@@ -299,17 +389,19 @@ function wix_idf() {
 		//logの定数を10にするか、e(ただのlog()は底がe)にするか
 		$idf = log($document_num / $count);
 		// $idf = log10($document_num / $count);
+		$df = $count / $document_num;
 
 		if ( empty($term_featureObj) ) {
-			$term_featureObj[$keyword] = array('idf' => $idf);
+			$term_featureObj[$keyword] = array('idf' => $idf, 'df' => $df);
 		} else {
 			$obj['idf'] = $idf;
+			$obj['df'] = $df;
 			$term_featureObj[$keyword] = $obj;
 		}
 	}
 }
 
-//ドキュメント作成中におけるキーワード推薦時のidf計算
+//ドキュメント作成中におけるキーワード推薦時のidf, df計算
 function wix_idf_creating_document( $id ) {
 	global $wpdb, $term_featureObj;
 
@@ -335,8 +427,10 @@ function wix_idf_creating_document( $id ) {
 		//logの定数を10にするか、e(ただのlog()は底がe)にするか
 		$idf = log($document_num / $count);
 		// $idf = log10($document_num / $count);
+		$df = $count / $document_num;
 
 		$obj['idf'] = $idf;
+		$obj['df'] = $df;
 		$term_featureObj[$keyword] = $obj;
 	}
 }

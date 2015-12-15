@@ -93,7 +93,7 @@ jQuery(function($) {
 			});
 
  		} else {
- 			alert('入力してください');
+ 			alert('単語とURLを入力してください');
  		}
  
   	}); 
@@ -233,6 +233,29 @@ console.log(json['similarity']);
 // console.log(json['test']);
 // console.log(json['entry']);
 										alert('完了しました');
+										if ( json['result'] == 'SUCCESS' ) {
+											//成功したら、このキーワードが出現するドキュメント群のidをwixfilemeta_postsに格納
+											var target = $('#post-preview').attr('target');
+					  						var data = {
+					  							'action': 'wix_recommentd_wixfilemeta_posts_insert',
+					  							'insertKeywordArray': json['insertKeywordArray'],
+					  						};
+					  						$.ajax({
+												async: true,
+												dataType: "json",
+												type: "POST",
+												url: ajaxurl,
+												data: data,
+
+												success: function(json) {
+													console.log(json);
+												},
+
+												error: function(xhr, textStatus, errorThrown) {
+													console.log(textStatus);
+												}
+											});
+										}
 									},
 									error: function(xhr, textStatus, errorThrown){
 										alert('wixDecide.js DB Insert Error');
